@@ -1,1 +1,71 @@
-<div class="page-heading"><div><div class="eyebrow">RESERVA</div><h1 class="page-title"><%= @reservation.code %></h1><p class="subtitle"><%= @reservation.departure_offer.travel_package.name %></p></div><span class="pill <%= @reservation.status == 'confirmed' ? 'pill-green' : 'pill-gray' %>"><%= @reservation.status %></span></div><div class="grid gap-5 xl:grid-cols-2"><section class="card card-body"><h2 class="font-black">Pasajeros</h2><div class="mt-4 space-y-3"><% @reservation.passengers.each do |passenger| %><div class="rounded-xl bg-slate-50 p-4"><strong><%= passenger.full_name %></strong><p class="text-xs text-muted"><%= passenger.masked_document %> · <%= passenger.departure_stop.published_name %> · <%= passenger.accommodation.name %></p></div><% end %></div></section><section class="card card-body"><h2 class="font-black">Condición congelada</h2><dl class="mt-4 grid grid-cols-2 gap-4 text-sm"><div><dt class="text-muted">Precio unitario</dt><dd class="font-black"><%= money(@reservation.unit_price_cents) %></dd></div><div><dt class="text-muted">Gastos</dt><dd class="font-black"><%= money(@reservation.unit_fee_cents) %></dd></div><div><dt class="text-muted">Canal</dt><dd><%= @reservation.channel %></dd></div><div><dt class="text-muted">Rendición</dt><dd>Pendiente o verificada por separado</dd></div></dl><% if current_role == 'admin' && @reservation.status == 'confirmed' %><%= form_with url: cancel_reservation_path(@reservation), class: "mt-6 flex gap-2" do |form| %><%= text_field_tag :reason, nil, required: true, placeholder: "Motivo de cancelación" %><%= form.submit "Cancelar", class: "btn btn-danger" %><% end %><% end %></section></div>
+<div class="page-heading">
+  <div>
+    <div class="eyebrow"><%= @reservation.status == "requested" ? "SOLICITUD" : "RESERVA" %></div>
+    <h1 class="page-title"><%= @reservation.code %></h1>
+    <p class="subtitle"><%= @reservation.departure_offer.travel_package.name %></p>
+  </div>
+  <span class="pill <%= @reservation.status == 'confirmed' ? 'pill-green' : 'pill-gray' %>"><%= @reservation.status %></span>
+</div>
+
+<div class="grid gap-5 xl:grid-cols-2">
+  <section class="card card-body">
+    <h2 class="font-black">Pasajeros</h2>
+    <div class="mt-4 space-y-3">
+      <% @reservation.passengers.each do |passenger| %>
+        <div class="rounded-xl bg-slate-50 p-4">
+          <strong><%= passenger.full_name %></strong>
+          <p class="text-xs text-muted"><%= passenger.masked_document %> · <%= passenger.departure_stop.published_name %> · <%= passenger.accommodation.name %></p>
+        </div>
+      <% end %>
+    </div>
+  </section>
+
+  <section class="card card-body">
+    <h2 class="font-black">Condición comercial</h2>
+    <dl class="mt-4 grid grid-cols-2 gap-4 text-sm">
+      <div><dt class="text-muted">Precio unitario</dt><dd class="font-black"><%= money(@reservation.unit_price_cents) %></dd></div>
+      <div><dt class="text-muted">Gastos</dt><dd class="font-black"><%= money(@reservation.unit_fee_cents) %></dd></div>
+      <div><dt class="text-muted">Canal</dt><dd><%= @reservation.channel %></dd></div>
+      <div><dt class="text-muted">Rendición</dt><dd>Pendiente o verificada por separado</dd></div>
+    </dl>
+    <% if current_role == "admin" && @reservation.status == "confirmed" %>
+      <%= form_with url: cancel_reservation_path(@reservation), class: "mt-6 flex gap-2" do |form| %>
+        <%= text_field_tag :reason, nil, required: true, placeholder: "Motivo de cancelación" %>
+        <%= form.submit "Cancelar", class: "btn btn-danger" %>
+      <% end %>
+    <% end %>
+  </section>
+</div>
+
+<% if current_role == "reseller" && @reservation.status == "requested" %>
+  <% current_fare = @reservation.departure_offer.current_fare %>
+  <section class="card card-body mt-5">
+    <h2 class="font-black">Confirmar reserva</h2>
+    <p class="subtitle">Se volverán a comprobar la autorización, la tarifa vigente y los cupos. Los datos de pasajeros ya cargados se conservarán.</p>
+    <%= form_with url: confirm_reservation_path(@reservation), class: "mt-4 space-y-4" do |form| %>
+      <div class="form-grid">
+        <div>
+          <%= label_tag "payment_amount_cents", "Importe de la seña (ARS)" %>
+          <%= number_field_tag "payment[amount_cents]", (money_input_value(current_fare.required_payment_cents * @reservation.passengers.size) if current_fare), min: "0.01", step: "0.01", required: true %>
+        </div>
+        <div>
+          <%= label_tag "payment_method", "Medio de pago" %>
+          <%= select_tag "payment[method]", options_for_select([["Efectivo", "cash"], ["Transferencia", "transfer"], ["Mercado Pago", "mercado_pago"], ["Otro", "other"]]) %>
+        </div>
+        <div>
+          <%= label_tag "payment_received_on", "Fecha" %>
+          <%= date_field_tag "payment[received_on]", Date.current, required: true %>
+        </div>
+        <div>
+          <%= label_tag "payment_proof", "Comprobante opcional" %>
+          <%= file_field_tag "payment[proof]", accept: "image/*,.pdf" %>
+        </div>
+        <div class="field-wide">
+          <%= label_tag "payment_notes", "Observaciones" %>
+          <%= text_area_tag "payment[notes]" %>
+        </div>
+      </div>
+      <%= form.submit "Confirmar reserva", class: "btn btn-teal" %>
+    <% end %>
+  </section>
+<% end %>

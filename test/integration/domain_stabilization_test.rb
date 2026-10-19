@@ -9,18 +9,21 @@ class DomainStabilizationTest < ActionDispatch::IntegrationTest
     login_as(@user)
   end
 
-  test "manifests and boarding screens omit passengers from cancelled reservations" do
-    active = reservation_with_passenger("Activa", "confirmed")
+  test "manifests and boarding screens only include confirmed reservation passengers" do
+    active = reservation_with_passenger("Confirmada", "confirmed")
+    reservation_with_passenger("Solicitud no confirmada", "requested")
     reservation_with_passenger("Cancelada", "cancelled")
 
     get departure_manifest_path(@trip[:departure], format: :csv)
     assert_response :success
     assert_includes response.body, active.passengers.first.full_name
+    assert_not_includes response.body, "Solicitud no confirmada"
     assert_not_includes response.body, "Cancelada"
 
     get operation_departure_path(@trip[:departure])
     assert_response :success
-    assert_includes response.body, "Activa"
+    assert_includes response.body, "Confirmada"
+    assert_not_includes response.body, "Solicitud no confirmada"
     assert_not_includes response.body, "Cancelada"
   end
 
@@ -87,25 +90,54 @@ class PassengerFormConversionTest < ActionDispatch::IntegrationTest
     assert_redirected_to reservation_path(request_reservation)
   end
 
-  test "received data can be confirmed once as a reservation" do
-    attributes = { full_name: "Ana Formulario", document_number: "30111222", nationality: "Argentina",
-      departure_stop_id: @trip[:stop].id, room_type: "Doble" }
-    request_params = {
-      departure_offer_id: @trip[:offer].id, passenger_form_id: @form.id, idempotency_key: SecureRandom.uuid,
-      passengers: { "0" => attributes },
-      payment: { amount_cents: "500.00", method: "cash", received_on: Date.current }
-    }
+  test "an existing request can be confirmed once without duplicating its data" do
+    post convert_passenger_form_path(@form)
+    request_reservation = @form.reload.reservation
+    request_params = { payment: { amount_cents: "500.00", method: "cash", received_on: Date.current } }
 
-    assert_difference([ "Reservation.count", "SeatAllocation.count" ], 1) do
-      post reservations_path, params: request_params
+    get reservation_path(request_reservation)
+    assert_response :success
+    assert_includes response.body, "Confirmar reserva"
+
+    assert_no_difference([ "Reservation.count", "Passenger.count" ]) do
+      assert_difference([ "SeatAllocation.count", "CustomerPayment.count" ], 1) do
+        post confirm_reservation_path(request_reservation), params: request_params
+      end
     end
-    confirmed = @form.reload.reservation
+    confirmed = request_reservation.reload
     assert_equal "confirmed", confirmed.status
+    assert_equal "cash", confirmed.customer_payments.sole.method
 
-    request_params[:idempotency_key] = SecureRandom.uuid
-    assert_no_difference([ "Reservation.count", "SeatAllocation.count" ]) do
-      post reservations_path, params: request_params
+    assert_no_difference([ "Reservation.count", "Passenger.count", "SeatAllocation.count", "CustomerPayment.count" ]) do
+      post confirm_reservation_path(confirmed), params: request_params
     end
     assert_redirected_to reservation_path(confirmed)
+
+    get reservation_path(confirmed)
+    assert_not_includes response.body, "Confirmar reserva"
+  end
+
+  test "a sold out confirmation shows an error and preserves the request" do
+    post convert_passenger_form_path(@form)
+    request_reservation = @form.reload.reservation
+    @trip[:departure].update!(capacity: 1)
+    occupied = @company.reservations.create!(departure_offer: @trip[:offer], seller_membership: @membership,
+      created_by: @user, code: "OCUPADA-#{SecureRandom.hex(2)}", channel: "reseller", status: "confirmed")
+    passenger = occupied.passengers.create!(company: @company, departure_stop: @trip[:stop],
+      accommodation: @trip[:hotel], full_name: "Cupo ocupado", document_number: "30999888",
+      document_last4: "9888", nationality: "Argentina")
+    SeatAllocation.create!(company: @company, departure: @trip[:departure], passenger:)
+
+    assert_no_difference([ "SeatAllocation.count", "CustomerPayment.count", "CommissionEntry.count" ]) do
+      post confirm_reservation_path(request_reservation), params: {
+        payment: { amount_cents: "500.00", method: "cash", received_on: Date.current }
+      }
+    end
+
+    assert_redirected_to reservation_path(request_reservation)
+    follow_redirect!
+    assert_includes response.body, "No quedan cupos suficientes"
+    assert_equal "requested", request_reservation.reload.status
+    assert_equal "Ana Formulario", request_reservation.passengers.sole.full_name
   end
 end

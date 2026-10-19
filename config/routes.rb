@@ -30,7 +30,10 @@ Rails.application.routes.draw do
     resources :fare_versions, path: "tarifas", only: :create
   end
   resources :reservations, path: "reservas", only: %i[index show new create] do
-    member { post :cancel }
+    member do
+      post :cancel
+      post :confirm
+    end
   end
   resources :passenger_forms, path: "solicitudes", only: %i[index show create] do
     member { post :convert }

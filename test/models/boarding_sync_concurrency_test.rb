@@ -57,4 +57,25 @@ class BoardingSyncConcurrencyTest < ActiveSupport::TestCase
       } ])
     end
   end
+
+  test "requested reservation passengers cannot receive boarding events" do
+    company = Company.create!(name: "Solicitudes", slug: "solicitudes-#{SecureRandom.hex(4)}")
+    user = create_user
+    membership = create_membership(company:, user:, roles: %w[coordinator])
+    trip = create_trip(company:)
+    trip[:departure].departure_assignments.create!(membership:)
+    reservation = company.reservations.create!(departure_offer: trip[:offer], created_by: user,
+      code: "S-#{SecureRandom.hex(3)}", channel: "direct", status: "requested")
+    passenger = reservation.passengers.create!(company:, departure_stop: trip[:stop], accommodation: trip[:hotel],
+      full_name: "Sin confirmar", document_number: "30999888", document_last4: "9888", nationality: "Argentina")
+
+    assert_raises(ActiveRecord::RecordNotFound) do
+      Boarding::Sync.call(departure: trip[:departure], membership:, commands: [ {
+        command_id: SecureRandom.uuid, passenger_id: passenger.id, desired_status: "boarded",
+        base_version: passenger.lock_version, occurred_at: Time.current
+      } ])
+    end
+    assert_not BoardingEvent.new(company:, departure: trip[:departure], passenger:, recorded_by: user,
+      command_id: SecureRandom.uuid, status: "boarded", base_version: 0, occurred_at: Time.current).valid?
+  end
 end

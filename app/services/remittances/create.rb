@@ -19,13 +19,23 @@ module Remittances
           .where(id: @allocations.keys).order(:id).lock.to_a
         raise Pundit::NotAuthorizedError unless payments.size == @allocations.size
 
+        payments.each do |payment|
+          amount = @allocations.fetch(payment.id)
+          if amount <= 0
+            payment.errors.add(:base, "El importe a rendir debe ser mayor a cero")
+            raise ActiveRecord::RecordInvalid, payment
+          end
+          if amount > payment.pending_remittance_cents
+            payment.errors.add(:base, "El importe a rendir supera el saldo disponible")
+            raise ActiveRecord::RecordInvalid, payment
+          end
+        end
+
         remittance = Remittance.create!(company: @company, reseller_membership: @membership,
           declared_by: @actor, code: "RE-#{SecureRandom.hex(3).upcase}", amount_cents: @allocations.values.sum,
           method: @method, declared_on: @declared_on, notes: @notes)
         payments.each do |payment|
           amount = @allocations.fetch(payment.id)
-          raise ActiveRecord::RecordInvalid, payment if amount <= 0 || amount > payment.pending_remittance_cents
-
           remittance.remittance_allocations.create!(customer_payment: payment, amount_cents: amount)
           payment.update!(status: "partially_remitted") unless payment.status == "verified"
         end

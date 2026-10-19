@@ -1,6 +1,6 @@
 class ReservationsController < ApplicationController
   before_action -> { require_role!("admin", "reseller") }
-  before_action :set_reservation, only: %i[show cancel]
+  before_action :set_reservation, only: %i[show cancel confirm]
 
   def index
     @reservations = reservation_scope.includes(departure_offer: [ :travel_package, :departure ]).order(created_at: :desc)
@@ -26,7 +26,7 @@ class ReservationsController < ApplicationController
     redirect_to reservation, notice: "Reserva #{reservation.code} confirmada."
   rescue Reservations::Confirm::SoldOut, Reservations::Confirm::InsufficientPayment,
     Reservations::Confirm::NotAuthorized, Reservations::Confirm::InvalidPassengers,
-    Reservations::Confirm::NotAvailable => error
+    Reservations::Confirm::NotAvailable, MoneyParser::InvalidAmount => error
     redirect_to departure_offer_path(offer), alert: error.message
   end
 
@@ -34,6 +34,17 @@ class ReservationsController < ApplicationController
     require_role!("admin")
     Reservations::Cancel.call(reservation: @reservation, actor: current_user, reason: params[:reason])
     redirect_to @reservation, notice: "Reserva cancelada y cupos liberados."
+  end
+
+  def confirm
+    require_role!("reseller")
+    reservation = Reservations::Confirm.call(reservation: @reservation, actor: current_user,
+      membership: current_membership, payment: payment_params)
+    redirect_to reservation, notice: "Reserva #{reservation.code} confirmada; los cupos ya fueron asignados."
+  rescue Reservations::Confirm::SoldOut, Reservations::Confirm::InsufficientPayment,
+    Reservations::Confirm::NotAuthorized, Reservations::Confirm::InvalidPassengers,
+    Reservations::Confirm::NotAvailable, MoneyParser::InvalidAmount => error
+    redirect_to @reservation, alert: error.message
   end
 
   private

@@ -60,6 +60,73 @@ class ReservationsConfirmTest < ActiveSupport::TestCase
     assert_equal 0, @trip[:departure].occupied_seats
   end
 
+  test "confirmation transitions an existing request and freezes the current fare" do
+    request = requested_reservation
+    admin_user = create_user
+    create_membership(company: @company, user: admin_user, roles: %w[admin])
+    @trip[:offer].fare_versions.create!(price_cents: 120_000, service_fee_cents: 12_000,
+      deposit_type: "fixed", deposit_cents: 60_000, promotion_label: "Tarifa actual",
+      valid_from: 1.minute.ago)
+
+    assert_difference("Notification.count", 2) do
+      assert_no_difference([ "Reservation.count", "Passenger.count" ]) do
+        assert_difference([ "SeatAllocation.count", "CustomerPayment.count", "CommissionEntry.count", "AuditEvent.count" ], 1) do
+          Reservations::Confirm.call(reservation: request, actor: @user, membership: @membership,
+            payment: payment_attributes(60_000))
+        end
+      end
+    end
+
+    assert_equal "confirmed", request.reload.status
+    assert_equal 120_000, request.unit_price_cents
+    assert_equal({ "deposit_type" => "fixed", "promotion_label" => "Tarifa actual" }, request.terms_snapshot)
+    assert_equal 1, @trip[:departure].occupied_seats
+    recipients = Notification.where(company: @company, event_type: "reservation_confirmed").pluck(:user_id)
+    assert_equal [ @user.id, admin_user.id ].sort, recipients.sort
+  end
+
+  test "confirming an existing request twice does not duplicate side effects" do
+    request = requested_reservation
+    2.times do
+      Reservations::Confirm.call(reservation: request, actor: @user, membership: @membership,
+        payment: payment_attributes(50_000))
+    end
+
+    assert_equal 1, request.reload.customer_payments.count
+    assert_equal 1, request.passengers.joins(:seat_allocation).count
+    assert_equal 1, CommissionEntry.where(reservation: request).count
+    assert_equal 1, AuditEvent.where(auditable_type: "Reservation", auditable_id: request.id,
+      action: "reservation.confirmed").count
+  end
+
+  test "sold out confirmation preserves the pending request" do
+    request = requested_reservation
+    confirm(passengers: 2, key: "fill-departure")
+
+    assert_raises(Reservations::Confirm::SoldOut) do
+      Reservations::Confirm.call(reservation: request, actor: @user, membership: @membership,
+        payment: payment_attributes(50_000))
+    end
+
+    assert_equal "requested", request.reload.status
+    assert_empty request.customer_payments
+    assert_nil request.passengers.first.seat_allocation
+  end
+
+  test "request confirmation rechecks reseller authorization" do
+    request = requested_reservation
+    @membership.reseller_authorization.update!(auto_confirm_enabled: false)
+
+    assert_raises(Reservations::Confirm::NotAuthorized) do
+      Reservations::Confirm.call(reservation: request, actor: @user, membership: @membership,
+        payment: payment_attributes(50_000))
+    end
+
+    assert_equal "requested", request.reload.status
+    assert_empty request.customer_payments
+    assert_equal 0, @trip[:departure].occupied_seats
+  end
+
   private
 
   def confirm(passengers:, key:)
@@ -76,5 +143,15 @@ class ReservationsConfirmTest < ActiveSupport::TestCase
 
   def payment_attributes(amount)
     { amount_cents: amount, method: "cash", received_on: Date.current }
+  end
+
+  def requested_reservation
+    reservation = @company.reservations.create!(departure_offer: @trip[:offer], seller_membership: @membership,
+      created_by: @user, code: "SOL-#{SecureRandom.hex(3)}", channel: "reseller", status: "requested",
+      unit_price_cents: 100_000, unit_fee_cents: 10_000, minimum_payment_cents: 50_000)
+    reservation.passengers.create!(company: @company, departure_stop: @trip[:stop], accommodation: @trip[:hotel],
+      full_name: "Pasajera Solicitada", document_number: "30111222", document_last4: "1222",
+      nationality: "Argentina")
+    reservation
   end
 end

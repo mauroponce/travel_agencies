@@ -15,12 +15,13 @@ Actualizado: 19 de octubre de 2026.
 - Centro interno, email asíncrono, Web Push opt-in, PWA y polling público.
 - Datos demo, Docker, CI, Caddy/Hetzner y documentación.
 - Confirmación protegida por estado de oferta/salida, con bloqueos compartidos con la edición de oferta y capacidad.
-- Manifiestos, hoja de ruta y sincronización de embarque excluyen reservas canceladas; la versión se comprueba bajo lock.
-- Rendiciones parciales sucesivas y concurrentes, con comprobante y tope transaccional por cobro.
-- Formularios recibidos con vista privada y conversión idempotente a solicitud o reserva.
+- Manifiestos, hoja de ruta y sincronización de embarque incluyen exclusivamente pasajeros de reservas confirmadas; las solicitudes y cancelaciones no pueden registrar embarques.
+- Rendiciones parciales sucesivas y concurrentes, con comprobante, campos no seleccionados ignorados y tope transaccional por cobro.
+- Formularios recibidos con vista privada y conversión idempotente a solicitud sin ocupar cupos.
+- Confirmación posterior de una solicitud sobre la misma reserva y los mismos pasajeros, con seña declarada, tarifa vigente, autorización, auditoría y asignación atómica de cupos.
 - Horario editable por parada de salida e importes de interfaz expresados en pesos argentinos.
 
-La suite actual contiene 28 pruebas Rails con 127 aserciones y 4 escenarios Playwright en desktop/móvil. Incluye carreras concurrentes de cupos, rendiciones, conversión de formularios y embarques. El esquema migra desde cero y `zeitwerk:check` pasa.
+La suite actual contiene 38 pruebas Rails con 220 aserciones y 4 escenarios Playwright en desktop/móvil. Incluye carreras concurrentes de cupos, confirmación de solicitudes, rendiciones, conversión de formularios y embarques. El esquema migra desde cero y `zeitwerk:check` pasa.
 
 ## Parcial
 

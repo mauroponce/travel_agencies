@@ -15,8 +15,7 @@ class RemittancesController < ApplicationController
 
   def create
     require_role!("reseller")
-    allocations = params.fetch(:allocations, {}).to_unsafe_h
-    requested = allocations.to_h.transform_values { |amount| MoneyParser.call(amount) }.select { |_id, amount| amount.positive? }
+    requested = parsed_allocations
     return redirect_to(remittances_path, alert: "Seleccioná al menos un cobro con un importe válido.") if requested.empty?
     remittance = Remittances::Create.call(company: current_company, membership: current_membership, actor: current_user,
       allocations: requested, method: params[:method], declared_on: params[:declared_on] || Date.current,
@@ -39,6 +38,19 @@ class RemittancesController < ApplicationController
   end
 
   private
+
+  def parsed_allocations
+    allocations = params[:allocations]
+    allocations = allocations.respond_to?(:to_unsafe_h) ? allocations.to_unsafe_h : allocations.to_h
+    allocations.each_with_object({}) do |(payment_id, raw_amount), parsed|
+      next if raw_amount.blank?
+
+      amount = MoneyParser.call(raw_amount)
+      raise MoneyParser::InvalidAmount, "Los importes de la rendición deben ser mayores a cero" unless amount.positive?
+
+      parsed[payment_id] = amount
+    end
+  end
 
   def set_remittance
     scope = Remittance.where(company: current_company)

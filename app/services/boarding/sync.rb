@@ -26,14 +26,18 @@ module Boarding
       passenger = Passenger.with_active_reservations.where(company: @membership.company).joins(reservation: :departure_offer)
         .where(departure_offers: { departure_id: @departure.id }).find(command.fetch(:passenger_id))
 
-      passenger.with_lock do
-        next conflict(command, passenger) if passenger.lock_version != command.fetch(:base_version).to_i
+      passenger.reservation.with_lock do
+        raise ActiveRecord::RecordNotFound unless passenger.reservation.status == "confirmed"
 
-        event = BoardingEvent.create!(company: @membership.company, departure: @departure, passenger:,
-          recorded_by: @membership.user, command_id: command[:command_id], status: command.fetch(:desired_status),
-          base_version: command[:base_version], occurred_at: command[:occurred_at] || Time.current, notes: command[:notes])
-        passenger.touch
-        { command_id: command[:command_id], result: "applied", status: event.status, version: passenger.lock_version }
+        passenger.with_lock do
+          next conflict(command, passenger) if passenger.lock_version != command.fetch(:base_version).to_i
+
+          event = BoardingEvent.create!(company: @membership.company, departure: @departure, passenger:,
+            recorded_by: @membership.user, command_id: command[:command_id], status: command.fetch(:desired_status),
+            base_version: command[:base_version], occurred_at: command[:occurred_at] || Time.current, notes: command[:notes])
+          passenger.touch
+          { command_id: command[:command_id], result: "applied", status: event.status, version: passenger.lock_version }
+        end
       end
     rescue ActiveRecord::RecordNotUnique
       { command_id: command[:command_id], result: "duplicate" }
