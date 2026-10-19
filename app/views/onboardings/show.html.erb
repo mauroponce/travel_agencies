@@ -1,0 +1,13 @@
+<div class="mx-auto flex min-h-screen max-w-xl items-center px-5 py-12">
+  <section class="card w-full p-8">
+    <div class="eyebrow">PRIMEROS PASOS</div><h1 class="page-title">Creá tu empresa</h1>
+    <p class="subtitle mb-6">Tu cuenta Google ya fue validada. Ahora configurá el espacio de trabajo.</p>
+    <%= form_with model: Company.new, url: onboarding_path, class: "space-y-4" do |form| %>
+      <div><%= form.label :name, "Nombre comercial" %><%= form.text_field :name, required: true %></div>
+      <div><%= form.label :slug, "Identificador público" %><%= form.text_field :slug, required: true, placeholder: "mi-empresa" %></div>
+      <div><%= form.label :email, "Correo de contacto" %><%= form.email_field :email, value: current_user.email %></div>
+      <div><%= form.label :whatsapp, "WhatsApp de la empresa" %><%= form.telephone_field :whatsapp, placeholder: "54911..." %></div>
+      <%= form.submit "Crear empresa", class: "btn btn-teal w-full" %>
+    <% end %>
+  </section>
+</div>

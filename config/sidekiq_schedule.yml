@@ -1,0 +1,4 @@
+expire_private_forms:
+  cron: "15 * * * *"
+  class: "ExpirePrivateFormsJob"
+  queue: default

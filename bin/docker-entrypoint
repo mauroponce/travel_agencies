@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ "${RUN_MIGRATIONS:-false}" == "true" ]]; then
+  bin/rails db:prepare
+fi
+
+exec "$@"

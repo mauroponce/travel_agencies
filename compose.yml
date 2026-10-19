@@ -1,0 +1,63 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: nexoviajes_development
+      POSTGRES_USER: nexoviajes
+      POSTGRES_PASSWORD: nexoviajes
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nexoviajes -d nexoviajes_development"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  redis:
+    image: redis:7.4-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+  mailpit:
+    image: axllent/mailpit:v1.27
+    ports:
+      - "8025:8025"
+  web:
+    build: .
+    env_file: ${ENV_FILE:-.env}
+    environment:
+      DATABASE_URL: postgresql://nexoviajes:nexoviajes@db:5432/nexoviajes_development
+      REDIS_URL: redis://redis:6379/0
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+      RUN_MIGRATIONS: "true"
+    ports:
+      - "3000:3000"
+    volumes:
+      - storage_data:/rails/storage
+    depends_on:
+      db: {condition: service_healthy}
+      redis: {condition: service_healthy}
+  worker:
+    build: .
+    command: bundle exec sidekiq -C config/sidekiq.yml
+    env_file: ${ENV_FILE:-.env}
+    environment:
+      DATABASE_URL: postgresql://nexoviajes:nexoviajes@db:5432/nexoviajes_development
+      REDIS_URL: redis://redis:6379/0
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+    volumes:
+      - storage_data:/rails/storage
+    depends_on:
+      db: {condition: service_healthy}
+      redis: {condition: service_healthy}
+
+volumes:
+  postgres_data:
+  redis_data:
+  storage_data:

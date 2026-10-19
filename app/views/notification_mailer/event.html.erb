@@ -1,0 +1,3 @@
+<h1><%= @notification.title %></h1>
+<p><%= @notification.body %></p>
+<p><%= link_to "Abrir NexoViajes", URI.join(ENV.fetch("APP_URL", "http://localhost:3000"), @notification.action_url || "/").to_s %></p>

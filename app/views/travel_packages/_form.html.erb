@@ -1,0 +1,15 @@
+<%= form_with model: travel_package, class: "card card-body space-y-5" do |form| %>
+  <% if travel_package.errors.any? %><div class="notice notice-amber"><%= travel_package.errors.full_messages.to_sentence %></div><% end %>
+  <div class="form-grid">
+    <div><%= form.label :name, "Nombre comercial" %><%= form.text_field :name, required: true %></div>
+    <div><%= form.label :destination_id, "Destino" %><%= form.collection_select :destination_id, current_company.destinations.order(:name), :id, :name %></div>
+    <div><%= form.label :days, "Días" %><%= form.number_field :days, min: 1 %></div>
+    <div><%= form.label :nights, "Noches" %><%= form.number_field :nights, min: 0 %></div>
+    <div class="field-wide"><%= form.label :description, "Descripción" %><%= form.text_area :description, rows: 5 %></div>
+    <div><%= form.label :included_services, "Servicios incluidos (uno por línea)" %><%= form.text_area :included_services, value: travel_package.included_services.join("\n"), rows: 5 %></div>
+    <div><%= form.label :excluded_services, "Servicios no incluidos (uno por línea)" %><%= form.text_area :excluded_services, value: travel_package.excluded_services.join("\n"), rows: 5 %></div>
+    <div class="field-wide"><%= form.label :commercial_terms, "Condiciones comerciales" %><%= form.text_area :commercial_terms, rows: 4 %></div>
+    <div class="field-wide"><%= form.label :images, "Imágenes" %><%= form.file_field :images, multiple: true, accept: "image/*" %></div>
+  </div>
+  <%= form.submit "Guardar paquete", class: "btn btn-teal" %>
+<% end %>

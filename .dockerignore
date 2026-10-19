@@ -1,0 +1,10 @@
+.git
+.env
+config/master.key
+log/*
+tmp/*
+storage/*
+public/assets
+node_modules
+test-results
+playwright-report

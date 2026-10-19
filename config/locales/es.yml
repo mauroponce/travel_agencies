@@ -1,0 +1,27 @@
+es:
+  date:
+    formats:
+      default: "%d/%m/%Y"
+      short: "%d/%m/%Y"
+      long: "%A %d de %B de %Y"
+    day_names: [domingo, lunes, martes, miércoles, jueves, viernes, sábado]
+    month_names: [~, enero, febrero, marzo, abril, mayo, junio, julio, agosto, septiembre, octubre, noviembre, diciembre]
+  time:
+    formats:
+      default: "%d/%m/%Y %H:%M"
+      short: "%d/%m %H:%M"
+      long: "%A %d de %B de %Y, %H:%M"
+  activerecord:
+    errors:
+      messages:
+        record_invalid: "La validación falló: %{errors}"
+  errors:
+    format: "%{attribute} %{message}"
+    messages:
+      blank: "no puede estar vacío"
+      taken: "ya está en uso"
+      invalid: "no es válido"
+      greater_than: "debe ser mayor que %{count}"
+      greater_than_or_equal_to: "debe ser mayor o igual que %{count}"
+      not_a_number: "no es un número"
+      not_an_integer: "debe ser un número entero"

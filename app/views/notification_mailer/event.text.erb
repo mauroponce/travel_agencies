@@ -1,0 +1,5 @@
+<%= @notification.title %>
+
+<%= @notification.body %>
+
+<%= URI.join(ENV.fetch("APP_URL", "http://localhost:3000"), @notification.action_url || "/").to_s %>

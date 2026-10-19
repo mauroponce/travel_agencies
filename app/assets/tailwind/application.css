@@ -1,0 +1,65 @@
+@import "tailwindcss";
+
+@theme {
+  --color-navy: #172745;
+  --color-navy-dark: #101d34;
+  --color-teal: #138f82;
+  --color-surface: #f5f7fb;
+  --color-line: #e7ebf1;
+  --color-muted: #7d899d;
+  --color-orange: #e99c51;
+  --font-sans: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+@layer base {
+  html { @apply bg-surface text-navy antialiased; }
+  body { @apply min-h-screen bg-surface; }
+  input, select, textarea { @apply w-full rounded-xl border border-line bg-white px-3 py-2.5 text-sm outline-none focus:border-teal focus:ring-4 focus:ring-teal/10; }
+  label { @apply mb-1.5 block text-xs font-bold text-slate-600; }
+  table { @apply w-full text-left text-sm; }
+  th { @apply bg-slate-50 px-4 py-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-400; }
+  td { @apply border-t border-slate-100 px-4 py-4 align-middle; }
+}
+
+@layer components {
+  .app-shell { @apply flex min-h-screen; }
+  .sidebar { @apply fixed inset-y-0 left-0 z-30 hidden w-64 flex-col bg-navy-dark px-4 py-7 text-slate-300 lg:flex; }
+  .brand { @apply flex items-center gap-3 px-3 text-xl font-black tracking-tight text-white; }
+  .brand-mark { @apply grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-teal-400 to-cyan-600 text-white shadow-lg; }
+  .workspace { @apply mt-8 rounded-xl border border-slate-600/60 bg-slate-700/50 p-3; }
+  .nav-link { @apply flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-slate-300 transition hover:bg-white/5 hover:text-white; }
+  .nav-link-active { @apply bg-slate-600/70 text-white; }
+  .main-column { @apply min-w-0 flex-1 lg:pl-64; }
+  .topbar { @apply sticky top-0 z-20 flex min-h-20 items-center justify-between border-b border-line bg-white px-4 lg:px-10; }
+  .content { @apply mx-auto w-full max-w-[1560px] px-4 py-7 pb-28 lg:px-10 lg:py-9; }
+  .page-heading { @apply mb-6 flex flex-wrap items-end justify-between gap-4; }
+  .eyebrow { @apply text-[10px] font-black uppercase tracking-[.16em] text-teal; }
+  .page-title { @apply mt-2 text-3xl font-black tracking-tight text-navy; }
+  .subtitle { @apply mt-1 text-sm leading-6 text-muted; }
+  .card { @apply rounded-2xl border border-line bg-white shadow-[0_12px_32px_rgba(33,48,73,.035)]; }
+  .card-body { @apply p-5 lg:p-6; }
+  .card-header { @apply flex items-center justify-between gap-3 border-b border-line px-5 py-4 lg:px-6; }
+  .btn { @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-line bg-white px-4 py-2 text-xs font-extrabold text-slate-700 transition hover:-translate-y-px hover:shadow-md; }
+  .btn-primary { @apply border-navy bg-navy text-white; }
+  .btn-teal { @apply border-teal bg-teal text-white; }
+  .btn-soft { @apply border-transparent bg-teal/10 text-teal; }
+  .btn-danger { @apply border-transparent bg-red-50 text-red-700; }
+  .pill { @apply inline-flex items-center rounded-lg px-2.5 py-1.5 text-[10px] font-extrabold; }
+  .pill-green { @apply bg-emerald-50 text-emerald-700; }
+  .pill-amber { @apply bg-orange-50 text-orange-700; }
+  .pill-blue { @apply bg-blue-50 text-blue-700; }
+  .pill-gray { @apply bg-slate-100 text-slate-600; }
+  .metric-grid { @apply grid grid-cols-2 gap-3 xl:grid-cols-4; }
+  .metric { @apply rounded-2xl border border-line bg-white p-5 shadow-[0_12px_32px_rgba(33,48,73,.035)]; }
+  .metric-number { @apply mt-4 text-3xl font-black tracking-tight; }
+  .form-grid { @apply grid gap-4 md:grid-cols-2; }
+  .field-wide { @apply md:col-span-2; }
+  .notice { @apply rounded-xl border border-cyan-100 bg-cyan-50 px-4 py-3 text-sm leading-6 text-cyan-900; }
+  .notice-amber { @apply border-orange-100 bg-orange-50 text-orange-900; }
+  .flash { @apply fixed right-4 top-24 z-50 max-w-md rounded-xl px-4 py-3 text-sm font-semibold shadow-xl; }
+  .table-wrap { @apply overflow-x-auto; }
+  .mobile-nav { @apply fixed inset-x-0 bottom-0 z-30 flex h-20 items-center justify-around border-t border-line bg-white px-2 lg:hidden; }
+  .mobile-nav a { @apply flex flex-1 flex-col items-center gap-1 text-[10px] font-bold text-slate-500; }
+  .hero-gradient { background: linear-gradient(115deg,#172f4b 0%,#214762 62%,#246376 100%); }
+  .public-hero { background: linear-gradient(135deg,#6fb4bd,#f4d0a2 48%,#304f6d 49%,#1d3f5d 70%,#b48f7b 71%); }
+}
