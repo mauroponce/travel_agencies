@@ -18,6 +18,16 @@ class PassengerFormAndRemittanceTest < ActiveSupport::TestCase
     assert_equal before, @trip[:departure].available_seats
   end
 
+  test "a submission cannot select a stop from another departure" do
+    form, = PassengerForm.issue!(company: @company, departure_offer: @trip[:offer], reseller_membership: @membership)
+    other_trip = create_trip(company: @company)
+    submission = form.build_passenger_form_submission(full_name: "Ana Pérez", document_number: "30111222",
+      document_last4: "1222", nationality: "Argentina", departure_stop: other_trip[:stop])
+
+    assert_not submission.save
+    assert_includes submission.errors[:departure_stop], "no pertenece a la salida del formulario"
+  end
+
   test "verification is idempotent and updates payment financial state" do
     reservation = @company.reservations.create!(departure_offer: @trip[:offer], seller_membership: @membership,
       created_by: @user, code: "R-#{SecureRandom.hex(3)}", channel: "reseller", status: "confirmed")

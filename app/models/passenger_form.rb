@@ -2,6 +2,7 @@ class PassengerForm < ApplicationRecord
   belongs_to :company
   belongs_to :departure_offer
   belongs_to :reseller_membership, class_name: "Membership"
+  belongs_to :reservation, optional: true
   has_one :passenger_form_submission, dependent: :destroy
   validate :records_share_company
 

@@ -36,7 +36,7 @@ class ScreenSmokeTest < ActionDispatch::IntegrationTest
         departure_offer_id: @trip[:offer].id, idempotency_key: SecureRandom.uuid,
         passengers: { "0" => { full_name: "María Prueba", document_number: "30123456", nationality: "Argentina",
           departure_stop_id: @trip[:stop].id, room_type: "Doble" } },
-        payment: { amount_cents: 50_000, method: "cash", received_on: Date.current }
+        payment: { amount_cents: "500.00", method: "cash", received_on: Date.current }
       }
     end
     assert_response :redirect
@@ -59,7 +59,7 @@ class ScreenSmokeTest < ActionDispatch::IntegrationTest
 
   test "price update is visible on permanent public URL" do
     post departure_offer_fare_versions_path(@trip[:offer]), params: { fare_version: {
-      price_cents: "250000", service_fee_cents: "10000", deposit_type: "fixed", deposit_cents: "50000",
+      price_cents: "2500.00", service_fee_cents: "100.00", deposit_type: "fixed", deposit_cents: "500.00",
       promotion_label: "SUPER SALE"
     } }
     travel 1.second

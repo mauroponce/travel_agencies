@@ -6,7 +6,7 @@ class ManifestsController < ApplicationController
     else
       require_role!("admin")
     end
-    passengers = Passenger.where(company: current_company).joins(reservation: :departure_offer)
+    passengers = Passenger.with_active_reservations.where(company: current_company).joins(reservation: :departure_offer)
       .where(departure_offers: { departure_id: departure.id }).includes(:departure_stop, :accommodation)
     respond_to do |format|
       format.csv { send_data ManifestExporter.csv(passengers), filename: "manifiesto-#{departure.code}.csv" }

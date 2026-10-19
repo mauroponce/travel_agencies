@@ -32,7 +32,9 @@ Rails.application.routes.draw do
   resources :reservations, path: "reservas", only: %i[index show new create] do
     member { post :cancel }
   end
-  resources :passenger_forms, path: "solicitudes", only: %i[index create]
+  resources :passenger_forms, path: "solicitudes", only: %i[index show create] do
+    member { post :convert }
+  end
   resources :customer_payments, path: "pagos", only: %i[index create]
   resources :remittances, path: "rendiciones", only: %i[index create show] do
     member { post :verify }

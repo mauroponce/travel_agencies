@@ -20,6 +20,8 @@ class Passenger < ApplicationRecord
     boarding_events.order(created_at: :desc).pick(:status) || "pending"
   end
 
+  scope :with_active_reservations, -> { joins(:reservation).where.not(reservations: { status: "cancelled" }) }
+
   private
 
   def records_share_reservation_scope

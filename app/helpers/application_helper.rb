@@ -3,6 +3,11 @@ module ApplicationHelper
     MoneyFormatter.call(cents)
   end
 
+  def money_input_value(cents)
+    amount = cents.to_i
+    format("%d.%02d", amount.div(100), amount % 100)
+  end
+
   def role_label(role)
     { "admin" => "Administrador", "reseller" => "Revendedor", "coordinator" => "Coordinador" }.fetch(role, role.titleize)
   end

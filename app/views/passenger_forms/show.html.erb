@@ -1,0 +1,33 @@
+<div class="page-heading">
+  <div>
+    <div class="eyebrow">FORMULARIO RECIBIDO</div>
+    <h1 class="page-title"><%= @form.departure_offer.travel_package.name %></h1>
+    <p class="subtitle">Recibido <%= l @form.submitted_at, format: :long %></p>
+  </div>
+  <%= link_to "Volver", passenger_forms_path, class: "btn" %>
+</div>
+
+<% submission = @form.passenger_form_submission %>
+<section class="card card-body">
+  <dl class="grid gap-4 md:grid-cols-2">
+    <div><dt class="text-xs text-muted">Nombre y apellido</dt><dd class="font-bold"><%= submission.full_name %></dd></div>
+    <div><dt class="text-xs text-muted">Documento</dt><dd class="font-bold"><%= submission.document_number %></dd></div>
+    <div><dt class="text-xs text-muted">Nacionalidad</dt><dd class="font-bold"><%= submission.nationality %></dd></div>
+    <div><dt class="text-xs text-muted">Punto de embarque</dt><dd class="font-bold"><%= submission.departure_stop.published_name %></dd></div>
+    <div><dt class="text-xs text-muted">Habitación</dt><dd class="font-bold"><%= submission.room_type.presence || "Sin preferencia" %></dd></div>
+    <div><dt class="text-xs text-muted">Observaciones</dt><dd class="font-bold"><%= submission.notes.presence || "—" %></dd></div>
+  </dl>
+</section>
+
+<% if @form.reservation %>
+  <div class="notice mt-5">Este formulario ya se convirtió en <%= link_to @form.reservation.code, @form.reservation, class: "font-bold text-teal" %>.</div>
+<% else %>
+  <section class="card card-body mt-5">
+    <h2 class="font-black">Convertir datos</h2>
+    <p class="subtitle">La solicitud no ocupa cupos. La reserva vuelve a comprobar venta, tarifa y disponibilidad bajo bloqueo.</p>
+    <div class="mt-4 flex flex-wrap gap-3">
+      <%= button_to "Crear solicitud", convert_passenger_form_path(@form), method: :post, class: "btn" %>
+      <%= link_to "Confirmar reserva", new_reservation_path(passenger_form_id: @form.id), class: "btn btn-teal" %>
+    </div>
+  </section>
+<% end %>

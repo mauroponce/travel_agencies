@@ -13,7 +13,7 @@ class FareVersionsController < ApplicationController
 
   def fare_params
     raw = params.expect(fare_version: [ :price_cents, :service_fee_cents, :deposit_type, :deposit_cents, :promotion_label ])
-    %i[price_cents service_fee_cents deposit_cents].each { |key| raw[key] = raw[key].to_s.delete(".").to_i }
+    %i[price_cents service_fee_cents deposit_cents].each { |key| raw[key] = MoneyParser.call(raw[key]) }
     raw
   end
 end

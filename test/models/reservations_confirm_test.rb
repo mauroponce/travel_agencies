@@ -50,6 +50,16 @@ class ReservationsConfirmTest < ActiveSupport::TestCase
     assert_nil reservation.commission_entry
   end
 
+  test "confirmation requires a published offer and an open departure" do
+    @trip[:departure].update!(status: "draft")
+    assert_raises(Reservations::Confirm::NotAvailable) { confirm(passengers: 1, key: "closed-departure") }
+
+    @trip[:departure].update!(status: "open")
+    @trip[:offer].update!(status: "unpublished")
+    assert_raises(Reservations::Confirm::NotAvailable) { confirm(passengers: 1, key: "unpublished-offer") }
+    assert_equal 0, @trip[:departure].occupied_seats
+  end
+
   private
 
   def confirm(passengers:, key:)

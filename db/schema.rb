@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_19_170000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_19_180000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -370,9 +370,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_19_170000) do
     t.datetime "revoked_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.uuid "reservation_id"
     t.index ["company_id"], name: "index_passenger_forms_on_company_id"
     t.index ["departure_offer_id"], name: "index_passenger_forms_on_departure_offer_id"
     t.index ["reseller_membership_id"], name: "index_passenger_forms_on_reseller_membership_id"
+    t.index ["reservation_id"], name: "index_passenger_forms_on_reservation_id", unique: true
     t.index ["token_digest"], name: "index_passenger_forms_on_token_digest", unique: true
   end
 
@@ -628,6 +630,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_19_170000) do
   add_foreign_key "passenger_forms", "companies"
   add_foreign_key "passenger_forms", "departure_offers"
   add_foreign_key "passenger_forms", "memberships", column: "reseller_membership_id"
+  add_foreign_key "passenger_forms", "reservations"
   add_foreign_key "passengers", "accommodations"
   add_foreign_key "passengers", "companies"
   add_foreign_key "passengers", "departure_stops"

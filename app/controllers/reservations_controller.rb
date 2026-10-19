@@ -9,18 +9,24 @@ class ReservationsController < ApplicationController
   def show; end
 
   def new
-    @offer = available_offers.find(params[:departure_offer_id] || params[:offer_id])
+    @passenger_form = submitted_form_scope.find(params[:passenger_form_id]) if params[:passenger_form_id].present?
+    return redirect_to(@passenger_form.reservation) if @passenger_form&.reservation
+
+    @offer = @passenger_form&.departure_offer || available_offers.find(params[:departure_offer_id] || params[:offer_id])
+    @passenger_seed = @passenger_form&.passenger_form_submission
     @reservation = Reservation.new
   end
 
   def create
     offer = available_offers.find(params[:departure_offer_id])
+    passenger_form = submitted_form_scope.find(params[:passenger_form_id]) if params[:passenger_form_id].present?
     channel = current_role == "admin" ? "direct" : "reseller"
     reservation = Reservations::Confirm.call(offer:, actor: current_user, membership: current_membership, channel:,
-      passengers: passenger_params, payment: payment_params, idempotency_key: params[:idempotency_key])
+      passengers: passenger_params, payment: payment_params, idempotency_key: params[:idempotency_key], passenger_form:)
     redirect_to reservation, notice: "Reserva #{reservation.code} confirmada."
   rescue Reservations::Confirm::SoldOut, Reservations::Confirm::InsufficientPayment,
-    Reservations::Confirm::NotAuthorized, Reservations::Confirm::InvalidPassengers => error
+    Reservations::Confirm::NotAuthorized, Reservations::Confirm::InvalidPassengers,
+    Reservations::Confirm::NotAvailable => error
     redirect_to departure_offer_path(offer), alert: error.message
   end
 
@@ -40,6 +46,10 @@ class ReservationsController < ApplicationController
   def set_reservation = @reservation = reservation_scope.find(params[:id])
   def available_offers = current_company.departure_offers.published
 
+  def submitted_form_scope
+    PassengerForm.where(company: current_company, reseller_membership: current_membership).where.not(submitted_at: nil)
+  end
+
   def passenger_params
     allowed = %i[ full_name document_number nationality departure_stop_id room_type notes ]
     params.fetch(:passengers, {}).values.map { |passenger| passenger.permit(*allowed).to_h.symbolize_keys }
@@ -47,7 +57,7 @@ class ReservationsController < ApplicationController
 
   def payment_params
     raw = params.expect(payment: [ :amount_cents, :method, :received_on, :notes, :proof ]).to_h.symbolize_keys
-    raw[:amount_cents] = raw[:amount_cents].to_s.delete(".").to_i
+    raw[:amount_cents] = MoneyParser.call(raw[:amount_cents])
     raw
   end
 end

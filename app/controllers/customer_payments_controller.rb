@@ -23,7 +23,7 @@ class CustomerPaymentsController < ApplicationController
 
   def payment_params
     raw = params.expect(customer_payment: [ :amount_cents, :method, :received_on, :notes, :proof ]).to_h.symbolize_keys
-    raw[:amount_cents] = raw[:amount_cents].to_s.delete(".").to_i
+    raw[:amount_cents] = MoneyParser.call(raw[:amount_cents])
     raw
   end
 end

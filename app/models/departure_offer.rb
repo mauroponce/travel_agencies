@@ -10,6 +10,7 @@ class DepartureOffer < ApplicationRecord
   validates :slug, presence: true, uniqueness: { scope: :company_id }
   validates :status, inclusion: { in: %w[draft published unpublished cancelled] }
   validate :all_records_share_company
+  validate :departure_cannot_change_with_reservations, on: :update
 
   scope :published, -> { where(status: "published") }
 
@@ -25,5 +26,11 @@ class DepartureOffer < ApplicationRecord
     [ travel_package, departure, accommodation ].compact.each do |record|
       errors.add(:base, "Todos los registros deben pertenecer a la empresa") if record.company_id != company_id
     end
+  end
+
+  def departure_cannot_change_with_reservations
+    return unless will_save_change_to_departure_id? && reservations.exists?
+
+    errors.add(:departure, "no puede cambiar porque la oferta ya tiene reservas")
   end
 end

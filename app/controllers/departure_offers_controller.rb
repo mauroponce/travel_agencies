@@ -26,7 +26,11 @@ class DepartureOffersController < ApplicationController
 
   def update
     require_role!("admin")
-    if @offer.update(offer_params)
+    updated = ApplicationRecord.transaction do
+      @offer.lock!
+      @offer.update(offer_params)
+    end
+    if updated
       redirect_to @offer, notice: "Oferta actualizada."
     else
       render :edit, status: :unprocessable_entity
@@ -65,7 +69,7 @@ class DepartureOffersController < ApplicationController
 
   def fare_params
     raw = params.expect(fare: [ :price_cents, :service_fee_cents, :deposit_type, :deposit_cents, :promotion_label ])
-    %i[price_cents service_fee_cents deposit_cents].each { |key| raw[key] = raw[key].to_s.delete(".").to_i }
+    %i[price_cents service_fee_cents deposit_cents].each { |key| raw[key] = MoneyParser.call(raw[key]) }
     raw
   end
 end

@@ -17,12 +17,17 @@ class Remittance < ApplicationRecord
 
   def verify!(user)
     transaction do
+      already_verified = false
       with_lock do
-        return self if status == "verified"
-        raise ArgumentError, "Solo se verifican rendiciones declaradas" unless status == "declared"
-        update!(status: "verified", verified_by: user, verified_at: Time.current)
+        already_verified = status == "verified"
+        unless already_verified
+          raise ArgumentError, "Solo se verifican rendiciones declaradas" unless status == "declared"
+          update!(status: "verified", verified_by: user, verified_at: Time.current)
+        end
       end
-      customer_payments.lock.find_each do |payment|
+      next self if already_verified
+
+      customer_payments.order(:id).lock.each do |payment|
         verified_cents = payment.remittance_allocations.joins(:remittance).where(remittances: { status: "verified" }).sum(:amount_cents)
         payment.update!(status: verified_cents >= payment.amount_cents ? "verified" : "partially_remitted")
       end

@@ -6,6 +6,7 @@ class Reservation < ApplicationRecord
   has_many :passengers, dependent: :destroy
   has_many :customer_payments, dependent: :restrict_with_error
   has_one :commission_entry, dependent: :restrict_with_error
+  has_one :passenger_form, dependent: :nullify
 
   validates :code, presence: true, uniqueness: { scope: :company_id }
   validates :channel, inclusion: { in: %w[direct reseller] }

@@ -25,7 +25,7 @@ class DeparturesController < ApplicationController
 
   def update
     require_role!("admin")
-    if @departure.update(departure_params)
+    if @departure.update_with_inventory_lock(departure_params)
       redirect_to @departure, notice: "Salida actualizada."
     else
       render :edit, status: :unprocessable_entity
@@ -44,7 +44,9 @@ class DeparturesController < ApplicationController
     else
       require_role!("admin")
     end
-    @stops = @departure.departure_stops.includes(passengers: [ :accommodation, :boarding_events ])
+    @stops = @departure.departure_stops
+    @passengers_by_stop = Passenger.with_active_reservations.where(company: current_company, departure_stop: @stops)
+      .includes(:accommodation, :boarding_events).group_by(&:departure_stop_id)
   end
 
   private
@@ -57,7 +59,8 @@ class DeparturesController < ApplicationController
   end
 
   def departure_params
-    params.expect(departure: [ :bus_id, :route_id, :code, :departs_at, :returns_at, :capacity, :status, :return_notes ])
+    params.expect(departure: [ :bus_id, :route_id, :code, :departs_at, :returns_at, :capacity, :status,
+      :return_notes, departure_stops_attributes: [ [ :id, :scheduled_at ] ] ])
   end
 
   def copy_route_stops(departure)

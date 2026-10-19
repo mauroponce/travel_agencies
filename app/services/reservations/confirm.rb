@@ -4,10 +4,11 @@ module Reservations
     class NotAuthorized < StandardError; end
     class InsufficientPayment < StandardError; end
     class InvalidPassengers < StandardError; end
+    class NotAvailable < StandardError; end
 
     def self.call(**arguments) = new(**arguments).call
 
-    def initialize(offer:, actor:, membership:, channel:, passengers:, payment:, idempotency_key:)
+    def initialize(offer:, actor:, membership:, channel:, passengers:, payment:, idempotency_key:, passenger_form: nil)
       @offer = offer
       @actor = actor
       @membership = membership
@@ -15,6 +16,7 @@ module Reservations
       @passenger_attributes = passengers
       @payment_attributes = payment
       @idempotency_key = idempotency_key.presence || SecureRandom.uuid
+      @passenger_form = passenger_form
     end
 
     def call
@@ -23,8 +25,15 @@ module Reservations
       existing = Reservation.find_by(company: @offer.company, idempotency_key: @idempotency_key)
       return existing if existing
 
+      created = false
       reservation = ApplicationRecord.transaction do
+        @passenger_form&.lock!
+        next @passenger_form.reservation if @passenger_form&.reservation
+
+        @offer.lock!
         departure = @offer.departure.lock!
+        validate_sale_available!(departure)
+        validate_passenger_form!
         authorize_channel!
         fare = @offer.current_fare || raise(ActiveRecord::RecordNotFound, "No hay tarifa vigente")
         raise SoldOut, "No quedan cupos suficientes" if departure.available_seats < @passenger_attributes.size
@@ -57,15 +66,18 @@ module Reservations
           notes: @payment_attributes[:notes])
         payment.proof.attach(@payment_attributes[:proof]) if @payment_attributes[:proof].present?
         create_commission!(reservation)
+        @passenger_form&.update!(reservation:)
         AuditRecorder.call(action: "reservation.confirmed", auditable: reservation,
           actor: @actor, company: @offer.company, changeset: { passengers: @passenger_attributes.size, amount_cents: received })
+        created = true
         reservation
       end
 
-      NotificationDispatcher.reservation_confirmed(reservation)
+      NotificationDispatcher.reservation_confirmed(reservation) if created
       reservation
     rescue ActiveRecord::RecordNotUnique
-      Reservation.find_by!(company: @offer.company, idempotency_key: @idempotency_key)
+      @passenger_form&.reload&.reservation ||
+        Reservation.find_by!(company: @offer.company, idempotency_key: @idempotency_key)
     end
 
     private
@@ -76,6 +88,22 @@ module Reservations
       valid = @channel == "reseller" && @membership&.company_id == @offer.company_id &&
         authorization&.active? && authorization.auto_confirm_enabled?
       raise NotAuthorized, "El perfil no puede confirmar esta reserva" unless valid
+    end
+
+    def validate_sale_available!(departure)
+      return if @offer.status == "published" && departure.status == "open"
+
+      raise NotAvailable, "La salida debe estar abierta y la oferta publicada para confirmar reservas"
+    end
+
+    def validate_passenger_form!
+      return unless @passenger_form
+
+      valid = @passenger_form.company_id == @offer.company_id &&
+        @passenger_form.departure_offer_id == @offer.id &&
+        @passenger_form.reseller_membership_id == @membership&.id &&
+        @passenger_form.passenger_form_submission.present?
+      raise NotAuthorized, "El formulario no puede convertirse en esta reserva" unless valid
     end
 
     def create_commission!(reservation)
