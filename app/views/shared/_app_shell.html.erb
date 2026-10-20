@@ -4,7 +4,7 @@
     <div class="sidebar-logo">
       <%= link_to dashboard_path, class: "sidebar-brand" do %>
         <span class="brand-mark"><%= app_icon("activity") %></span>
-        <span><strong><%= ENV.fetch("PLATFORM_NAME", "NexoViajes").downcase %></strong><small><%= current_company.name %></small></span>
+        <span><strong><%= ENV.fetch("PLATFORM_NAME", "Turistack").downcase %></strong><small><%= current_company.name %></small></span>
       <% end %>
       <button class="sidebar-close" type="button" data-action="app-shell#close" aria-label="Cerrar menú"><%= app_icon("close") %></button>
     </div>
@@ -39,7 +39,7 @@
     <header class="topbar">
       <button class="mobile-menu-button" type="button" data-action="app-shell#open" data-app-shell-target="toggle" aria-controls="main-sidebar" aria-expanded="false" aria-label="Abrir menú"><%= app_icon("menu") %></button>
       <div class="topbar-spacer" aria-hidden="true"></div>
-      <div class="topbar-brand"><strong>NexoViajes</strong><span>Panel de empresa · datos reales</span></div>
+      <div class="topbar-brand"><strong>Turistack</strong><span>Panel de empresa · datos reales</span></div>
       <div class="topbar-actions">
         <%= link_to notifications_path, class: "topbar-icon-button", aria: {label: "Notificaciones"} do %><%= app_icon("bell") %><% end %>
         <%= form_with url: context_path, method: :post, class: "profile-switcher" do |form| %>

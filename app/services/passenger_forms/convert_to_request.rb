@@ -43,7 +43,7 @@ module PassengerForms
     private
 
     def next_code
-      "NV-SOL-#{Time.current.strftime('%y%m')}-#{SecureRandom.hex(3).upcase}"
+      "TS-SOL-#{Time.current.strftime('%y%m')}-#{SecureRandom.hex(3).upcase}"
     end
   end
 end

@@ -131,8 +131,7 @@ class HostnameTenancyTest < ActionDispatch::IntegrationTest
   end
 
   test "only a platform operator can register and activate a custom domain" do
-    operator = create_user(name: "Operadora")
-    operator.platform_roles.create!(role: "operator")
+    operator = create_platform_operator(name: "Operadora")
     login_as(operator)
 
     hostname = "app.#{SecureRandom.hex(4)}.example.com"
@@ -149,8 +148,7 @@ class HostnameTenancyTest < ActionDispatch::IntegrationTest
   end
 
   test "disabling the primary custom domain restores the permanent platform subdomain" do
-    operator = create_user(name: "Operadora de dominios")
-    operator.platform_roles.create!(role: "operator")
+    operator = create_platform_operator(name: "Operadora de dominios")
     custom = @company_a.company_domains.create!(hostname: "recovery.#{SecureRandom.hex(3)}.example.com", kind: "custom",
       status: "active", verified_at: Time.current, tls_status: "ready", activated_at: Time.current,
       cname_target: "tenants.example.net")
@@ -166,8 +164,7 @@ class HostnameTenancyTest < ActionDispatch::IntegrationTest
   end
 
   test "platform operator also authenticates only through the central host" do
-    operator = create_user(name: "Operador OAuth")
-    operator.platform_roles.create!(role: "operator")
+    operator = create_platform_operator(name: "Operador OAuth")
 
     complete_oauth(company: nil, user: operator, hostname: PlatformHosts.platform_host)
 

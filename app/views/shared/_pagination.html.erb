@@ -1,0 +1,24 @@
+<% if pagination.total_pages > 1 %>
+  <% visible_pages = ([1, pagination.total_pages] + ((pagination.number - 2)..(pagination.number + 2)).to_a)
+    .select { |page| page.between?(1, pagination.total_pages) }.uniq.sort %>
+  <nav class="flex flex-wrap items-center justify-between gap-3 border-t border-line px-5 py-4" aria-label="Paginación">
+    <span class="text-xs text-muted"><%= pagination.total_count %> resultados · página <%= pagination.number %> de <%= pagination.total_pages %></span>
+    <div class="flex flex-wrap items-center gap-1">
+      <% if pagination.previous %>
+        <%= link_to "← Anterior", url_for(request.query_parameters.merge(page_param.to_s => pagination.previous)),
+          class: "btn", rel: "prev", data: { turbo_frame: frame_id, turbo_action: "advance" } %>
+      <% end %>
+      <% visible_pages.each_with_index do |page, index| %>
+        <% if index.positive? && page > visible_pages[index - 1] + 1 %><span class="px-1 text-muted">…</span><% end %>
+        <%= link_to page, url_for(request.query_parameters.merge(page_param.to_s => page)),
+          class: "btn #{page == pagination.number ? 'btn-primary' : ''}",
+          aria: ({ current: "page" } if page == pagination.number),
+          data: { turbo_frame: frame_id, turbo_action: "advance" } %>
+      <% end %>
+      <% if pagination.next %>
+        <%= link_to "Siguiente →", url_for(request.query_parameters.merge(page_param.to_s => pagination.next)),
+          class: "btn", rel: "next", data: { turbo_frame: frame_id, turbo_action: "advance" } %>
+      <% end %>
+    </div>
+  </nav>
+<% end %>

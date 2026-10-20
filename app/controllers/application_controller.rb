@@ -81,6 +81,10 @@ class ApplicationController < ActionController::Base
     raise Pundit::NotAuthorizedError unless roles.map(&:to_s).include?(current_role)
   end
 
+  def paginate(scope, param: :page, per_page: Pagination::DEFAULT_PER_PAGE)
+    Pagination.call(scope, page: params[param], per_page:)
+  end
+
   def forbidden
     render file: Rails.public_path.join("403.html"), status: :forbidden, layout: false
   end

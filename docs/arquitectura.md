@@ -2,7 +2,9 @@
 
 ## Vista general
 
-NexoViajes es un monolito Rails con HTML server-rendered, Turbo y Stimulus. PostgreSQL es la fuente de verdad; Redis soporta Sidekiq, caché y tareas programadas. Active Storage conserva comprobantes e imágenes en disco privado o S3 compatible. Caddy termina TLS en el despliegue Docker.
+Turistack es un monolito Rails con HTML server-rendered, Turbo y Stimulus. PostgreSQL es la fuente de verdad; Redis soporta Sidekiq, caché y tareas programadas. Active Storage conserva comprobantes e imágenes en disco privado o S3 compatible. Caddy termina TLS en el despliegue Docker.
+
+Los índices y catálogos extensos se paginan en el servidor. Cada paginador vive dentro de un Turbo Frame con parámetros independientes, por lo que navegar páginas hace una solicitud AJAX y reemplaza solo la colección correspondiente.
 
 ```text
 Hostname registrado → Caddy/TLS → Rails/Puma → TenantResolver → PostgreSQL

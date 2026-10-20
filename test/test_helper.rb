@@ -1,4 +1,5 @@
 ENV["RAILS_ENV"] ||= "test"
+ENV["PLATFORM_ADMIN_GOOGLE_EMAILS"] ||= "operator@turistack.test"
 require_relative "../config/environment"
 require "rails/test_help"
 
@@ -25,6 +26,12 @@ module TestData
     roles.each { |role| membership.membership_roles.create!(role:) }
     membership.create_reseller_authorization!(auto_confirm_enabled: auto_confirm) if roles.include?("reseller")
     membership
+  end
+
+  def create_platform_operator(name: "Operador de plataforma")
+    user = create_user(name:, email: "operator@turistack.test")
+    user.platform_roles.create!(role: "operator")
+    user
   end
 
   def create_trip(company:, capacity: 6, slug: nil)

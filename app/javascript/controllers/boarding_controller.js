@@ -6,6 +6,7 @@ export default class extends Controller {
   connect() {
     this.flush = () => this.sendPending()
     window.addEventListener("online", this.flush)
+    this.migrateLegacyQueue()
     this.renderQueue()
     if (navigator.onLine) this.sendPending()
   }
@@ -32,7 +33,21 @@ export default class extends Controller {
   }
 
   get storageKey() {
+    return `turistack.boarding.queue.${this.companyIdValue}.${this.departureIdValue}.${this.userIdValue}`
+  }
+
+  get legacyStorageKey() {
     return `nexoviajes.boarding.queue.${this.companyIdValue}.${this.departureIdValue}.${this.userIdValue}`
+  }
+
+  migrateLegacyQueue() {
+    if (localStorage.getItem(this.legacyStorageKey) === null) return
+
+    const legacyQueue = this.readQueueFrom(this.legacyStorageKey)
+    const commands = new Map(legacyQueue.map(command => [command.command_id, command]))
+    this.readQueue().forEach(command => commands.set(command.command_id, command))
+    if (commands.size) this.writeQueue([...commands.values()])
+    localStorage.removeItem(this.legacyStorageKey)
   }
 
   commandId() {
@@ -45,8 +60,12 @@ export default class extends Controller {
   }
 
   readQueue() {
+    return this.readQueueFrom(this.storageKey)
+  }
+
+  readQueueFrom(key) {
     try {
-      const queue = JSON.parse(localStorage.getItem(this.storageKey) || "[]")
+      const queue = JSON.parse(localStorage.getItem(key) || "[]")
       return Array.isArray(queue) ? queue : []
     } catch (_error) {
       return []

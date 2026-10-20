@@ -11,6 +11,6 @@ class User < ApplicationRecord
   validates :phone, format: { with: /\A\d{8,15}\z/, allow_blank: true }
 
   def platform_operator?
-    platform_roles.exists?(role: "operator")
+    PlatformOperatorAccess.allowed?(self) && platform_roles.exists?(role: "operator")
   end
 end

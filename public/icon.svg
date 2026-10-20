@@ -1,3 +1,8 @@
-<svg width="512" height="512" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="256" cy="256" r="256" fill="red"/>
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title">
+  <title id="title">Turistack</title>
+  <rect width="512" height="512" rx="112" fill="#142440"/>
+  <path d="M126 142h260a26 26 0 0 1 0 52H126a26 26 0 0 1 0-52Z" fill="#5DD6C0"/>
+  <path d="M102 230h260a26 26 0 0 1 0 52H102a26 26 0 0 1 0-52Z" fill="#F7F9FC"/>
+  <path d="M126 318h260a26 26 0 0 1 0 52H126a26 26 0 0 1 0-52Z" fill="#FF9B63"/>
+  <path d="m342 219 38 37-38 37" fill="none" stroke="#5DD6C0" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

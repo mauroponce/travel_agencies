@@ -2,8 +2,14 @@ class TeamMembersController < ApplicationController
   before_action -> { require_role!("admin") }
 
   def index
-    @memberships = current_company.memberships.includes(:user, :membership_roles, :reseller_authorization).order(created_at: :desc)
-    @invitations = CompanyInvitation.where(company: current_company).order(created_at: :desc).limit(20)
+    @memberships, @memberships_pagination = paginate(
+      current_company.memberships.includes(:user, :membership_roles, :reseller_authorization).order(created_at: :desc),
+      param: :memberships_page, per_page: 20
+    )
+    @invitations, @invitations_pagination = paginate(
+      CompanyInvitation.where(company: current_company).order(created_at: :desc),
+      param: :invitations_page, per_page: 20
+    )
   end
 
   def create
@@ -16,13 +22,9 @@ class TeamMembersController < ApplicationController
   def update
     membership = current_company.memberships.find(params[:id])
     attributes = params.expect(membership: [ :status, :auto_confirm_enabled, :commercial_phone ]).to_h
-    ApplicationRecord.transaction do
-      membership.update!(status: attributes[:status]) if attributes[:status].present?
-      membership.update!(commercial_phone: attributes[:commercial_phone]) if attributes.key?(:commercial_phone)
-      if membership.reseller_authorization && attributes.key?(:auto_confirm_enabled)
-        membership.reseller_authorization.update!(auto_confirm_enabled: attributes[:auto_confirm_enabled] == "1")
-      end
-    end
+    Memberships::UpdateAccess.call(membership:, attributes:)
     redirect_to team_members_path, notice: "Acceso actualizado."
+  rescue Memberships::UpdateAccess::LastAdministrator => error
+    redirect_to team_members_path, alert: error.message
   end
 end

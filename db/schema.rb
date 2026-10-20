@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_19_194000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_20_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -147,6 +147,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_19_194000) do
     t.text "notes"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["company_id", "name"], name: "index_boarding_points_on_company_id_and_name"
     t.index ["company_id"], name: "index_boarding_points_on_company_id"
   end
 
@@ -158,6 +159,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_19_194000) do
     t.string "operator_name"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["company_id", "name"], name: "index_buses_on_company_id_and_name"
     t.index ["company_id"], name: "index_buses_on_company_id"
     t.index ["id", "company_id"], name: "uidx_buses_id_company", unique: true
     t.check_constraint "capacity > 0", name: "buses_capacity_positive"
@@ -173,7 +175,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_19_194000) do
     t.string "status", default: "accrued", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["company_id", "created_at"], name: "index_commission_entries_on_company_id_and_created_at", order: { created_at: :desc }
     t.index ["company_id"], name: "index_commission_entries_on_company_id"
+    t.index ["reseller_membership_id", "created_at"], name: "idx_on_reseller_membership_id_created_at_0f7518118b", order: { created_at: :desc }
     t.index ["reseller_membership_id"], name: "index_commission_entries_on_reseller_membership_id"
     t.index ["reservation_id"], name: "index_commission_entries_on_reservation_id", unique: true
     t.check_constraint "amount_cents >= 0", name: "commission_entries_nonnegative"
@@ -204,6 +208,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_19_194000) do
     t.jsonb "settings", default: {}, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["name"], name: "index_companies_on_name"
     t.index ["slug"], name: "index_companies_on_slug", unique: true
   end
 
@@ -244,6 +249,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_19_194000) do
     t.datetime "revoked_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["company_id", "created_at"], name: "index_company_invitations_on_company_id_and_created_at", order: { created_at: :desc }
     t.index ["company_id", "email"], name: "index_company_invitations_on_company_id_and_email"
     t.index ["company_id"], name: "index_company_invitations_on_company_id"
     t.index ["invited_by_id"], name: "index_company_invitations_on_invited_by_id"
@@ -262,7 +268,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_19_194000) do
     t.text "notes"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["company_id", "received_on", "created_at"], name: "idx_on_company_id_received_on_created_at_23dc6fffc8", order: { received_on: :desc, created_at: :desc }
     t.index ["company_id"], name: "index_customer_payments_on_company_id"
+    t.index ["received_by_membership_id", "received_on"], name: "idx_on_received_by_membership_id_received_on_3e3de13a7a", order: { received_on: :desc }
     t.index ["received_by_membership_id"], name: "index_customer_payments_on_received_by_membership_id"
     t.index ["recorded_by_id"], name: "index_customer_payments_on_recorded_by_id"
     t.index ["reservation_id"], name: "index_customer_payments_on_reservation_id"
@@ -290,6 +298,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_19_194000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["accommodation_id"], name: "index_departure_offers_on_accommodation_id"
+    t.index ["company_id", "created_at"], name: "index_departure_offers_on_company_id_and_created_at", order: { created_at: :desc }
     t.index ["company_id", "slug"], name: "index_departure_offers_on_company_id_and_slug", unique: true
     t.index ["company_id"], name: "index_departure_offers_on_company_id"
     t.index ["departure_id"], name: "index_departure_offers_on_departure_id"
@@ -327,6 +336,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_19_194000) do
     t.datetime "updated_at", null: false
     t.index ["bus_id"], name: "index_departures_on_bus_id"
     t.index ["company_id", "code"], name: "index_departures_on_company_id_and_code", unique: true
+    t.index ["company_id", "departs_at"], name: "index_departures_on_company_id_and_departs_at"
     t.index ["company_id"], name: "index_departures_on_company_id"
     t.index ["id", "company_id"], name: "uidx_departures_id_company", unique: true
     t.index ["route_id"], name: "index_departures_on_route_id"
@@ -379,6 +389,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_19_194000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "commercial_phone"
+    t.index ["company_id", "created_at"], name: "index_memberships_on_company_id_and_created_at", order: { created_at: :desc }
     t.index ["company_id", "user_id"], name: "index_memberships_on_company_id_and_user_id", unique: true
     t.index ["company_id"], name: "index_memberships_on_company_id"
     t.index ["id", "company_id"], name: "uidx_memberships_id_company", unique: true
@@ -410,6 +421,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_19_194000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["company_id"], name: "index_notifications_on_company_id"
+    t.index ["user_id", "company_id", "created_at"], name: "index_notifications_on_user_id_and_company_id_and_created_at", order: { created_at: :desc }
     t.index ["user_id", "deduplication_key"], name: "index_notifications_on_user_id_and_deduplication_key", unique: true
     t.index ["user_id"], name: "index_notifications_on_user_id"
   end
@@ -441,6 +453,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_19_194000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.uuid "reservation_id"
+    t.index ["company_id", "reseller_membership_id", "created_at"], name: "idx_on_company_id_reseller_membership_id_created_at_389e51004d", order: { created_at: :desc }
     t.index ["company_id"], name: "index_passenger_forms_on_company_id"
     t.index ["departure_offer_id"], name: "index_passenger_forms_on_departure_offer_id"
     t.index ["reseller_membership_id"], name: "index_passenger_forms_on_reseller_membership_id"
@@ -522,8 +535,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_19_194000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["company_id", "code"], name: "index_remittances_on_company_id_and_code", unique: true
+    t.index ["company_id", "created_at"], name: "index_remittances_on_company_id_and_created_at", order: { created_at: :desc }
     t.index ["company_id"], name: "index_remittances_on_company_id"
     t.index ["declared_by_id"], name: "index_remittances_on_declared_by_id"
+    t.index ["reseller_membership_id", "created_at"], name: "index_remittances_on_reseller_membership_id_and_created_at", order: { created_at: :desc }
     t.index ["reseller_membership_id"], name: "index_remittances_on_reseller_membership_id"
     t.index ["verified_by_id"], name: "index_remittances_on_verified_by_id"
     t.check_constraint "amount_cents > 0", name: "remittances_amount_positive"
@@ -559,11 +574,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_19_194000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["company_id", "code"], name: "index_reservations_on_company_id_and_code", unique: true
+    t.index ["company_id", "created_at"], name: "index_reservations_on_company_id_and_created_at", order: { created_at: :desc }
     t.index ["company_id", "idempotency_key"], name: "index_reservations_on_company_id_and_idempotency_key", unique: true, where: "(idempotency_key IS NOT NULL)"
     t.index ["company_id"], name: "index_reservations_on_company_id"
     t.index ["created_by_id"], name: "index_reservations_on_created_by_id"
     t.index ["departure_offer_id"], name: "index_reservations_on_departure_offer_id"
     t.index ["id", "company_id"], name: "uidx_reservations_id_company", unique: true
+    t.index ["seller_membership_id", "created_at"], name: "index_reservations_on_seller_membership_id_and_created_at", order: { created_at: :desc }
     t.index ["seller_membership_id"], name: "index_reservations_on_seller_membership_id"
   end
 
@@ -611,6 +628,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_19_194000) do
     t.text "description"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["company_id", "name"], name: "index_routes_on_company_id_and_name"
     t.index ["company_id"], name: "index_routes_on_company_id"
     t.index ["id", "company_id"], name: "uidx_routes_id_company", unique: true
   end
@@ -642,6 +660,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_19_194000) do
     t.text "commercial_terms"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["company_id", "name"], name: "index_travel_packages_on_company_id_and_name"
     t.index ["company_id"], name: "index_travel_packages_on_company_id"
     t.index ["destination_id"], name: "index_travel_packages_on_destination_id"
     t.index ["id", "company_id"], name: "uidx_travel_packages_id_company", unique: true

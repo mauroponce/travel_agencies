@@ -1,4 +1,4 @@
-# NexoViajes
+# Turistack
 
 SaaS multiempresa para agencias de turismo argentinas que venden viajes en micro mediante equipos propios y revendedores. Incluye catálogo comercial, salidas con inventario compartido, reservas, pasajeros cifrados, cobros declarados, rendiciones, comisiones, operación de embarque, PWA y notificaciones.
 
@@ -33,6 +33,8 @@ Web: `http://localhost:3000`; Mailpit: `http://localhost:8025`.
 
 La autenticación es exclusivamente por Google. Configure `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET`. Si `DEMO_GOOGLE_EMAIL` coincide con la cuenta que ingresa, se le vincula el workspace demostrativo **Sanzó Viajes**, con acceso a los tres perfiles. Los seeders también crean personas ficticias de equipo, viajes a Mendoza, Bariloche, Córdoba y Mar del Plata, paquetes que comparten micro, cobros y rendiciones.
 
+El acceso al panel global se controla con `PLATFORM_ADMIN_GOOGLE_EMAILS`, una lista de correos separada por comas. Esa lista es la fuente de verdad: al autenticar, Turistack concede o revoca el rol de operador según la configuración vigente.
+
 Para generar claves:
 
 ```bash
@@ -42,6 +44,7 @@ bundle exec webpush generate_key         # VAPID
 ```
 
 No cambie `ACTIVE_RECORD_ENCRYPTION_KEY` después de guardar DNI o endpoints Push: perdería acceso al contenido cifrado.
+En producción esta clave es obligatoria y no puede coincidir con `SECRET_KEY_BASE`; la aplicación falla al arrancar si la configuración es insegura.
 
 ## Pruebas y calidad
 
@@ -67,12 +70,18 @@ Las pruebas cubren las reglas críticas de cupos, precios, acceso multiempresa, 
 
 Active Storage usa disco local por defecto y puede cambiarse a cualquier S3 compatible con `ACTIVE_STORAGE_SERVICE=s3`. En producción deben respaldarse PostgreSQL y el volumen `storage_data`, o utilizar almacenamiento S3.
 
-`compose.production.yml`, `deploy/Caddyfile` y `bin/deploy-hetzner` forman el despliegue manual previsto para Hetzner. En el servidor copie el compose, Caddyfile y un `.env` seguro a `/opt/nexoviajes`, autentique el registry y ejecute:
+`compose.production.yml`, `deploy/Caddyfile` y `bin/deploy-hetzner` forman el despliegue manual previsto para Hetzner. En el servidor copie el compose, Caddyfile y un `.env` seguro a `/opt/turistack`, autentique el registry y ejecute:
+
+La URL pública de plataforma es `https://turistack.com`, OAuth usa `https://auth.turistack.com/auth/google_oauth2/callback` y los espacios de agencia viven bajo `*.turistack.com` o sus dominios propios verificados. Configure esas variables como se detalla en [despliegue de dominios](docs/despliegue-dominios.md).
+
+Si actualiza una instalación con un volumen PostgreSQL ya inicializado, conserve temporalmente sus valores anteriores en `POSTGRES_USER` y `POSTGRES_DB`; la imagen oficial no renombra roles ni bases existentes al cambiar las variables. Luego puede planificar ese cambio de forma explícita y con respaldo.
 
 ```bash
 DEPLOY_HOST=IP_O_HOST \
-NEXOVIAJES_IMAGE=ghcr.io/organizacion/nexoviajes:sha \
+TURISTACK_IMAGE=ghcr.io/organizacion/turistack:sha \
 bin/deploy-hetzner
 ```
 
 El script construye/publica la imagen, actualiza web y worker, aplica migraciones desde un único contenedor y verifica el arranque. Revise [arquitectura](docs/arquitectura.md), [reglas de negocio](docs/reglas-negocio.md) y [estado de implementación](docs/estado-implementacion.md) antes de operar.
+
+Los listados administrativos se paginan en el servidor y los controles actualizan únicamente su bloque mediante Turbo Frames. Las consultas conservan el aislamiento por empresa y cuentan con índices para sus órdenes y filtros habituales.

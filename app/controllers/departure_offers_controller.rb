@@ -3,7 +3,9 @@ class DepartureOffersController < ApplicationController
   before_action :set_offer, only: %i[show edit update publish unpublish]
 
   def index
-    @offers = offer_scope.includes(:travel_package, :departure, :accommodation).order(created_at: :desc)
+    @offers, @offers_pagination = paginate(
+      offer_scope.includes(:travel_package, :departure, :accommodation).order(created_at: :desc), per_page: 18
+    )
   end
 
   def show; end

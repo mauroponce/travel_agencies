@@ -2,7 +2,9 @@ class DeparturesController < ApplicationController
   before_action :set_departure, only: %i[show edit update destroy operation]
 
   def index
-    @departures = departure_scope.includes(:bus, :departure_offers).order(:departs_at)
+    @departures, @departures_pagination = paginate(
+      departure_scope.includes(:bus, :departure_offers).order(:departs_at), per_page: 18
+    )
   end
 
   def show; end

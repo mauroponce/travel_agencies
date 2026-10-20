@@ -3,7 +3,10 @@ class ReservationsController < ApplicationController
   before_action :set_reservation, only: %i[show cancel confirm]
 
   def index
-    @reservations = reservation_scope.includes(departure_offer: [ :travel_package, :departure ]).order(created_at: :desc)
+    @reservations, @reservations_pagination = paginate(
+      reservation_scope.includes(:passengers, departure_offer: [ :travel_package, :departure ]).order(created_at: :desc),
+      per_page: 25
+    )
   end
 
   def show; end

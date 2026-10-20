@@ -1,4 +1,4 @@
-class CreateNexoviajesDomain < ActiveRecord::Migration[8.1]
+class CreateTuristackDomain < ActiveRecord::Migration[8.1]
   def change
     enable_extension "pgcrypto" unless extension_enabled?("pgcrypto")
 

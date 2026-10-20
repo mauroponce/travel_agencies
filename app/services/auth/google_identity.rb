@@ -28,8 +28,7 @@ module Auth
     private
 
     def provision_operator(user)
-      emails = ENV.fetch("PLATFORM_ADMIN_GOOGLE_EMAILS", "").split(",").map { |email| email.strip.downcase }
-      user.platform_roles.find_or_create_by!(role: "operator") if emails.include?(user.email)
+      PlatformOperatorAccess.synchronize!(user)
     end
   end
 end

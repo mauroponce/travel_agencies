@@ -16,6 +16,9 @@ default: &default
   adapter: postgresql
   encoding: unicode
   url: <%= ENV["DATABASE_URL"] %>
+  host: <%= ENV["DB_HOST"] %>
+  username: <%= ENV["DB_USER"] %>
+  password: <%= ENV["DB_PASSWORD"] %>
   # For details on connection pooling, see Rails configuration guide
   # https://guides.rubyonrails.org/configuring.html#database-pooling
   max_connections: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
@@ -23,13 +26,13 @@ default: &default
 
 development:
   <<: *default
-  database: nexoviajes_development
+  database: <%= ENV.fetch("DB_NAME", "turistack_development") %>
 
   # The specified database role being used to connect to PostgreSQL.
   # To create additional roles in PostgreSQL see `$ createuser --help`.
   # When left blank, PostgreSQL will use the default role. This is
   # the same name as the operating system user running Rails.
-  #username: travel_agencies
+  #username: turistack
 
   # The password associated with the PostgreSQL role (username).
   #password:
@@ -57,7 +60,7 @@ development:
 # Do not set this db to the same as development or production.
 test:
   <<: *default
-  database: nexoviajes_test
+  database: <%= ENV.fetch("DB_NAME", "turistack_test") %>
 
 # As with config/credentials.yml, you never want to store sensitive information,
 # like your database password, in your source code. If your source code is
@@ -87,4 +90,4 @@ test:
 #
 production:
   <<: *default
-  database: nexoviajes_production
+  database: <%= ENV.fetch("DB_NAME", "turistack_production") %>

@@ -3,7 +3,10 @@ class PassengerFormsController < ApplicationController
   before_action :set_form, only: %i[show convert]
 
   def index
-    @forms = form_scope.includes(:passenger_form_submission, :reservation).order(created_at: :desc)
+    @forms, @forms_pagination = paginate(
+      form_scope.includes(:passenger_form_submission, :reservation, departure_offer: :travel_package)
+        .order(created_at: :desc), per_page: 20
+    )
     @generated_url = CompanyUrl.call(current_company,
       path: public_passenger_form_path(flash[:passenger_form_token])) if flash[:passenger_form_token].present?
   end

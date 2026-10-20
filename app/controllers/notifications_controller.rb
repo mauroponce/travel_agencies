@@ -1,6 +1,8 @@
 class NotificationsController < ApplicationController
   def index
-    @notifications = current_user.notifications.where(company: [ current_company, nil ]).order(created_at: :desc).limit(100)
+    @notifications, @notifications_pagination = paginate(
+      current_user.notifications.where(company: [ current_company, nil ]).order(created_at: :desc), per_page: 30
+    )
   end
 
   def update

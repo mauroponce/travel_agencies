@@ -3,7 +3,9 @@ class TravelPackagesController < ApplicationController
   before_action :set_package, only: %i[show edit update destroy]
 
   def index
-    @packages = current_company.travel_packages.includes(:destination).order(:name)
+    @packages, @packages_pagination = paginate(
+      current_company.travel_packages.includes(:destination).order(:name), per_page: 20
+    )
   end
 
   def show; end

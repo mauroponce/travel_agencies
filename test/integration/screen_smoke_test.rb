@@ -30,6 +30,25 @@ class ScreenSmokeTest < ActionDispatch::IntegrationTest
     assert_redirected_to departure_offer_path(@trip[:offer])
   end
 
+  test "pagination links target their Turbo frame and page the collection" do
+    31.times do |index|
+      @user.notifications.create!(company: @company, event_type: "test", title: "Aviso #{index}", body: "Detalle",
+        deduplication_key: "pagination-#{index}")
+    end
+
+    get notifications_path
+
+    assert_response :success
+    assert_select "turbo-frame#notifications"
+    assert_select "turbo-frame#notifications article", count: 30
+    assert_select "a[data-turbo-frame='notifications'][data-turbo-action='advance'][href*='page=2']"
+
+    get notifications_path(page: 2), headers: { "Turbo-Frame" => "notifications" }
+
+    assert_response :success
+    assert_select "turbo-frame#notifications article", count: 1
+  end
+
   test "reservation form persists a passenger and occupies a seat" do
     assert_difference([ "Reservation.count", "Passenger.count", "SeatAllocation.count" ], 1) do
       post reservations_path, params: {

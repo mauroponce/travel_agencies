@@ -4,12 +4,12 @@ services:
     restart: unless-stopped
     env_file: ${ENV_FILE:-.env}
     environment:
-      POSTGRES_DB: nexoviajes_production
-      POSTGRES_USER: nexoviajes
+      POSTGRES_DB: ${POSTGRES_DB:-turistack_production}
+      POSTGRES_USER: ${POSTGRES_USER:-turistack}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes: ["postgres_data:/var/lib/postgresql/data"]
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U nexoviajes -d nexoviajes_production"]
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
       timeout: 5s
       retries: 20
@@ -24,13 +24,16 @@ services:
       timeout: 3s
       retries: 20
   web:
-    image: ${NEXOVIAJES_IMAGE}
+    image: ${TURISTACK_IMAGE}
     restart: unless-stopped
     env_file: ${ENV_FILE:-.env}
     environment:
       RAILS_ENV: production
       RUN_MIGRATIONS: "true"
-      DATABASE_URL: postgresql://nexoviajes:${POSTGRES_PASSWORD}@db:5432/nexoviajes_production
+      DB_HOST: db
+      DB_USER: ${POSTGRES_USER:-turistack}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_NAME: ${POSTGRES_DB:-turistack_production}
       REDIS_URL: redis://redis:6379/0
     expose: ["3000"]
     volumes: ["storage_data:/rails/storage"]
@@ -38,13 +41,16 @@ services:
       db: {condition: service_healthy}
       redis: {condition: service_healthy}
   worker:
-    image: ${NEXOVIAJES_IMAGE}
+    image: ${TURISTACK_IMAGE}
     restart: unless-stopped
     command: bundle exec sidekiq -C config/sidekiq.yml
     env_file: ${ENV_FILE:-.env}
     environment:
       RAILS_ENV: production
-      DATABASE_URL: postgresql://nexoviajes:${POSTGRES_PASSWORD}@db:5432/nexoviajes_production
+      DB_HOST: db
+      DB_USER: ${POSTGRES_USER:-turistack}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_NAME: ${POSTGRES_DB:-turistack_production}
       REDIS_URL: redis://redis:6379/0
     volumes: ["storage_data:/rails/storage"]
     depends_on:

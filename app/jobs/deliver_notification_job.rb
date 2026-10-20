@@ -29,7 +29,7 @@ class DeliverNotificationJob < ApplicationJob
       path: Rails.application.routes.url_helpers.open_notification_path(notification))
     WebPush.payload_send(endpoint: subscription.endpoint, p256dh: subscription.p256dh, auth: subscription.auth,
       message: { title: notification.title, body: notification.body, url: action_url }.to_json,
-      vapid: { subject: ENV.fetch("VAPID_SUBJECT", "mailto:soporte@localhost"),
+      vapid: { subject: ENV.fetch("VAPID_SUBJECT", "mailto:soporte@turistack.com"),
               public_key: ENV.fetch("VAPID_PUBLIC_KEY"), private_key: ENV.fetch("VAPID_PRIVATE_KEY") })
     subscription.touch(:last_used_at)
   rescue WebPush::InvalidSubscription, WebPush::ExpiredSubscription

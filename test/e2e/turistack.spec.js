@@ -2,6 +2,7 @@ const { test, expect } = require("@playwright/test")
 
 test("landing and public trip expose the real responsive experience", async ({ page }) => {
   await page.goto("/")
+  await expect(page).toHaveTitle(/Turistack/)
   await expect(page.getByRole("heading", { name: /Un solo lugar/ })).toBeVisible()
   await expect(page.getByRole("button", { name: /Ingresar con Google/ }).first()).toBeVisible()
 
@@ -18,7 +19,7 @@ test("landing and public trip expose the real responsive experience", async ({ p
 
 test("admin dashboard is responsive and uses real navigation", async ({ page }, testInfo) => {
   if (testInfo.project.name.startsWith("mobile")) await page.setViewportSize({ width: 390, height: 844 })
-  await page.goto("/test/sign-in?email=demo%40nexoviajes.local&company=sanzo-viajes&role=admin")
+  await page.goto("/test/sign-in?email=demo%40turistack.local&company=sanzo-viajes&role=admin")
   await expect(page.getByRole("heading", { name: /Resumen general/ })).toBeVisible()
   await expect(page.getByText("Sanzó Viajes").first()).toBeVisible()
   await expect(page.getByRole("link", { name: /Nueva oferta/ })).toHaveAttribute("href", "/ofertas/new")
@@ -43,7 +44,7 @@ test("admin dashboard is responsive and uses real navigation", async ({ page }, 
 })
 
 test("coordinator keeps the authorized mobile operation flow", async ({ page }) => {
-  await page.goto("/test/sign-in?email=demo%40nexoviajes.local&company=sanzo-viajes&role=coordinator")
+  await page.goto("/test/sign-in?email=demo%40turistack.local&company=sanzo-viajes&role=coordinator")
   await expect(page).toHaveURL(/salidas/)
   await page.locator("a[href$='/operation']").first().click()
   await expect(page.getByRole("heading", { name: /MZA-/ })).toBeVisible()
@@ -65,9 +66,24 @@ test("boarding queues a command offline without passenger data and syncs on reco
       results: commands.map(command => ({ command_id: command.command_id, result: "applied", status: command.desired_status }))
     }) })
   })
-  await page.goto("/test/sign-in?email=demo%40nexoviajes.local&company=sanzo-viajes&role=coordinator")
+  await page.goto("/test/sign-in?email=demo%40turistack.local&company=sanzo-viajes&role=coordinator")
   await page.locator("a[href$='/operation']").first().click()
   await expect(page.getByRole("heading", { name: /MZA-/ })).toBeVisible()
+
+  const migratedQueue = await page.evaluate(() => {
+    const element = document.querySelector("[data-controller='boarding']")
+    const controller = window.Stimulus.getControllerForElementAndIdentifier(element, "boarding")
+    localStorage.setItem(controller.legacyStorageKey, JSON.stringify([{ command_id: "legacy-command", passenger_id: "legacy-passenger", state: "pending" }]))
+    controller.migrateLegacyQueue()
+    const result = {
+      legacy: localStorage.getItem(controller.legacyStorageKey),
+      current: JSON.parse(localStorage.getItem(controller.storageKey))
+    }
+    localStorage.removeItem(controller.storageKey)
+    return result
+  })
+  expect(migratedQueue.legacy).toBeNull()
+  expect(migratedQueue.current).toEqual([expect.objectContaining({ command_id: "legacy-command" })])
 
   await page.evaluate(() => { window.__testOnline = false })
   const boardingButton = page.getByRole("button", { name: "Embarcado" }).first()
@@ -75,7 +91,7 @@ test("boarding queues a command offline without passenger data and syncs on reco
   await expect(boardingButton.locator("xpath=ancestor::*[@data-passenger-id]").getByText("Pendiente de sincronizar")).toBeVisible()
 
   const stored = await page.evaluate(() => Object.entries(localStorage)
-    .filter(([key]) => key.startsWith("nexoviajes.boarding.queue.")))
+    .filter(([key]) => key.startsWith("turistack.boarding.queue.")))
   expect(stored).toHaveLength(1)
   expect(stored[0][1]).toContain("command_id")
   expect(stored[0][1]).not.toMatch(/full_name|document|dni|nombre/i)
@@ -90,7 +106,7 @@ test("boarding queues a command offline without passenger data and syncs on reco
   ])
   await expect.poll(() => syncRequests).toBeGreaterThan(0)
   await expect.poll(async () => page.evaluate(() => Object.entries(localStorage)
-    .filter(([key]) => key.startsWith("nexoviajes.boarding.queue."))
+    .filter(([key]) => key.startsWith("turistack.boarding.queue."))
     .every(([, value]) => JSON.parse(value).length === 0)), { timeout: 15_000 }).toBeTruthy()
 })
 })

@@ -2,13 +2,13 @@ services:
   db:
     image: postgres:17-alpine
     environment:
-      POSTGRES_DB: nexoviajes_development
-      POSTGRES_USER: nexoviajes
-      POSTGRES_PASSWORD: nexoviajes
+      POSTGRES_DB: turistack_development
+      POSTGRES_USER: turistack
+      POSTGRES_PASSWORD: turistack
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U nexoviajes -d nexoviajes_development"]
+      test: ["CMD-SHELL", "pg_isready -U turistack -d turistack_development"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -30,7 +30,10 @@ services:
     build: .
     env_file: ${ENV_FILE:-.env}
     environment:
-      DATABASE_URL: postgresql://nexoviajes:nexoviajes@db:5432/nexoviajes_development
+      DB_HOST: db
+      DB_USER: turistack
+      DB_PASSWORD: turistack
+      DB_NAME: turistack_development
       REDIS_URL: redis://redis:6379/0
       SMTP_HOST: mailpit
       SMTP_PORT: 1025
@@ -47,7 +50,10 @@ services:
     command: bundle exec sidekiq -C config/sidekiq.yml
     env_file: ${ENV_FILE:-.env}
     environment:
-      DATABASE_URL: postgresql://nexoviajes:nexoviajes@db:5432/nexoviajes_development
+      DB_HOST: db
+      DB_USER: turistack
+      DB_PASSWORD: turistack
+      DB_NAME: turistack_development
       REDIS_URL: redis://redis:6379/0
       SMTP_HOST: mailpit
       SMTP_PORT: 1025

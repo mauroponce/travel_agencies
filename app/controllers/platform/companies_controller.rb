@@ -4,7 +4,9 @@ module Platform
     before_action :set_company, only: :update
 
     def index
-      @companies = Company.includes(:company_domains).order(:name)
+      @companies, @companies_pagination = paginate(
+        Company.includes(:memberships, :company_domains).order(:name), per_page: 20
+      )
     end
 
     def new

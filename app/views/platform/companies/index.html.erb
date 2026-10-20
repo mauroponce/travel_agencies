@@ -3,6 +3,7 @@
   <%= link_to "Nueva empresa", new_platform_company_path, class: "btn btn-primary" %>
 </div>
 
+<%= turbo_frame_tag "platform_companies" do %>
 <div class="space-y-5">
   <% @companies.each do |company| %>
     <section class="card card-body">
@@ -36,3 +37,5 @@
     </section>
   <% end %>
 </div>
+<%= render "shared/pagination", pagination: @companies_pagination, page_param: :page, frame_id: "platform_companies" %>
+<% end %>

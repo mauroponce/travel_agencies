@@ -5,16 +5,19 @@
 En producción configurar:
 
 ```text
-PLATFORM_BASE_DOMAIN=dominio-base.example
-PLATFORM_HOST=platform.dominio-base.example
-AUTH_HOST=auth.dominio-base.example
+PLATFORM_BASE_DOMAIN=turistack.com
+PLATFORM_HOST=turistack.com
+AUTH_HOST=auth.turistack.com
 APP_PROTOCOL=https
-CUSTOM_DOMAIN_CNAME_TARGET=tenants.dominio-base.example
-CADDY_SITE_ADDRESSES=platform.dominio-base.example, auth.dominio-base.example, agencia.dominio-base.example
-PLATFORM_NAME=Nombre provisional de la plataforma
+CUSTOM_DOMAIN_CNAME_TARGET=tenants.turistack.com
+CADDY_SITE_ADDRESSES=turistack.com, auth.turistack.com, agencia.turistack.com
+PLATFORM_NAME=Turistack
+PLATFORM_ADMIN_GOOGLE_EMAILS=operador@tu-organizacion.com
 ```
 
-`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, SMTP, VAPID y las claves Rails continúan siendo secretos. No configurar un `domain:` común para la cookie de sesión: la cookie debe permanecer host-only.
+`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `ACTIVE_RECORD_ENCRYPTION_KEY`, SMTP, VAPID y las claves Rails continúan siendo secretos. `ACTIVE_RECORD_ENCRYPTION_KEY` debe ser estable, exclusiva y distinta de `SECRET_KEY_BASE`. No configurar un `domain:` común para la cookie de sesión: la cookie debe permanecer host-only.
+
+`PLATFORM_ADMIN_GOOGLE_EMAILS` es la fuente de verdad del acceso global. Quitar un correo de esa lista revoca su rol la próxima vez que autentica y lo bloquea inmediatamente en las comprobaciones de autorización.
 
 ## DNS inicial
 

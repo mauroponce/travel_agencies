@@ -2,11 +2,11 @@
 set -euo pipefail
 
 : "${DEPLOY_HOST:?Definí DEPLOY_HOST}"
-: "${NEXOVIAJES_IMAGE:?Definí NEXOVIAJES_IMAGE}"
+: "${TURISTACK_IMAGE:?Definí TURISTACK_IMAGE}"
 DEPLOY_USER="${DEPLOY_USER:-deploy}"
-DEPLOY_PATH="${DEPLOY_PATH:-/opt/nexoviajes}"
+DEPLOY_PATH="${DEPLOY_PATH:-/opt/turistack}"
 
-docker build -t "$NEXOVIAJES_IMAGE" .
-docker push "$NEXOVIAJES_IMAGE"
+docker build -t "$TURISTACK_IMAGE" .
+docker push "$TURISTACK_IMAGE"
 ssh "$DEPLOY_USER@$DEPLOY_HOST" "cd '$DEPLOY_PATH' && docker compose -f compose.production.yml pull && docker compose -f compose.production.yml up -d --remove-orphans"
 ssh "$DEPLOY_USER@$DEPLOY_HOST" "cd '$DEPLOY_PATH' && docker compose -f compose.production.yml exec -T web bin/rails runner 'puts :ok'"

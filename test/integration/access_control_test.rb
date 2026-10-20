@@ -104,6 +104,28 @@ class AccessControlTest < ActionDispatch::IntegrationTest
     assert admin_membership.role?("admin")
   end
 
+  test "agency cannot suspend its last active administrator" do
+    admin = create_membership(company: @company, user: create_user, roles: %w[admin])
+    login_as(admin.user)
+
+    patch team_member_path(admin), params: { membership: { status: "suspended" } }
+
+    assert_redirected_to team_members_path
+    assert_equal "active", admin.reload.status
+    assert_equal "No podés suspender o revocar al último administrador activo de la agencia.", flash[:alert]
+  end
+
+  test "agency can suspend an administrator when another one remains active" do
+    first_admin = create_membership(company: @company, user: create_user, roles: %w[admin])
+    second_admin = create_membership(company: @company, user: create_user, roles: %w[admin])
+    login_as(first_admin.user)
+
+    patch team_member_path(second_admin), params: { membership: { status: "suspended" } }
+
+    assert_redirected_to team_members_path
+    assert_equal "suspended", second_admin.reload.status
+  end
+
   test "public reseller contact comes from the membership for that company" do
     @membership.update!(commercial_phone: "5491188887777")
     @user.update!(phone: "5491100000000")
@@ -149,8 +171,7 @@ class AccessControlTest < ActionDispatch::IntegrationTest
   end
 
   test "global operator without an agency can suspend a company" do
-    operator = create_user
-    operator.platform_roles.create!(role: "operator")
+    operator = create_platform_operator
 
     login_as(operator)
     assert_redirected_to platform_companies_path

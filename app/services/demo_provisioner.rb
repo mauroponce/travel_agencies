@@ -6,7 +6,7 @@ class DemoProvisioner
 
   def initialize(user)
     @user = user || User.find_or_create_by!(google_sub: "demo-bootstrap") do |record|
-      record.email = "demo@nexoviajes.local"
+      record.email = "demo@turistack.local"
       record.name = "Carolina Administradora"
     end
   end
@@ -34,9 +34,9 @@ class DemoProvisioner
 
   def build_demo_people(company)
     [
-      [ "demo-revendedora-lucia", "lucia.revendedora@nexoviajes.local", "Lucía Fernández", "5491155550202", [ "reseller" ] ],
-      [ "demo-revendedor-juan", "juan.revendedor@nexoviajes.local", "Juan Acosta", "5491155550303", [ "reseller" ] ],
-      [ "demo-coordinador-martin", "martin.coordinador@nexoviajes.local", "Martín Sosa", "5491155550404", [ "coordinator" ] ]
+      [ "demo-revendedora-lucia", "lucia.revendedora@turistack.local", "Lucía Fernández", "5491155550202", [ "reseller" ] ],
+      [ "demo-revendedor-juan", "juan.revendedor@turistack.local", "Juan Acosta", "5491155550303", [ "reseller" ] ],
+      [ "demo-coordinador-martin", "martin.coordinador@turistack.local", "Martín Sosa", "5491155550404", [ "coordinator" ] ]
     ].to_h do |google_sub, email, name, phone, roles|
       user = User.find_or_create_by!(google_sub:) { |record| record.assign_attributes(email:, name:, phone:) }
       membership = company.memberships.find_or_create_by!(user:) { |record| record.status = "active" }
@@ -55,7 +55,7 @@ class DemoProvisioner
       record.kind = "percentage"
       record.percentage = 10
     end
-    reservation = company.reservations.find_by(code: "NV-DEMO-1048")
+    reservation = company.reservations.find_by(code: "TS-DEMO-1048")
     if reservation && reservation.commission_entry.nil?
       CommissionEntry.create!(company:, reservation:, reseller_membership: membership,
         amount_cents: rule.calculate(reservation.total_cents), calculation_kind: rule.kind,
@@ -118,7 +118,7 @@ class DemoProvisioner
       [ mar_del_plata, hotels[:costa], "Escapada a Mar del Plata", "mar-del-plata", 18_490_000 ],
       [ destinations["Córdoba"], hotels[:sierras], "Córdoba serrana", "cordoba-serrana", 21_500_000 ] ].each_with_index do |(destination, hotel, name, slug, price), index|
       other_bus = company.buses.create!(name: "SRM 0#{index + 2}", capacity: 45, operator_name: "Transporte SRM")
-      other_departure = company.departures.create!(bus: other_bus, route:, code: "NV-#{index + 2}",
+      other_departure = company.departures.create!(bus: other_bus, route:, code: "TS-#{index + 2}",
         departs_at: (28 + index * 14).days.from_now.change(hour: 15), capacity: 45, status: "open")
       points.each_with_index do |point, position|
         other_departure.departure_stops.create!(boarding_point: point, position: position + 1,
@@ -149,7 +149,7 @@ class DemoProvisioner
 
   def seed_reservation(company, membership, offer)
     reservation = company.reservations.create!(departure_offer: offer, seller_membership: membership, created_by: @user,
-      code: "NV-DEMO-1048", channel: "reseller", status: "confirmed", unit_price_cents: 9_999_000,
+      code: "TS-DEMO-1048", channel: "reseller", status: "confirmed", unit_price_cents: 9_999_000,
       unit_fee_cents: 1_000_000, minimum_payment_cents: 10_999_000, confirmed_at: 1.day.ago)
     2.times do |index|
       document = "3000000#{index}"

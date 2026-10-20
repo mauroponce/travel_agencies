@@ -37,11 +37,19 @@ class CatalogsController < ApplicationController
   private
 
   def load_catalog
-    @destinations = current_company.destinations.order(:name)
-    @accommodations = current_company.accommodations.includes(:destination).order(:name)
-    @buses = current_company.buses.order(:name)
-    @boarding_points = current_company.boarding_points.order(:name)
-    @routes = current_company.routes.includes(route_stages: :boarding_point).order(:name)
+    destination_scope = current_company.destinations.order(:name)
+    @destination_options = destination_scope.to_a
+    @destinations, @destinations_pagination = paginate(destination_scope, param: :destinations_page, per_page: 10)
+    @accommodations, @accommodations_pagination = paginate(
+      current_company.accommodations.includes(:destination).order(:name), param: :accommodations_page, per_page: 10
+    )
+    @buses, @buses_pagination = paginate(current_company.buses.order(:name), param: :buses_page, per_page: 10)
+    @boarding_points, @boarding_points_pagination = paginate(
+      current_company.boarding_points.order(:name), param: :boarding_points_page, per_page: 10
+    )
+    @routes, @routes_pagination = paginate(
+      current_company.routes.includes(route_stages: :boarding_point).order(:name), param: :routes_page, per_page: 10
+    )
   end
 
   def catalog_params(kind)

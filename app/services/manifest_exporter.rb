@@ -9,7 +9,7 @@ class ManifestExporter
 
   def self.pdf(departure, passengers)
     Prawn::Document.new do |pdf|
-      pdf.text "NexoViajes · Manifiesto #{departure.code}", size: 18, style: :bold
+      pdf.text "Turistack · Manifiesto #{departure.code}", size: 18, style: :bold
       pdf.text I18n.l(departure.departs_at, format: :long)
       pdf.move_down 16
       passengers.each { |p| pdf.text "#{p.full_name} · #{p.masked_document} · #{p.departure_stop.published_name} · #{p.accommodation.name}" }
