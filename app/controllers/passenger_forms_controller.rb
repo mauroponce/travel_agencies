@@ -4,8 +4,8 @@ class PassengerFormsController < ApplicationController
 
   def index
     @forms = form_scope.includes(:passenger_form_submission, :reservation).order(created_at: :desc)
-    @generated_url = public_passenger_form_url(token: flash[:passenger_form_token], host: request.host,
-      protocol: request.protocol) if flash[:passenger_form_token].present?
+    @generated_url = CompanyUrl.call(current_company,
+      path: public_passenger_form_path(flash[:passenger_form_token])) if flash[:passenger_form_token].present?
   end
 
   def create

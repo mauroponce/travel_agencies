@@ -6,7 +6,7 @@ class PublicTripsController < ApplicationController
   def show
     @fare = @offer.current_fare
     @reseller = reseller_from_reference
-    @contact_phone = @reseller&.user&.phone.presence || @offer.company.whatsapp
+    @contact_phone = @reseller&.commercial_phone.presence || @offer.company.whatsapp
     return not_found unless @fare
     response.headers["Cache-Control"] = "public, max-age=30, stale-while-revalidate=60"
   end
@@ -22,16 +22,26 @@ class PublicTripsController < ApplicationController
     render json: payload unless performed?
   end
 
+  def legacy
+    return not_found unless params[:company_slug] == current_company.slug
+    redirect_to public_trip_path(params[:offer_slug], ref: params[:ref]), status: :moved_permanently
+  end
+
+  def legacy_status
+    return not_found unless params[:company_slug] == current_company.slug
+    redirect_to public_trip_status_path(params[:offer_slug]), status: :moved_permanently
+  end
+
   private
 
   def set_offer
-    company = Company.find_by!(slug: params[:company_slug], status: "active")
-    @offer = company.departure_offers.published.includes(:travel_package, :departure, :accommodation, :fare_versions).find_by!(slug: params[:offer_slug])
+    @offer = current_company.departure_offers.published.includes(:travel_package, :departure, :accommodation, :fare_versions).find_by!(slug: params[:offer_slug])
   end
 
   def reseller_from_reference
     return if params[:ref].blank?
     authorization = ResellerAuthorization.find_by(public_code: params[:ref], status: "active")
-    authorization&.membership if authorization&.membership&.company_id == @offer.company_id
+    membership = authorization&.membership
+    membership if membership&.company_id == @offer.company_id && membership.active? && membership.company.status == "active"
   end
 end

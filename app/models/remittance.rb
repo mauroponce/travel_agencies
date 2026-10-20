@@ -1,5 +1,6 @@
 class Remittance < ApplicationRecord
   include SafeAttachment
+  include CompanyAssociationIntegrity
   belongs_to :company
   belongs_to :reseller_membership, class_name: "Membership"
   belongs_to :declared_by, class_name: "User"
@@ -13,7 +14,7 @@ class Remittance < ApplicationRecord
   validates :method, inclusion: { in: %w[cash transfer mercado_pago other] }
   validates :status, inclusion: { in: %w[declared verified rejected] }
   validate -> { validate_safe_attachment(:proof) }
-  validate :membership_belongs_to_company
+  validates_same_company :reseller_membership
 
   def verify!(user)
     transaction do
@@ -32,11 +33,5 @@ class Remittance < ApplicationRecord
         payment.update!(status: verified_cents >= payment.amount_cents ? "verified" : "partially_remitted")
       end
     end
-  end
-
-  private
-
-  def membership_belongs_to_company
-    errors.add(:reseller_membership, "debe pertenecer a la empresa") if reseller_membership && reseller_membership.company_id != company_id
   end
 end

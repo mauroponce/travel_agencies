@@ -1,4 +1,5 @@
 class Departure < ApplicationRecord
+  include CompanyAssociationIntegrity
   belongs_to :company
   belongs_to :bus
   belongs_to :route, optional: true
@@ -11,11 +12,12 @@ class Departure < ApplicationRecord
   validates :code, presence: true, uniqueness: { scope: :company_id }
   validates :capacity, numericality: { only_integer: true, greater_than: 0 }
   validates :status, inclusion: { in: %w[draft open sold_out cancelled completed] }
-  validate :catalog_records_share_company
+  validates_same_company :bus, :route
   validate :capacity_covers_occupied_seats
 
   def occupied_seats
-    seat_allocations.where(status: "active").count
+    seat_allocations.loaded? ? seat_allocations.count { |allocation| allocation.status == "active" } :
+      seat_allocations.where(status: "active").count
   end
 
   def available_seats
@@ -27,11 +29,6 @@ class Departure < ApplicationRecord
   end
 
   private
-
-  def catalog_records_share_company
-    errors.add(:bus, "debe pertenecer a la empresa") if bus && bus.company_id != company_id
-    errors.add(:route, "debe pertenecer a la empresa") if route && route.company_id != company_id
-  end
 
   def capacity_covers_occupied_seats
     return unless capacity && persisted?

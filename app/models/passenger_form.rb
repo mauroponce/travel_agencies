@@ -28,5 +28,10 @@ class PassengerForm < ApplicationRecord
   def records_share_company
     errors.add(:departure_offer, "debe pertenecer a la empresa") if departure_offer && departure_offer.company_id != company_id
     errors.add(:reseller_membership, "debe pertenecer a la empresa") if reseller_membership && reseller_membership.company_id != company_id
+    return unless reservation
+
+    valid = reservation.company_id == company_id && reservation.departure_offer_id == departure_offer_id &&
+      reservation.seller_membership_id == reseller_membership_id
+    errors.add(:reservation, "no coincide con el formulario") unless valid
   end
 end

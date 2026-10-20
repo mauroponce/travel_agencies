@@ -49,12 +49,14 @@ module TestData
   end
 
   def login_as(user)
-    OmniAuth.config.test_mode = true
-    OmniAuth.config.mock_auth[:google_oauth2] = OmniAuth::AuthHash.new(
-      provider: "google_oauth2", uid: user.google_sub,
-      info: { email: user.email, name: user.name }, extra: { id_info: { email_verified: true } }
-    )
-    post "/auth/google_oauth2/callback"
+    membership = user.memberships.active.includes(:company, :membership_roles).order(:created_at, :id).first
+    if membership
+      host! membership.company.platform_domain.hostname
+      get "/test/sign-in", params: { email: user.email, role: membership.membership_roles.order(:created_at, :id).pick(:role) }
+    else
+      host! PlatformHosts.platform_host
+      get "/test/sign-in", params: { email: user.email }
+    end
   end
 end
 

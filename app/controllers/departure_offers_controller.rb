@@ -3,7 +3,7 @@ class DepartureOffersController < ApplicationController
   before_action :set_offer, only: %i[show edit update publish unpublish]
 
   def index
-    @offers = current_company.departure_offers.includes(:travel_package, :departure, :accommodation).order(created_at: :desc)
+    @offers = offer_scope.includes(:travel_package, :departure, :accommodation).order(created_at: :desc)
   end
 
   def show; end
@@ -54,8 +54,13 @@ class DepartureOffersController < ApplicationController
   private
 
   def set_offer
-    scope = current_company.departure_offers.includes(:travel_package, :departure, :accommodation, :fare_versions)
+    scope = offer_scope.includes(:travel_package, :departure, :accommodation, :fare_versions)
     @offer = scope.find(params[:id])
+  end
+
+  def offer_scope
+    scope = current_company.departure_offers
+    current_role == "reseller" ? scope.published : scope
   end
 
   def offer_params

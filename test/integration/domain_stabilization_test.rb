@@ -10,7 +10,7 @@ class DomainStabilizationTest < ActionDispatch::IntegrationTest
   end
 
   test "manifests and boarding screens only include confirmed reservation passengers" do
-    active = reservation_with_passenger("Confirmada", "confirmed")
+    active = reservation_with_passenger("Confirmada", "confirmed", allocate_seat: true)
     reservation_with_passenger("Solicitud no confirmada", "requested")
     reservation_with_passenger("Cancelada", "cancelled")
 

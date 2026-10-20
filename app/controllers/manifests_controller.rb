@@ -1,5 +1,6 @@
 class ManifestsController < ApplicationController
   def show
+    response.headers["Cache-Control"] = "private, no-store"
     departure = current_company.departures.find(params[:departure_id])
     if current_role == "coordinator"
       raise Pundit::NotAuthorizedError unless departure.departure_assignments.exists?(membership: current_membership)

@@ -1,5 +1,6 @@
 class DemoProvisioner
   def self.call(user = nil)
+    raise "Demo provisioning is disabled in production" if Rails.env.production? && ENV["ENABLE_DEMO_DATA"] != "true"
     new(user).call
   end
 
@@ -18,6 +19,7 @@ class DemoProvisioner
         record.whatsapp = "5491150001234"
       end
       membership = company.memberships.find_or_create_by!(user: @user) { |record| record.status = "active" }
+      membership.update!(commercial_phone: "5491155550101") if membership.commercial_phone.blank?
       MembershipRole::ROLES.each { |role| membership.membership_roles.find_or_create_by!(role:) }
       membership.create_reseller_authorization!(auto_confirm_enabled: true) unless membership.reseller_authorization
       @user.update!(phone: "5491155550101") if @user.phone.blank?
@@ -38,6 +40,7 @@ class DemoProvisioner
     ].to_h do |google_sub, email, name, phone, roles|
       user = User.find_or_create_by!(google_sub:) { |record| record.assign_attributes(email:, name:, phone:) }
       membership = company.memberships.find_or_create_by!(user:) { |record| record.status = "active" }
+      membership.update!(commercial_phone: phone) if membership.commercial_phone.blank?
       roles.each { |role| membership.membership_roles.find_or_create_by!(role:) }
       membership.create_reseller_authorization!(auto_confirm_enabled: true) if roles.include?("reseller") && membership.reseller_authorization.nil?
       [ roles.first, membership ]

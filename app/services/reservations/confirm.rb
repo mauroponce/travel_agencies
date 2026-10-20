@@ -37,6 +37,8 @@ module Reservations
 
       created = false
       reservation = ApplicationRecord.transaction do
+        raise NotAvailable, "La empresa está suspendida" unless @offer.company.reload.status == "active"
+
         @passenger_form&.lock!
         next @passenger_form.reservation if @passenger_form&.reservation
 
@@ -87,6 +89,8 @@ module Reservations
     def confirm_request
       confirmed = false
       reservation = ApplicationRecord.transaction do
+        raise NotAvailable, "La empresa está suspendida" unless @offer.company.reload.status == "active"
+
         @reservation.lock!
         validate_request_ownership!
         next @reservation if @reservation.status == "confirmed"
@@ -133,9 +137,9 @@ module Reservations
     end
 
     def validate_sale_available!(departure)
-      return if @offer.status == "published" && departure.status == "open"
+      return if @offer.company.status == "active" && @offer.status == "published" && departure.status == "open"
 
-      raise NotAvailable, "La salida debe estar abierta y la oferta publicada para confirmar reservas"
+      raise NotAvailable, "La empresa debe estar activa, la salida abierta y la oferta publicada para confirmar reservas"
     end
 
     def validate_passenger_form!

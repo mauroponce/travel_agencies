@@ -1,6 +1,6 @@
 class RemittancesController < ApplicationController
   before_action -> { require_role!("admin", "reseller") }
-  before_action :set_remittance, only: %i[show verify]
+  before_action :set_remittance, only: %i[show verify proof]
 
   def index
     scope = Remittance.where(company: current_company).includes(:reseller_membership, :remittance_allocations)
@@ -35,6 +35,14 @@ class RemittancesController < ApplicationController
       event_type: "remittance_verified", title: "Rendición verificada", body: "#{@remittance.code} fue recibida por la empresa.",
       action_url: remittance_path(@remittance))
     redirect_to @remittance, notice: "Recepción verificada."
+  end
+
+  def proof
+    raise ActiveRecord::RecordNotFound unless @remittance.proof.attached?
+
+    response.headers["Cache-Control"] = "private, no-store"
+    send_data @remittance.proof.download, filename: @remittance.proof.filename.to_s,
+      type: @remittance.proof.content_type, disposition: "attachment"
   end
 
   private

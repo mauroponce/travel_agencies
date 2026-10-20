@@ -1,4 +1,4 @@
-{$APP_HOST} {
+{$CADDY_SITE_ADDRESSES} {
   encode zstd gzip
   reverse_proxy web:3000
   header {

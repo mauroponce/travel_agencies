@@ -2,14 +2,14 @@
 <div class="min-h-screen bg-navy-dark text-white">
   <header class="mx-auto flex max-w-6xl items-center justify-between px-6 py-7">
     <div class="brand"><span class="brand-mark">↝</span><span>NexoViajes<small class="block text-[9px] tracking-[.2em] text-teal-300">PLATAFORMA TURÍSTICA</small></span></div>
-    <%= button_to "/auth/google_oauth2", method: :post, data: {turbo: false}, class: "btn" do %><span class="text-lg">G</span> Ingresar con Google<% end %>
+    <%= button_to auth_start_path, method: :post, data: {turbo: false}, class: "btn" do %><span class="text-lg">G</span> Ingresar con Google<% end %>
   </header>
   <main class="mx-auto grid min-h-[calc(100vh-100px)] max-w-6xl items-center gap-12 px-6 py-16 lg:grid-cols-2">
     <section>
       <div class="eyebrow !text-teal-300">TURISMO CONECTADO</div>
       <h1 class="mt-5 text-5xl font-black leading-tight tracking-[-.04em] lg:text-7xl">Un solo lugar para vender y operar cada viaje.</h1>
       <p class="mt-6 max-w-xl text-lg leading-8 text-slate-300">Paquetes, micros, revendedores, pasajeros, rendiciones y hojas de ruta con cupos reales y datos aislados por empresa.</p>
-      <div class="mt-8 flex flex-wrap gap-3"><%= button_to "/auth/google_oauth2", method: :post, data: {turbo: false}, class: "btn btn-teal !px-6 !py-4" do %>Comenzar con Google →<% end %><button type="button" class="btn !px-6 !py-4" data-action="pwa#install">Instalar aplicación</button></div>
+      <div class="mt-8 flex flex-wrap gap-3"><%= button_to auth_start_path, method: :post, data: {turbo: false}, class: "btn btn-teal !px-6 !py-4" do %>Ingresar con Google →<% end %><button type="button" class="btn !px-6 !py-4" data-action="pwa#install">Instalar aplicación</button></div>
     </section>
     <section class="hero-gradient relative overflow-hidden rounded-[2rem] border border-white/10 p-8 shadow-2xl">
       <div class="grid grid-cols-2 gap-4">

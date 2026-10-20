@@ -1,4 +1,5 @@
 class DepartureOffer < ApplicationRecord
+  include CompanyAssociationIntegrity
   belongs_to :company
   belongs_to :travel_package
   belongs_to :departure
@@ -9,24 +10,23 @@ class DepartureOffer < ApplicationRecord
   normalizes :slug, with: ->(value) { value.to_s.parameterize }
   validates :slug, presence: true, uniqueness: { scope: :company_id }
   validates :status, inclusion: { in: %w[draft published unpublished cancelled] }
-  validate :all_records_share_company
+  validates_same_company :travel_package, :departure, :accommodation
   validate :departure_cannot_change_with_reservations, on: :update
 
   scope :published, -> { where(status: "published") }
 
   def current_fare(at: Time.current)
-    fare_versions.where("valid_from <= ? AND (valid_until IS NULL OR valid_until > ?)", at, at).first
+    if fare_versions.loaded?
+      fare_versions.select { |fare| fare.valid_from <= at && (fare.valid_until.nil? || fare.valid_until > at) }
+        .max_by(&:valid_from)
+    else
+      fare_versions.where("valid_from <= ? AND (valid_until IS NULL OR valid_until > ?)", at, at).first
+    end
   end
 
   delegate :available_seats, to: :departure
 
   private
-
-  def all_records_share_company
-    [ travel_package, departure, accommodation ].compact.each do |record|
-      errors.add(:base, "Todos los registros deben pertenecer a la empresa") if record.company_id != company_id
-    end
-  end
 
   def departure_cannot_change_with_reservations
     return unless will_save_change_to_departure_id? && reservations.exists?

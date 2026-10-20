@@ -1,0 +1,11 @@
+<% content_for :title, "Acceso seguro" %>
+<div class="min-h-screen bg-navy-dark px-5 py-16 text-white">
+  <main class="mx-auto max-w-lg rounded-3xl border border-white/10 bg-white/5 p-8 text-center shadow-2xl">
+    <div class="brand justify-center"><span class="brand-mark">↝</span><span>Acceso a la plataforma</span></div>
+    <h1 class="mt-8 text-3xl font-black">Continuar con Google</h1>
+    <p class="mt-3 text-slate-300">La autenticación se realiza en el dominio central y volverá únicamente al espacio que inició este acceso.</p>
+    <%= button_to "/auth/google_oauth2", method: :post, data: { turbo: false }, class: "btn btn-teal mt-8 w-full" do %>
+      Ingresar con Google
+    <% end %>
+  </main>
+</div>

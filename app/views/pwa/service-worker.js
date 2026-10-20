@@ -1,5 +1,5 @@
-const CACHE = "nexoviajes-v1"
-const STATIC = ["/icon.png", "/icon.svg", "/"]
+const CACHE = "tenant-<%= Current.company.id %>-v2"
+const STATIC = ["/icon.png", "/icon.svg"]
 
 self.addEventListener("install", event => event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(STATIC))))
 self.addEventListener("activate", event => event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key))))))
@@ -14,6 +14,8 @@ self.addEventListener("fetch", event => {
 })
 self.addEventListener("push", event => {
   const message = event.data?.json() || {}
-  event.waitUntil(self.registration.showNotification(message.title || "NexoViajes", { body: message.body, icon: "/icon.png", data: { url: message.url || "/dashboard" } }))
+  const target = new URL(message.url || "/dashboard", location.origin)
+  const safeUrl = target.origin === location.origin ? target.href : new URL("/dashboard", location.origin).href
+  event.waitUntil(self.registration.showNotification(message.title || "<%= j Current.company.name %>", { body: message.body, icon: "/icon.png", data: { url: safeUrl } }))
 })
 self.addEventListener("notificationclick", event => { event.notification.close(); event.waitUntil(clients.openWindow(event.notification.data.url)) })

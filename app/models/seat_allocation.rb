@@ -13,5 +13,6 @@ class SeatAllocation < ApplicationRecord
     expected_departure = passenger.reservation.departure_offer.departure_id
     errors.add(:departure, "no coincide con la reserva") if departure_id != expected_departure
     errors.add(:company, "no coincide con el pasajero") if company_id != passenger.company_id
+    errors.add(:company, "no coincide con la salida") if company_id != departure.company_id
   end
 end

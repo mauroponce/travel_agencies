@@ -5,13 +5,18 @@ class BoardingEvent < ApplicationRecord
   belongs_to :recorded_by, class_name: "User"
   validates :command_id, uniqueness: true
   validates :status, inclusion: { in: %w[pending boarded absent incident] }
-  validate :passenger_has_confirmed_reservation
+  validate :records_share_operation_scope
 
   private
 
-  def passenger_has_confirmed_reservation
-    return if passenger&.reservation&.status == "confirmed"
+  def records_share_operation_scope
+    return unless passenger && departure
 
-    errors.add(:passenger, "debe pertenecer a una reserva confirmada")
+    reservation = passenger.reservation
+    allocation = passenger.seat_allocation
+    errors.add(:passenger, "debe pertenecer a la empresa") if passenger.company_id != company_id
+    errors.add(:departure, "debe pertenecer a la empresa") if departure.company_id != company_id
+    errors.add(:passenger, "debe pertenecer a una reserva confirmada") unless reservation.status == "confirmed"
+    errors.add(:passenger, "debe tener un cupo activo en la salida") unless allocation&.status == "active" && allocation.departure_id == departure_id
   end
 end

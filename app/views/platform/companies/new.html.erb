@@ -1,1 +1,14 @@
-<div class="page-heading"><div><div class="eyebrow">NUEVO TENANT</div><h1 class="page-title">Crear empresa</h1><p class="subtitle">Se enviará una invitación al administrador indicado.</p></div></div><section class="card card-body max-w-3xl"><%= form_with model: [:platform, @company], class: "form-grid" do |f| %><div><%= f.label :name, "Nombre" %><%= f.text_field :name, required: true %></div><div><%= f.label :slug, "Identificador público" %><%= f.text_field :slug, required: true %></div><div><%= f.label :email, "Email comercial" %><%= f.email_field :email %></div><div><%= f.label :whatsapp, "WhatsApp empresa" %><%= f.telephone_field :whatsapp %></div><div class="field-wide"><%= label_tag :admin_email, "Email Google del administrador" %><%= email_field_tag :admin_email, nil, required: true %></div><div class="field-wide flex gap-2"><%= f.submit "Crear e invitar", class: "btn btn-primary" %><%= link_to "Cancelar", platform_companies_path, class: "btn" %></div><% end %></section>
+<div class="page-heading">
+  <div><div class="eyebrow">NUEVO TENANT</div><h1 class="page-title">Crear empresa</h1><p class="subtitle">Se asignará un subdominio permanente y se invitará al primer administrador.</p></div>
+</div>
+<section class="card card-body max-w-3xl">
+  <%= form_with model: [:platform, @company], class: "form-grid" do |f| %>
+    <div><%= f.label :name, "Nombre" %><%= f.text_field :name, required: true %></div>
+    <div><%= f.label :slug, "Identificador público" %><%= f.text_field :slug, required: true %></div>
+    <div class="field-wide"><%= label_tag :platform_subdomain, "Subdominio permanente" %><div class="flex items-center gap-2"><%= text_field_tag :platform_subdomain, nil, required: true, pattern: "[a-z0-9][a-z0-9-]*" %><span>.<%= PlatformHosts.base_domain %></span></div></div>
+    <div><%= f.label :email, "Email comercial" %><%= f.email_field :email %></div>
+    <div><%= f.label :whatsapp, "WhatsApp empresa" %><%= f.telephone_field :whatsapp %></div>
+    <div class="field-wide"><%= label_tag :admin_email, "Email Google del administrador" %><%= email_field_tag :admin_email, nil, required: true %></div>
+    <div class="field-wide flex gap-2"><%= f.submit "Crear e invitar", class: "btn btn-primary" %><%= link_to "Cancelar", platform_companies_path, class: "btn" %></div>
+  <% end %>
+</section>

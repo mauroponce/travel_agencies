@@ -32,8 +32,11 @@ class ReservationsController < ApplicationController
 
   def cancel
     require_role!("admin")
-    Reservations::Cancel.call(reservation: @reservation, actor: current_user, reason: params[:reason])
+    Reservations::Cancel.call(reservation: @reservation, actor: current_user, membership: current_membership,
+      reason: params[:reason])
     redirect_to @reservation, notice: "Reserva cancelada y cupos liberados."
+  rescue Reservations::Cancel::NotAuthorized, Reservations::Cancel::InvalidTransition => error
+    redirect_to @reservation, alert: error.message
   end
 
   def confirm

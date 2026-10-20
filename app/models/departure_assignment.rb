@@ -7,6 +7,6 @@ class DepartureAssignment < ApplicationRecord
   private
 
   def coordinator_membership
-    errors.add(:membership, "debe ser coordinador de la empresa") unless membership&.company_id == departure&.company_id && membership&.role?("coordinator")
+    errors.add(:membership, "debe ser coordinador activo de la empresa") unless membership&.company_id == departure&.company_id && membership&.role?("coordinator")
   end
 end

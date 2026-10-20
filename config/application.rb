@@ -21,6 +21,7 @@ module TravelAgencies
     config.i18n.default_locale = :es
     config.i18n.available_locales = %i[es en]
     config.active_job.queue_adapter = :sidekiq
+    config.active_storage.draw_routes = false
     config.generators.orm :active_record, primary_key_type: :uuid
 
     # Configuration for the application, engines, and railties goes here.

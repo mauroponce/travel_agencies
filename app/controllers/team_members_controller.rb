@@ -15,10 +15,10 @@ class TeamMembersController < ApplicationController
 
   def update
     membership = current_company.memberships.find(params[:id])
-    attributes = params.expect(membership: [ :status, :auto_confirm_enabled, :phone ]).to_h
+    attributes = params.expect(membership: [ :status, :auto_confirm_enabled, :commercial_phone ]).to_h
     ApplicationRecord.transaction do
       membership.update!(status: attributes[:status]) if attributes[:status].present?
-      membership.user.update!(phone: attributes[:phone]) if attributes.key?(:phone)
+      membership.update!(commercial_phone: attributes[:commercial_phone]) if attributes.key?(:commercial_phone)
       if membership.reseller_authorization && attributes.key?(:auto_confirm_enabled)
         membership.reseller_authorization.update!(auto_confirm_enabled: attributes[:auto_confirm_enabled] == "1")
       end

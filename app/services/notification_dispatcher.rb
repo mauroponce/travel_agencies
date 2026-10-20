@@ -28,12 +28,17 @@ class NotificationDispatcher
     end
 
     def dispatch(users, company:, event_type:, title:, body:, action_url: nil)
+      return [] unless company && Company.exists?(id: company.id, status: "active")
+
       event_id = SecureRandom.uuid
-      users.each do |user|
+      users.filter_map do |user|
+        next unless company.memberships.active.exists?(user:)
+
         notification = Notification.create_or_find_by!(user:, deduplication_key: "#{event_type}:#{event_id}") do |record|
           record.assign_attributes(company:, event_type:, title:, body:, action_url:)
         end
         DeliverNotificationJob.perform_later(notification.id)
+        notification
       end
     end
   end

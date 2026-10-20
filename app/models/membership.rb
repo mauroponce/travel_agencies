@@ -8,14 +8,19 @@ class Membership < ApplicationRecord
 
   validates :status, inclusion: { in: %w[active suspended revoked] }
   validates :user_id, uniqueness: { scope: :company_id }
+  validates :commercial_phone, format: { with: /\A\d{8,15}\z/, allow_blank: true }
 
   scope :active, -> { where(status: "active") }
+
+  def active?
+    status == "active" && company.status == "active"
+  end
 
   def roles
     membership_roles.pluck(:role)
   end
 
   def role?(role)
-    status == "active" && membership_roles.exists?(role: role.to_s)
+    active? && membership_roles.exists?(role: role.to_s)
   end
 end

@@ -1,16 +1,19 @@
 Rails.application.routes.draw do
   get "up" => "rails/health#show", as: :rails_health_check
-  get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
-  get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
+  get "manifest" => "pwa#manifest", as: :pwa_manifest
+  get "service-worker" => "pwa#service_worker", as: :pwa_service_worker
 
   root "landing#show"
+  post "/auth/start", to: "authentication#start", as: :auth_start
+  get "/auth/continue", to: "authentication#continue", as: :auth_continue
+  get "/auth/exchange", to: "authentication#exchange", as: :auth_exchange
   post "/auth/google_oauth2/callback", to: "sessions#create"
   get "/auth/google_oauth2/callback", to: "sessions#create"
   get "/auth/failure", to: "sessions#failure"
   delete "/session", to: "sessions#destroy", as: :session
   get "/test/sign-in", to: "sessions#test_sign_in" if Rails.env.test?
 
-  resource :onboarding, only: %i[show create]
+  resource :onboarding, only: :show
   post "/context", to: "contexts#update", as: :context
   get "/dashboard", to: "dashboard#show", as: :dashboard
 
@@ -40,10 +43,14 @@ Rails.application.routes.draw do
   end
   resources :customer_payments, path: "pagos", only: %i[index create]
   resources :remittances, path: "rendiciones", only: %i[index create show] do
-    member { post :verify }
+    member do
+      post :verify
+      get :proof
+    end
   end
   resources :notifications, path: "notificaciones", only: %i[index update] do
     collection { post :read_all }
+    member { get :open }
   end
   resources :push_subscriptions, only: %i[create destroy]
   resource :catalog, path: "catalogos", only: %i[show create destroy]
@@ -51,11 +58,23 @@ Rails.application.routes.draw do
   resources :commissions, path: "comisiones", only: :index
 
   namespace :platform do
-    resources :companies, only: %i[index new create]
+    resources :companies, only: %i[index new create update]
+    resources :companies, only: [] do
+      resources :company_domains, only: :create do
+        member do
+          post :verify
+          post :activate
+          post :make_primary
+          post :disable
+        end
+      end
+    end
   end
 
-  get "/viajes/:company_slug/:offer_slug", to: "public_trips#show", as: :public_trip
-  get "/viajes/:company_slug/:offer_slug/status", to: "public_trips#status", as: :public_trip_status
+  get "/viajes/:offer_slug", to: "public_trips#show", as: :public_trip
+  get "/viajes/:offer_slug/status", to: "public_trips#status", as: :public_trip_status
+  get "/viajes/:company_slug/:offer_slug/status", to: "public_trips#legacy_status", as: :legacy_public_trip_status
+  get "/viajes/:company_slug/:offer_slug", to: "public_trips#legacy", as: :legacy_public_trip
   get "/formularios/:token", to: "public_passenger_forms#show", as: :public_passenger_form
   post "/formularios/:token", to: "public_passenger_forms#create"
 end

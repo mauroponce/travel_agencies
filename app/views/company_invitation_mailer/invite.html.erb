@@ -1,4 +1,4 @@
 <h1>Te invitaron a <%= @invitation.company.name %></h1>
 <p>Ingresá con esta misma cuenta de Google para aceptar automáticamente tus permisos.</p>
-<p><%= link_to "Ingresar a NexoViajes", ENV.fetch("APP_URL", "http://localhost:3000") %></p>
+<p><%= link_to "Ingresar a #{h @invitation.company.name}", @login_url %></p>
 <p>La invitación vence el <%= l @invitation.expires_at, format: :long %>.</p>

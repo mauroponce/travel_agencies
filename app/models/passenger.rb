@@ -20,7 +20,11 @@ class Passenger < ApplicationRecord
     boarding_events.order(created_at: :desc).pick(:status) || "pending"
   end
 
-  scope :with_active_reservations, -> { joins(:reservation).where(reservations: { status: "confirmed" }) }
+  scope :eligible_for_boarding, -> {
+    joins(:reservation, :seat_allocation)
+      .where(reservations: { status: "confirmed" }, seat_allocations: { status: "active" })
+  }
+  scope :with_active_reservations, -> { eligible_for_boarding }
 
   private
 
@@ -29,5 +33,6 @@ class Passenger < ApplicationRecord
     errors.add(:reservation, "debe pertenecer a la empresa") if reservation.company_id != company_id
     errors.add(:departure_stop, "no pertenece a la salida reservada") if departure_stop.departure_id != reservation.departure_offer.departure_id
     errors.add(:accommodation, "debe pertenecer a la empresa") if accommodation.company_id != company_id
+    errors.add(:accommodation, "no pertenece a la oferta reservada") if accommodation_id != reservation.departure_offer.accommodation_id
   end
 end

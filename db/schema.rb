@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_19_180000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_19_194000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -33,6 +33,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_19_180000) do
     t.index ["company_id", "name"], name: "index_accommodations_on_company_id_and_name"
     t.index ["company_id"], name: "index_accommodations_on_company_id"
     t.index ["destination_id"], name: "index_accommodations_on_destination_id"
+    t.index ["id", "company_id"], name: "uidx_accommodations_id_company", unique: true
   end
 
   create_table "active_storage_attachments", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -80,6 +81,43 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_19_180000) do
     t.index ["company_id"], name: "index_audit_events_on_company_id"
   end
 
+  create_table "authentication_codes", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "authentication_request_id", null: false
+    t.uuid "user_id", null: false
+    t.uuid "company_id"
+    t.uuid "membership_id"
+    t.string "target_hostname", null: false
+    t.string "token_digest", null: false
+    t.string "browser_nonce_digest", null: false
+    t.datetime "expires_at", null: false
+    t.datetime "consumed_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["authentication_request_id"], name: "index_authentication_codes_on_authentication_request_id"
+    t.index ["company_id"], name: "index_authentication_codes_on_company_id"
+    t.index ["membership_id"], name: "index_authentication_codes_on_membership_id"
+    t.index ["token_digest"], name: "index_authentication_codes_on_token_digest", unique: true
+    t.index ["user_id"], name: "index_authentication_codes_on_user_id"
+    t.check_constraint "company_id IS NULL AND membership_id IS NULL OR company_id IS NOT NULL AND membership_id IS NOT NULL", name: "authentication_codes_scope_consistent"
+  end
+
+  create_table "authentication_requests", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "company_id"
+    t.uuid "company_domain_id"
+    t.string "return_hostname", null: false
+    t.string "token_digest", null: false
+    t.string "browser_nonce_digest", null: false
+    t.datetime "expires_at", null: false
+    t.datetime "used_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["company_domain_id"], name: "index_authentication_requests_on_company_domain_id"
+    t.index ["company_id"], name: "index_authentication_requests_on_company_id"
+    t.index ["id", "company_id"], name: "uidx_authentication_requests_id_company", unique: true
+    t.index ["token_digest"], name: "index_authentication_requests_on_token_digest", unique: true
+    t.check_constraint "company_id IS NULL AND company_domain_id IS NULL OR company_id IS NOT NULL AND company_domain_id IS NOT NULL", name: "authentication_requests_scope_consistent"
+  end
+
   create_table "boarding_events", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.uuid "company_id", null: false
     t.uuid "departure_id", null: false
@@ -121,6 +159,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_19_180000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["company_id"], name: "index_buses_on_company_id"
+    t.index ["id", "company_id"], name: "uidx_buses_id_company", unique: true
     t.check_constraint "capacity > 0", name: "buses_capacity_positive"
   end
 
@@ -166,6 +205,32 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_19_180000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["slug"], name: "index_companies_on_slug", unique: true
+  end
+
+  create_table "company_domains", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "company_id", null: false
+    t.string "hostname", null: false
+    t.string "kind", null: false
+    t.string "status", default: "pending", null: false
+    t.boolean "primary", default: false, null: false
+    t.string "verification_token_digest"
+    t.string "cname_target"
+    t.string "tls_status", default: "pending", null: false
+    t.datetime "verified_at"
+    t.datetime "activated_at"
+    t.datetime "disabled_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index "lower((hostname)::text)", name: "uidx_company_domains_lower_hostname", unique: true
+    t.index ["company_id"], name: "index_company_domains_on_company_id"
+    t.index ["company_id"], name: "uidx_company_domains_platform_per_company", unique: true, where: "((kind)::text = 'platform_subdomain'::text)"
+    t.index ["company_id"], name: "uidx_company_domains_primary_per_company", unique: true, where: "(\"primary\" = true)"
+    t.index ["id", "company_id"], name: "uidx_company_domains_id_company", unique: true
+    t.check_constraint "NOT \"primary\" OR status::text = 'active'::text", name: "company_domains_primary_active"
+    t.check_constraint "hostname::text = lower(hostname::text) AND hostname::text !~ '\\.$'::text", name: "company_domains_hostname_normalized"
+    t.check_constraint "kind::text = ANY (ARRAY['platform_subdomain'::character varying, 'custom'::character varying]::text[])", name: "company_domains_kind_valid"
+    t.check_constraint "status::text = ANY (ARRAY['pending'::character varying, 'verified'::character varying, 'active'::character varying, 'disabled'::character varying]::text[])", name: "company_domains_status_valid"
+    t.check_constraint "tls_status::text = ANY (ARRAY['pending'::character varying, 'ready'::character varying, 'failed'::character varying]::text[])", name: "company_domains_tls_status_valid"
   end
 
   create_table "company_invitations", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -228,6 +293,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_19_180000) do
     t.index ["company_id", "slug"], name: "index_departure_offers_on_company_id_and_slug", unique: true
     t.index ["company_id"], name: "index_departure_offers_on_company_id"
     t.index ["departure_id"], name: "index_departure_offers_on_departure_id"
+    t.index ["id", "company_id"], name: "uidx_departure_offers_id_company", unique: true
     t.index ["travel_package_id"], name: "index_departure_offers_on_travel_package_id"
   end
 
@@ -262,6 +328,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_19_180000) do
     t.index ["bus_id"], name: "index_departures_on_bus_id"
     t.index ["company_id", "code"], name: "index_departures_on_company_id_and_code", unique: true
     t.index ["company_id"], name: "index_departures_on_company_id"
+    t.index ["id", "company_id"], name: "uidx_departures_id_company", unique: true
     t.index ["route_id"], name: "index_departures_on_route_id"
     t.check_constraint "capacity > 0", name: "departures_capacity_positive"
   end
@@ -275,6 +342,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_19_180000) do
     t.datetime "updated_at", null: false
     t.index ["company_id", "name"], name: "index_destinations_on_company_id_and_name", unique: true
     t.index ["company_id"], name: "index_destinations_on_company_id"
+    t.index ["id", "company_id"], name: "uidx_destinations_id_company", unique: true
   end
 
   create_table "fare_versions", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -310,8 +378,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_19_180000) do
     t.string "status", default: "active", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "commercial_phone"
     t.index ["company_id", "user_id"], name: "index_memberships_on_company_id_and_user_id", unique: true
     t.index ["company_id"], name: "index_memberships_on_company_id"
+    t.index ["id", "company_id"], name: "uidx_memberships_id_company", unique: true
     t.index ["user_id"], name: "index_memberships_on_user_id"
   end
 
@@ -395,6 +465,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_19_180000) do
     t.index ["accommodation_id"], name: "index_passengers_on_accommodation_id"
     t.index ["company_id"], name: "index_passengers_on_company_id"
     t.index ["departure_stop_id"], name: "index_passengers_on_departure_stop_id"
+    t.index ["id", "company_id"], name: "uidx_passengers_id_company", unique: true
     t.index ["reservation_id"], name: "index_passengers_on_reservation_id"
   end
 
@@ -416,8 +487,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_19_180000) do
     t.datetime "last_used_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.uuid "company_id"
+    t.string "origin_hostname"
+    t.index ["company_id"], name: "index_push_subscriptions_on_company_id"
     t.index ["endpoint"], name: "index_push_subscriptions_on_endpoint", unique: true
     t.index ["user_id"], name: "index_push_subscriptions_on_user_id"
+    t.check_constraint "company_id IS NULL AND origin_hostname IS NULL OR company_id IS NOT NULL AND origin_hostname IS NOT NULL", name: "push_subscriptions_tenant_scope_consistent"
   end
 
   create_table "remittance_allocations", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -488,6 +563,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_19_180000) do
     t.index ["company_id"], name: "index_reservations_on_company_id"
     t.index ["created_by_id"], name: "index_reservations_on_created_by_id"
     t.index ["departure_offer_id"], name: "index_reservations_on_departure_offer_id"
+    t.index ["id", "company_id"], name: "uidx_reservations_id_company", unique: true
     t.index ["seller_membership_id"], name: "index_reservations_on_seller_membership_id"
   end
 
@@ -536,6 +612,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_19_180000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["company_id"], name: "index_routes_on_company_id"
+    t.index ["id", "company_id"], name: "uidx_routes_id_company", unique: true
   end
 
   create_table "seat_allocations", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -567,6 +644,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_19_180000) do
     t.datetime "updated_at", null: false
     t.index ["company_id"], name: "index_travel_packages_on_company_id"
     t.index ["destination_id"], name: "index_travel_packages_on_destination_id"
+    t.index ["id", "company_id"], name: "uidx_travel_packages_id_company", unique: true
   end
 
   create_table "users", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -584,38 +662,61 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_19_180000) do
 
   add_foreign_key "accommodations", "companies"
   add_foreign_key "accommodations", "destinations"
+  add_foreign_key "accommodations", "destinations", column: ["destination_id", "company_id"], primary_key: ["id", "company_id"], name: "fk_accommodations_destination_id_tenant"
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "audit_events", "companies"
   add_foreign_key "audit_events", "users", column: "actor_id"
+  add_foreign_key "authentication_codes", "authentication_requests"
+  add_foreign_key "authentication_codes", "authentication_requests", column: ["authentication_request_id", "company_id"], primary_key: ["id", "company_id"], name: "fk_auth_codes_request_company"
+  add_foreign_key "authentication_codes", "companies"
+  add_foreign_key "authentication_codes", "memberships"
+  add_foreign_key "authentication_codes", "memberships", column: ["membership_id", "company_id"], primary_key: ["id", "company_id"], name: "fk_auth_codes_membership_company"
+  add_foreign_key "authentication_codes", "users"
+  add_foreign_key "authentication_requests", "companies"
+  add_foreign_key "authentication_requests", "company_domains"
+  add_foreign_key "authentication_requests", "company_domains", column: ["company_domain_id", "company_id"], primary_key: ["id", "company_id"], name: "fk_auth_requests_domain_company"
   add_foreign_key "boarding_events", "companies"
   add_foreign_key "boarding_events", "departures"
+  add_foreign_key "boarding_events", "departures", column: ["departure_id", "company_id"], primary_key: ["id", "company_id"], name: "fk_boarding_events_departure_id_tenant"
   add_foreign_key "boarding_events", "passengers"
+  add_foreign_key "boarding_events", "passengers", column: ["passenger_id", "company_id"], primary_key: ["id", "company_id"], name: "fk_boarding_events_passenger_id_tenant"
   add_foreign_key "boarding_events", "users", column: "recorded_by_id"
   add_foreign_key "boarding_points", "companies"
   add_foreign_key "buses", "companies"
   add_foreign_key "commission_entries", "companies"
   add_foreign_key "commission_entries", "memberships", column: "reseller_membership_id"
+  add_foreign_key "commission_entries", "memberships", column: ["reseller_membership_id", "company_id"], primary_key: ["id", "company_id"], name: "fk_commission_entries_reseller_membership_id_tenant"
   add_foreign_key "commission_entries", "reservations"
+  add_foreign_key "commission_entries", "reservations", column: ["reservation_id", "company_id"], primary_key: ["id", "company_id"], name: "fk_commission_entries_reservation_id_tenant"
   add_foreign_key "commission_rules", "companies"
   add_foreign_key "commission_rules", "memberships", column: "reseller_membership_id"
+  add_foreign_key "commission_rules", "memberships", column: ["reseller_membership_id", "company_id"], primary_key: ["id", "company_id"], name: "fk_commission_rules_reseller_membership_id_tenant"
+  add_foreign_key "company_domains", "companies"
   add_foreign_key "company_invitations", "companies"
   add_foreign_key "company_invitations", "users", column: "invited_by_id"
   add_foreign_key "customer_payments", "companies"
   add_foreign_key "customer_payments", "memberships", column: "received_by_membership_id"
+  add_foreign_key "customer_payments", "memberships", column: ["received_by_membership_id", "company_id"], primary_key: ["id", "company_id"], name: "fk_customer_payments_received_by_membership_id_tenant"
   add_foreign_key "customer_payments", "reservations"
+  add_foreign_key "customer_payments", "reservations", column: ["reservation_id", "company_id"], primary_key: ["id", "company_id"], name: "fk_customer_payments_reservation_id_tenant"
   add_foreign_key "customer_payments", "users", column: "recorded_by_id"
   add_foreign_key "departure_assignments", "departures"
   add_foreign_key "departure_assignments", "memberships"
   add_foreign_key "departure_offers", "accommodations"
+  add_foreign_key "departure_offers", "accommodations", column: ["accommodation_id", "company_id"], primary_key: ["id", "company_id"], name: "fk_departure_offers_accommodation_id_tenant"
   add_foreign_key "departure_offers", "companies"
   add_foreign_key "departure_offers", "departures"
+  add_foreign_key "departure_offers", "departures", column: ["departure_id", "company_id"], primary_key: ["id", "company_id"], name: "fk_departure_offers_departure_id_tenant"
   add_foreign_key "departure_offers", "travel_packages"
+  add_foreign_key "departure_offers", "travel_packages", column: ["travel_package_id", "company_id"], primary_key: ["id", "company_id"], name: "fk_departure_offers_travel_package_id_tenant"
   add_foreign_key "departure_stops", "boarding_points"
   add_foreign_key "departure_stops", "departures"
   add_foreign_key "departures", "buses"
+  add_foreign_key "departures", "buses", column: ["bus_id", "company_id"], primary_key: ["id", "company_id"], name: "fk_departures_bus_id_tenant"
   add_foreign_key "departures", "companies"
   add_foreign_key "departures", "routes"
+  add_foreign_key "departures", "routes", column: ["route_id", "company_id"], primary_key: ["id", "company_id"], name: "fk_departures_route_id_tenant"
   add_foreign_key "destinations", "companies"
   add_foreign_key "fare_versions", "departure_offers"
   add_foreign_key "fare_versions", "users", column: "created_by_id"
@@ -629,37 +730,51 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_19_180000) do
   add_foreign_key "passenger_form_submissions", "passenger_forms"
   add_foreign_key "passenger_forms", "companies"
   add_foreign_key "passenger_forms", "departure_offers"
+  add_foreign_key "passenger_forms", "departure_offers", column: ["departure_offer_id", "company_id"], primary_key: ["id", "company_id"], name: "fk_passenger_forms_departure_offer_id_tenant"
   add_foreign_key "passenger_forms", "memberships", column: "reseller_membership_id"
+  add_foreign_key "passenger_forms", "memberships", column: ["reseller_membership_id", "company_id"], primary_key: ["id", "company_id"], name: "fk_passenger_forms_reseller_membership_id_tenant"
   add_foreign_key "passenger_forms", "reservations"
+  add_foreign_key "passenger_forms", "reservations", column: ["reservation_id", "company_id"], primary_key: ["id", "company_id"], name: "fk_passenger_forms_reservation_id_tenant"
   add_foreign_key "passengers", "accommodations"
+  add_foreign_key "passengers", "accommodations", column: ["accommodation_id", "company_id"], primary_key: ["id", "company_id"], name: "fk_passengers_accommodation_id_tenant"
   add_foreign_key "passengers", "companies"
   add_foreign_key "passengers", "departure_stops"
   add_foreign_key "passengers", "reservations"
+  add_foreign_key "passengers", "reservations", column: ["reservation_id", "company_id"], primary_key: ["id", "company_id"], name: "fk_passengers_reservation_id_tenant"
   add_foreign_key "platform_roles", "users"
+  add_foreign_key "push_subscriptions", "companies"
   add_foreign_key "push_subscriptions", "users"
   add_foreign_key "remittance_allocations", "customer_payments"
   add_foreign_key "remittance_allocations", "remittances"
   add_foreign_key "remittances", "companies"
   add_foreign_key "remittances", "memberships", column: "reseller_membership_id"
+  add_foreign_key "remittances", "memberships", column: ["reseller_membership_id", "company_id"], primary_key: ["id", "company_id"], name: "fk_remittances_reseller_membership_id_tenant"
   add_foreign_key "remittances", "users", column: "declared_by_id"
   add_foreign_key "remittances", "users", column: "verified_by_id"
   add_foreign_key "reseller_authorizations", "memberships"
   add_foreign_key "reservations", "companies"
   add_foreign_key "reservations", "departure_offers"
+  add_foreign_key "reservations", "departure_offers", column: ["departure_offer_id", "company_id"], primary_key: ["id", "company_id"], name: "fk_reservations_departure_offer_id_tenant"
   add_foreign_key "reservations", "memberships", column: "seller_membership_id"
+  add_foreign_key "reservations", "memberships", column: ["seller_membership_id", "company_id"], primary_key: ["id", "company_id"], name: "fk_reservations_seller_membership_id_tenant"
   add_foreign_key "reservations", "users", column: "created_by_id"
   add_foreign_key "room_assignment_passengers", "passengers"
   add_foreign_key "room_assignment_passengers", "room_assignments"
   add_foreign_key "room_assignments", "accommodations"
+  add_foreign_key "room_assignments", "accommodations", column: ["accommodation_id", "company_id"], primary_key: ["id", "company_id"], name: "fk_room_assignments_accommodation_id_tenant"
   add_foreign_key "room_assignments", "companies"
   add_foreign_key "room_assignments", "departures"
+  add_foreign_key "room_assignments", "departures", column: ["departure_id", "company_id"], primary_key: ["id", "company_id"], name: "fk_room_assignments_departure_id_tenant"
   add_foreign_key "route_stages", "accommodations"
   add_foreign_key "route_stages", "boarding_points"
   add_foreign_key "route_stages", "routes"
   add_foreign_key "routes", "companies"
   add_foreign_key "seat_allocations", "companies"
   add_foreign_key "seat_allocations", "departures"
+  add_foreign_key "seat_allocations", "departures", column: ["departure_id", "company_id"], primary_key: ["id", "company_id"], name: "fk_seat_allocations_departure_id_tenant"
   add_foreign_key "seat_allocations", "passengers"
+  add_foreign_key "seat_allocations", "passengers", column: ["passenger_id", "company_id"], primary_key: ["id", "company_id"], name: "fk_seat_allocations_passenger_id_tenant"
   add_foreign_key "travel_packages", "companies"
   add_foreign_key "travel_packages", "destinations"
+  add_foreign_key "travel_packages", "destinations", column: ["destination_id", "company_id"], primary_key: ["id", "company_id"], name: "fk_travel_packages_destination_id_tenant"
 end

@@ -6,6 +6,8 @@ class CommissionsController < ApplicationController
     scope = scope.where(reseller_membership: current_membership) if current_role == "reseller"
     @entries = scope.order(created_at: :desc)
     @totals = @entries.reorder(nil).group(:status).sum(:amount_cents)
-    @rules = CommissionRule.where(company: current_company, status: "active").includes(reseller_membership: :user)
+    rules = CommissionRule.where(company: current_company, status: "active")
+    rules = rules.where(reseller_membership: current_membership) if current_role == "reseller"
+    @rules = rules.includes(reseller_membership: :user)
   end
 end

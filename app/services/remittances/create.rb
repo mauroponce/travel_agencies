@@ -14,7 +14,12 @@ module Remittances
     end
 
     def call
+      raise Pundit::NotAuthorizedError unless @company.status == "active" &&
+        @membership.company_id == @company.id && @membership.role?("reseller")
+
       ApplicationRecord.transaction do
+        raise Pundit::NotAuthorizedError unless @company.reload.status == "active"
+
         payments = CustomerPayment.where(company: @company, received_by_membership: @membership)
           .where(id: @allocations.keys).order(:id).lock.to_a
         raise Pundit::NotAuthorizedError unless payments.size == @allocations.size

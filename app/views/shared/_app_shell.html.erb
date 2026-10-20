@@ -1,6 +1,6 @@
 <div class="app-shell">
   <aside class="sidebar">
-    <%= link_to dashboard_path, class: "brand" do %><span class="brand-mark">↝</span><span>NexoViajes<small class="block text-[9px] tracking-[.2em] text-teal-300">PLATAFORMA TURÍSTICA</small></span><% end %>
+    <%= link_to dashboard_path, class: "brand" do %><span class="brand-mark">↝</span><span><%= current_company.name %><small class="block text-[9px] tracking-[.2em] text-teal-300"><%= ENV.fetch("PLATFORM_NAME", "NexoViajes") %></small></span><% end %>
     <div class="workspace">
       <div class="text-xs font-extrabold text-white"><%= current_company.name %></div>
       <div class="mt-1 text-[11px] text-slate-400"><%= current_role.to_s.titleize %></div>
@@ -20,8 +20,8 @@
       <div><span class="text-xs text-slate-400">Workspace / </span><strong class="text-sm"><%= current_company.name %></strong></div>
       <div class="flex items-center gap-2">
         <%= form_with url: context_path, method: :post, class: "flex gap-2" do |form| %>
-          <% contexts = current_user.memberships.active.includes(:company, :membership_roles).flat_map { |membership| membership.roles.map { |role| ["#{membership.company.name} · #{role_label(role)}", "#{membership.id}:#{role}"] } } %>
-          <%= form.select :context_key, contexts, {selected: "#{current_membership.id}:#{current_role}"}, {class: "!w-auto max-w-56 !py-2", onchange: "this.form.requestSubmit()", aria: {label: "Cambiar empresa y perfil"}} %>
+          <% roles = current_membership.roles.map { |role| [role_label(role), role] } %>
+          <%= form.select :role, roles, {selected: current_role}, {class: "!w-auto max-w-56 !py-2", onchange: "this.form.requestSubmit()", aria: {label: "Cambiar perfil dentro de #{current_company.name}"}} %>
         <% end %>
         <%= link_to notifications_path, class: "btn", aria: {label: "Notificaciones"} do %>🔔<% end %>
         <span class="grid h-10 w-10 place-items-center rounded-xl bg-teal/10 text-xs font-black text-teal"><%= current_user.name.split.map(&:first).first(2).join %></span>

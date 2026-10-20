@@ -16,9 +16,13 @@ class CompanyInvitation < ApplicationRecord
   end
 
   def accept!(user)
-    raise ActiveRecord::RecordInvalid, self unless email.casecmp?(user.email) && expires_at.future? && revoked_at.nil?
+    with_lock do
+      if accepted_at.present?
+        membership = company.memberships.find_by(user:)
+        return membership if membership && email.casecmp?(user.email)
+      end
+      raise ActiveRecord::RecordInvalid, self unless email.casecmp?(user.email) && expires_at.future? && revoked_at.nil?
 
-    transaction do
       membership = company.memberships.find_or_create_by!(user:) { |record| record.status = "active" }
       membership.update!(status: "active")
       roles.each { |role| membership.membership_roles.find_or_create_by!(role:) }

@@ -12,9 +12,11 @@ module PassengerForms
 
     def call
       raise Pundit::NotAuthorizedError unless @form.reseller_membership_id == @membership.id &&
-        @form.company_id == @membership.company_id
+        @form.company_id == @membership.company_id && @form.company.status == "active" && @membership.role?("reseller")
 
       ApplicationRecord.transaction do
+        raise Pundit::NotAuthorizedError unless @form.company.reload.status == "active"
+
         @form.lock!
         next @form.reservation if @form.reservation
 

@@ -58,7 +58,10 @@ Rails.application.configure do
   # config.action_mailer.raise_delivery_errors = false
 
   # Set host to be used by links generated in mailer templates.
-  config.action_mailer.default_url_options = { host: ENV.fetch("APP_HOST"), protocol: ENV.fetch("APP_PROTOCOL", "https") }
+  platform_base_domain = ENV.fetch("PLATFORM_BASE_DOMAIN")
+  platform_host = ENV.fetch("PLATFORM_HOST", "platform.#{platform_base_domain}")
+  auth_host = ENV.fetch("AUTH_HOST", "auth.#{platform_base_domain}")
+  config.action_mailer.default_url_options = { host: platform_host, protocol: ENV.fetch("APP_PROTOCOL", "https") }
   config.action_mailer.delivery_method = :smtp
   config.action_mailer.smtp_settings = {
     address: ENV.fetch("SMTP_HOST"), port: ENV.fetch("SMTP_PORT", 587).to_i,
@@ -86,7 +89,17 @@ Rails.application.configure do
   config.active_record.attributes_for_inspect = [ :id ]
 
   # Enable DNS rebinding protection and other `Host` header attacks.
-  config.hosts = [ ENV.fetch("APP_HOST") ]
+  config.hosts = [
+    platform_host,
+    auth_host,
+    /\A[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.#{Regexp.escape(platform_base_domain)}\z/,
+    lambda do |host|
+      CompanyDomain.where(status: "active").exists?(hostname: host.to_s.downcase.delete_suffix("."))
+    rescue ActiveRecord::StatementInvalid
+      false
+    end
+  ]
+  config.host_authorization = { exclude: ->(request) { request.path == "/up" } }
   # config.hosts = [
   #   "example.com",     # Allow requests from example.com
   #   /.*\.example\.com/ # Allow requests from subdomains like `www.example.com`

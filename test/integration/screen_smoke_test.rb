@@ -17,7 +17,7 @@ class ScreenSmokeTest < ActionDispatch::IntegrationTest
       get path
       assert_response :success, "expected #{path} to render"
     end
-    get public_trip_path(@company.slug, @trip[:offer].slug)
+    get public_trip_path(@trip[:offer].slug)
     assert_response :success
     assert_select "h1", text: /Mendoza/
   end
@@ -53,8 +53,10 @@ class ScreenSmokeTest < ActionDispatch::IntegrationTest
     end
     assert_response :success
     assert form.reload.submitted_at
-    post public_passenger_form_path(token), params: { passenger_form_submission: { full_name: "Duplicado" } }
-    assert_response :gone
+    assert_no_difference("PassengerFormSubmission.count") do
+      post public_passenger_form_path(token), params: { passenger_form_submission: { full_name: "Duplicado" } }
+    end
+    assert_response :success
   end
 
   test "price update is visible on permanent public URL" do
@@ -63,7 +65,7 @@ class ScreenSmokeTest < ActionDispatch::IntegrationTest
       promotion_label: "SUPER SALE"
     } }
     travel 1.second
-    get public_trip_path(@company.slug, @trip[:offer].slug)
+    get public_trip_path(@trip[:offer].slug)
     assert_response :success
     assert_includes response.body, "$2.500,00"
     assert_includes response.body, "SUPER SALE"

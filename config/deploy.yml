@@ -40,7 +40,18 @@ registry:
 env:
   secret:
     - RAILS_MASTER_KEY
+    - GOOGLE_CLIENT_ID
+    - GOOGLE_CLIENT_SECRET
+    - SMTP_PASSWORD
+    - VAPID_PRIVATE_KEY
   clear:
+    PLATFORM_BASE_DOMAIN: example.com
+    PLATFORM_HOST: platform.example.com
+    AUTH_HOST: auth.example.com
+    APP_PROTOCOL: https
+    CUSTOM_DOMAIN_CNAME_TARGET: tenants.example.com
+    # Comma-separated Caddy site addresses. Add only custom domains that completed verification.
+    CADDY_SITE_ADDRESSES: "platform.example.com, auth.example.com, agencia-inicial.example.com"
     # Run the Solid Queue Supervisor inside the web server's Puma process to do jobs.
     # When you start using multiple servers, you should split out job processing to a dedicated machine.
     SOLID_QUEUE_IN_PUMA: true

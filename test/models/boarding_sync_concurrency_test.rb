@@ -78,4 +78,39 @@ class BoardingSyncConcurrencyTest < ActiveSupport::TestCase
     assert_not BoardingEvent.new(company:, departure: trip[:departure], passenger:, recorded_by: user,
       command_id: SecureRandom.uuid, status: "boarded", base_version: 0, occurred_at: Time.current).valid?
   end
+
+  test "a command id from another tenant is not accepted as a duplicate or leaked" do
+    company_a = Company.create!(name: "Embarque A", slug: "boarding-a-#{SecureRandom.hex(4)}")
+    company_b = Company.create!(name: "Embarque B", slug: "boarding-b-#{SecureRandom.hex(4)}")
+    command_id = SecureRandom.uuid
+
+    contexts = [ company_a, company_b ].map do |company|
+      reseller = create_membership(company:, user: create_user, roles: %w[reseller], auto_confirm: true)
+      coordinator = create_membership(company:, user: create_user, roles: %w[coordinator])
+      trip = create_trip(company:)
+      trip[:departure].departure_assignments.create!(membership: coordinator)
+      reservation = Reservations::Confirm.call(offer: trip[:offer], actor: reseller.user, membership: reseller,
+        channel: "reseller", passengers: [ { full_name: "Pasajera", document_number: "30123456",
+          nationality: "Argentina", departure_stop_id: trip[:stop].id } ],
+        payment: { amount_cents: 50_000, method: "cash", received_on: Date.current },
+        idempotency_key: SecureRandom.uuid)
+      [ coordinator, trip, reservation.passengers.sole ]
+    end
+
+    coordinator_a, trip_a, passenger_a = contexts.first
+    Boarding::Sync.call(departure: trip_a[:departure], membership: coordinator_a, commands: [ {
+      command_id:, passenger_id: passenger_a.id, desired_status: "boarded",
+      base_version: passenger_a.lock_version, occurred_at: Time.current
+    } ])
+
+    coordinator_b, trip_b, passenger_b = contexts.last
+    result = Boarding::Sync.call(departure: trip_b[:departure], membership: coordinator_b, commands: [ {
+      command_id:, passenger_id: passenger_b.id, desired_status: "boarded",
+      base_version: passenger_b.lock_version, occurred_at: Time.current
+    } ]).sole
+
+    assert_equal "invalid_scope", result[:result]
+    assert_not result.key?(:status)
+    assert_equal 1, BoardingEvent.where(command_id:).count
+  end
 end
