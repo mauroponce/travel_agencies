@@ -19,9 +19,17 @@ module Platform
       raise Pundit::NotAuthorizedError unless @domain.custom?
       result = CompanyDomains::Verifier.call(@domain)
       AuditRecorder.call(action: "company_domain.verified", auditable: @domain, actor: current_user,
-        company: @company, changeset: { ownership: result.ownership, cname: result.cname, tls: result.tls })
+        company: @company,
+        changeset: { ownership: result.ownership, cname: result.cname, tls: result.tls, mode: result.mode })
+      notice = if result.errors.empty?
+        "DNS, propiedad y HTTPS verificados."
+      elsif result.reverification?
+        "La reverificación falló, pero el dominio continúa activo. #{result.errors.join(' ')}"
+      else
+        result.errors.join(" ")
+      end
       redirect_to platform_companies_path,
-        notice: result.errors.empty? ? "DNS, propiedad y HTTPS verificados." : result.errors.join(" ")
+        notice:
     end
 
     def activate
@@ -32,11 +40,7 @@ module Platform
     end
 
     def make_primary
-      raise ActiveRecord::RecordInvalid, @domain unless @domain.active?
-      ApplicationRecord.transaction do
-        @company.company_domains.where(primary: true).where.not(id: @domain.id).update_all(primary: false, updated_at: Time.current)
-        @domain.update!(primary: true)
-      end
+      @domain = CompanyDomains::MakePrimary.call(company: @company, company_domain: @domain)
       audit("company_domain.primary_changed")
       redirect_to platform_companies_path, notice: "Dominio principal actualizado."
     end
@@ -44,6 +48,8 @@ module Platform
     def disable
       raise Pundit::NotAuthorizedError if @domain.platform_subdomain?
       ApplicationRecord.transaction do
+        @company.lock!
+        @domain = @company.company_domains.lock.find(@domain.id)
         @domain.update!(status: "disabled", primary: false, disabled_at: Time.current)
         platform_domain = @company.platform_domain
         platform_domain.update!(primary: true) unless @company.company_domains.active.exists?(primary: true)

@@ -24,6 +24,8 @@
 22. Cada agencia conserva un subdominio de plataforma activo como recuperación, aun cuando otro dominio sea principal.
 23. Un dominio propio requiere propiedad TXT, CNAME y HTTPS verificados antes de activarse. Registrar un hostname no lo autoriza automáticamente.
 24. Google OAuth solo se inicia y completa en el host central. El retorno usa el hostname persistido, no un parámetro libre ni el header `Host` para generar destinos.
+25. Reverificar un dominio activo nunca lo retira automáticamente de servicio: un fallo se informa y audita, y la desactivación queda como acción explícita del operador.
+26. Los cambios de dominio principal se serializan por empresa; la última operación que obtiene el bloqueo pasa a ser principal y siempre queda un único dominio principal.
 
 ## Estados separados
 

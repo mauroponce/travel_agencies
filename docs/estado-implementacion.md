@@ -1,6 +1,6 @@
 # Estado de implementación
 
-Actualizado: 19 de octubre de 2026.
+Actualizado: 20 de octubre de 2026.
 
 ## Operativo y probado
 
@@ -28,11 +28,12 @@ Actualizado: 19 de octubre de 2026.
 - CSP activa, parámetros personales filtrados y comprobantes servidos solo por rutas autorizadas.
 - Operador global con alta/suspensión de empresas y administración de dominios desde interfaz.
 - `CompanyDomain` con subdominio permanente, dominio propio, unicidad global, dominio principal y verificación TXT/CNAME/HTTPS.
+- Reverificación segura de dominios activos y cambio de principal serializado por empresa, sin perder el subdominio permanente de recuperación.
 - `TenantResolver` obligatorio en rutas privadas y públicas; hosts desconocidos, deshabilitados o suspendidos no resuelven datos.
 - OAuth central con solicitud ligada al navegador, retorno registrado, código de dos minutos, consumo atómico y protección contra replay/open redirect.
 - Cookies host-only, URLs salientes desde dominios persistidos, PWA/caché por tenant y Push asociado a empresa/origen.
 
-La suite actual contiene 72 pruebas Rails con 387 aserciones y cubre además hosts desconocidos, dominios duplicados/reservados, dominios propios, usuarios multiagencia, cookies por host, cruces de slugs, OAuth de retorno, invitaciones y códigos vencidos/reutilizados. Playwright ejecuta 3 recorridos en desktop y mobile (6 ejecuciones).
+La suite actual contiene 78 pruebas Rails con 419 aserciones y cubre además hosts desconocidos, dominios duplicados/reservados, dominios propios, reverificación segura, concurrencia al cambiar el dominio principal, recuperación por subdominio, usuarios multiagencia, cookies por host, cruces de slugs, OAuth de retorno, invitaciones y códigos vencidos/reutilizados. Playwright ejecuta 3 recorridos en desktop y mobile (6 ejecuciones).
 
 ## Parcial
 

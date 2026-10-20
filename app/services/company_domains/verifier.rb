@@ -3,7 +3,9 @@ require "net/http"
 
 module CompanyDomains
   class Verifier
-    Result = Data.define(:ownership, :cname, :tls, :errors)
+    Result = Data.define(:ownership, :cname, :tls, :errors, :mode) do
+      def reverification? = mode == :reverification
+    end
 
     def self.call(company_domain, dns: Resolv::DNS, https_probe: nil)
       new(company_domain, dns:, https_probe:).call
@@ -26,12 +28,31 @@ module CompanyDomains
       errors << "El CNAME no apunta al destino técnico configurado" unless cname
       errors << "HTTPS todavía no presenta un certificado válido" if ownership && cname && !tls
 
-      @domain.update!(status: ownership && cname ? "verified" : "pending",
-        verified_at: ownership && cname ? Time.current : nil, tls_status: tls ? "ready" : "pending")
-      Result.new(ownership:, cname:, tls:, errors:)
+      mode = persist_result(ownership:, cname:, tls:)
+      Result.new(ownership:, cname:, tls:, errors:, mode:)
     end
 
     private
+
+    def persist_result(ownership:, cname:, tls:)
+      @domain.with_lock do
+        if @domain.active?
+          # DNS or certificate outages must not disable a hostname that is already
+          # serving traffic. The verification attempt is still returned and audited
+          # by the caller; only a complete success refreshes the last verified time.
+          @domain.update!(verified_at: Time.current) if ownership && cname && tls
+          :reverification
+        else
+          ownership_and_cname = ownership && cname
+          @domain.update!(
+            status: ownership_and_cname ? "verified" : "pending",
+            verified_at: ownership_and_cname ? Time.current : nil,
+            tls_status: tls ? "ready" : (ownership_and_cname ? "failed" : "pending")
+          )
+          :initial
+        end
+      end
+    end
 
     def ownership_verified?
       records = resources("#{verification_label}.#{@domain.hostname}", Resolv::DNS::Resource::IN::TXT)

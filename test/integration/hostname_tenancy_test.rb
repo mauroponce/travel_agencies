@@ -148,6 +148,23 @@ class HostnameTenancyTest < ActionDispatch::IntegrationTest
     assert_equal "active", domain.reload.status
   end
 
+  test "disabling the primary custom domain restores the permanent platform subdomain" do
+    operator = create_user(name: "Operadora de dominios")
+    operator.platform_roles.create!(role: "operator")
+    custom = @company_a.company_domains.create!(hostname: "recovery.#{SecureRandom.hex(3)}.example.com", kind: "custom",
+      status: "active", verified_at: Time.current, tls_status: "ready", activated_at: Time.current,
+      cname_target: "tenants.example.net")
+    CompanyDomains::MakePrimary.call(company: @company_a, company_domain: custom)
+    login_as(operator)
+
+    post disable_platform_company_company_domain_path(@company_a, custom)
+
+    assert_redirected_to platform_companies_path
+    assert_equal "disabled", custom.reload.status
+    assert @company_a.platform_domain.reload.active?
+    assert @company_a.platform_domain.primary?
+  end
+
   test "platform operator also authenticates only through the central host" do
     operator = create_user(name: "Operador OAuth")
     operator.platform_roles.create!(role: "operator")

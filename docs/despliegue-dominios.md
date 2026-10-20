@@ -45,6 +45,8 @@ El subdominio de plataforma no se elimina cuando se configura un dominio propio 
 
 Si el dominio se deshabilita, deja de resolver inmediatamente en Rails y el subdominio permanente vuelve a ser principal si no quedaba otro dominio activo.
 
+La acción **Reverificar** también está disponible para dominios activos. Si durante esa comprobación falla temporalmente DNS o TLS, la aplicación conserva el estado operativo y el dominio principal; muestra y audita el fallo para que el operador decida si corresponde deshabilitarlo. Una reverificación exitosa actualiza la fecha de última verificación. Los cambios simultáneos de dominio principal se serializan por empresa y mantienen la unicidad respaldada por el índice parcial de PostgreSQL.
+
 ## Despliegue y rollback
 
 La migración crea los subdominios permanentes para empresas existentes usando su `slug`. Antes de desplegar, revisar que ningún slug use nombres reservados (`www`, `admin`, `auth`, `api`, `platform`, entre otros) y configurar `PLATFORM_BASE_DOMAIN` con el valor definitivo de esa instalación.

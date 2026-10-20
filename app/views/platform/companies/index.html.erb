@@ -20,7 +20,7 @@
             <td><strong><%= domain.hostname %></strong><% if domain.custom? %><small class="block text-muted">CNAME → <%= domain.cname_target %></small><% end %></td>
             <td><%= domain.platform_subdomain? ? "Plataforma" : "Propio" %></td><td><%= domain.status %></td><td><%= domain.tls_status %></td><td><%= domain.primary? ? "Principal" : "Alternativo" %></td>
             <td><div class="flex flex-wrap gap-2">
-              <% if domain.custom? && !domain.active? %><%= button_to "Verificar", verify_platform_company_company_domain_path(company, domain), class: "btn" %><% end %>
+              <% if domain.custom? %><%= button_to(domain.active? ? "Reverificar" : "Verificar", verify_platform_company_company_domain_path(company, domain), class: "btn") %><% end %>
               <% if domain.status == "verified" && domain.tls_status == "ready" %><%= button_to "Activar", activate_platform_company_company_domain_path(company, domain), class: "btn" %><% end %>
               <% if domain.active? && !domain.primary? %><%= button_to "Hacer principal", make_primary_platform_company_company_domain_path(company, domain), class: "btn" %><% end %>
               <% if domain.custom? && domain.active? %><%= button_to "Deshabilitar", disable_platform_company_company_domain_path(company, domain), class: "btn" %><% end %>
