@@ -9,21 +9,44 @@ test("landing and public trip expose the real responsive experience", async ({ p
   await expect(page.getByRole("heading", { name: /Mendoza/ })).toBeVisible()
   await expect(page.getByText(/cupos disponibles/)).toBeVisible()
   await expect(page.getByRole("link", { name: /WhatsApp/ })).toHaveAttribute("href", /^https:\/\/wa\.me\//)
-  const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)
-  expect(overflow).toBeFalsy()
+  const horizontalScroll = await page.evaluate(() => {
+    window.scrollTo(100, 0)
+    return window.scrollX
+  })
+  expect(horizontalScroll).toBe(0)
 })
 
-test("authorized profiles render dashboard and mobile operation", async ({ page }, testInfo) => {
-  const role = testInfo.project.name.startsWith("mobile") ? "coordinator" : "admin"
-  await page.goto(`/test/sign-in?email=demo%40nexoviajes.local&company=sanzo-viajes&role=${role}`)
-  if (role === "admin") {
-    await expect(page.getByRole("heading", { name: /Buen día/ })).toBeVisible()
-    await expect(page.getByText("Sanzó Viajes").first()).toBeVisible()
-  } else {
-    await expect(page).toHaveURL(/salidas/)
-    await page.getByRole("link", { name: "Hoja de ruta", exact: true }).first().click()
-    await expect(page.getByRole("heading", { name: /MZA-/ })).toBeVisible()
+test("admin dashboard is responsive and uses real navigation", async ({ page }, testInfo) => {
+  if (testInfo.project.name.startsWith("mobile")) await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto("/test/sign-in?email=demo%40nexoviajes.local&company=sanzo-viajes&role=admin")
+  await expect(page.getByRole("heading", { name: /Resumen general/ })).toBeVisible()
+  await expect(page.getByText("Sanzó Viajes").first()).toBeVisible()
+  await expect(page.getByRole("link", { name: /Nueva oferta/ })).toHaveAttribute("href", "/ofertas/new")
+  await expect(page.getByText("Ocupación de próximas salidas")).toBeVisible()
+  await page.getByRole("combobox", { name: "Filtrar salidas" }).selectOption("month")
+  await expect(page).toHaveURL(/departure_filter=month/)
+  await expect(page.getByText(/Mostrando 2 de 2 salidas/)).toBeVisible()
+  const horizontalScroll = await page.evaluate(() => {
+    window.scrollTo(100, 0)
+    return window.scrollX
+  })
+  expect(horizontalScroll).toBe(0)
+
+  if (testInfo.project.name.startsWith("mobile")) {
+    await page.getByRole("button", { name: "Abrir menú" }).click()
+    const mobileReservations = page.getByRole("complementary", { name: "Menú principal" }).getByRole("link", { name: "Reservas" })
+    await expect(mobileReservations).toBeVisible()
+    await page.keyboard.press("Escape")
+    await expect(page.locator("#main-sidebar")).toHaveAttribute("aria-hidden", "true")
+    await expect(page.getByRole("button", { name: "Abrir menú" })).toHaveAttribute("aria-expanded", "false")
   }
+})
+
+test("coordinator keeps the authorized mobile operation flow", async ({ page }) => {
+  await page.goto("/test/sign-in?email=demo%40nexoviajes.local&company=sanzo-viajes&role=coordinator")
+  await expect(page).toHaveURL(/salidas/)
+  await page.locator("a[href$='/operation']").first().click()
+  await expect(page.getByRole("heading", { name: /MZA-/ })).toBeVisible()
 })
 
 test.describe("boarding offline", () => {
@@ -43,7 +66,7 @@ test("boarding queues a command offline without passenger data and syncs on reco
     }) })
   })
   await page.goto("/test/sign-in?email=demo%40nexoviajes.local&company=sanzo-viajes&role=coordinator")
-  await page.getByRole("link", { name: "Hoja de ruta", exact: true }).first().click()
+  await page.locator("a[href$='/operation']").first().click()
   await expect(page.getByRole("heading", { name: /MZA-/ })).toBeVisible()
 
   await page.evaluate(() => { window.__testOnline = false })

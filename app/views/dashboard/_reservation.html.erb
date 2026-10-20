@@ -1,0 +1,8 @@
+<%= link_to reservation_path(reservation), class: "dashboard-reservation-row" do %>
+  <span class="dashboard-reservation-avatar"><%= reservation.code.to_s.first(2).upcase %></span>
+  <span class="dashboard-reservation-main">
+    <strong><%= reservation.code %></strong>
+    <span><%= reservation.departure_offer.travel_package.name %> · <%= pluralize(reservation.passengers.size, "pasajero", "pasajeros") %> · <%= reservation_channel_label(reservation.channel) %></span>
+  </span>
+  <span class="dashboard-status <%= reservation_status_class(reservation.status) %>"><%= reservation_status_label(reservation.status) %></span>
+<% end %>

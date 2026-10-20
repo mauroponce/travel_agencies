@@ -1,0 +1,611 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#fafafa">
+<meta name="description" content="Prototipo visual del dashboard administrativo de NexoViajes, inspirado en el sistema de diseño de Cadence.">
+<title>NexoViajes — Dashboard administrador · prototipo Cadence</title>
+<!--
+  NEXOVIAJES · REFERENCIA VISUAL PARA CODEX
+  =========================================
+  PROTOTIPO INDEPENDIENTE: datos ficticios, sin backend ni autenticación.
+  Se adaptó el lenguaje visual de Cadence (tipografía Inter, fondo blanco,
+  colores, líneas, gradientes, componentes y ritmo visual) al producto real.
+
+  FUENTE DE VERDAD (revisada 20/10/2026):
+  - app/controllers/dashboard_controller.rb
+  - app/views/dashboard/show.html.erb
+  - app/views/shared/_app_shell.html.erb
+  - app/helpers/application_helper.rb
+  - config/routes.rb
+  - docs/reglas-negocio.md
+  - docs/estado-implementacion.md
+
+  MAPEOS DIRECTOS PARA CODEX
+  KPI: @metrics[:upcoming_departures]
+       @metrics[:confirmed_passengers]
+       @metrics[:available_seats]
+       @metrics[:pending_reservations]
+       @metrics[:registered_payments_cents]
+       @metrics[:pending_remittance_cents]
+       @metrics[:pending_remittances]
+       @metrics[:pending_verification_cents]
+  Salidas: @departures, departure.code, .departs_at, .bus.name,
+           .capacity, .occupied_seats, .available_seats, .status.
+  Reservas: @reservations, reservation.code, .status,
+            .passengers.size, .departure_offer.travel_package.name,
+            .channel, .created_at.
+  Promo: @offers.find { |o| o.current_fare&.promotion_label.present? }
+  Navegación: dashboard_path, departure_offers_path, travel_packages_path,
+              departures_path, reservations_path, customer_payments_path,
+              remittances_path, commissions_path, catalog_path, team_members_path,
+              notifications_path, new_departure_offer_path.
+
+  DIFERENCIAS INTENCIONALES RESPECTO AL BACKEND ACTUAL:
+  - Gráfico histórico de reservas: DEMO; no existe serie temporal en @metrics.
+    Debe implementarse agregación tenant-scoped o reemplazarse por otro gráfico
+    de datos ya disponibles. NO inferir históricos con los KPI acumulados.
+  - Distribución de ocupación en la tabla: ocupa el inventario propio de cada
+    salida, NUNCA por paquete u oferta. Las cifras son de ejemplo.
+  - El módulo de alertas se alimenta aquí de métricas existentes; avisos
+    individuales y panel deslizable requieren consultas/alcances seguros.
+  - Búsqueda global y modal de nueva oferta son demostraciones de UX.
+  - El diseño original usa menú colapsable y paleta; adaptarlo a Rails/Turbo,
+    no reemplazar autorización, rutas, formularios ni reglas de negocio.
+  - Respetar tenant resuelto por hostname; NO cambiar agencia con un selector;
+    roles solo válidos para current_membership de current_company.
+  - No exponer datos privados de pasajeros a perfiles no autorizados.
+  - Estados de cobros/rendiciones/reservas SON DISTINTOS.
+-->
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+:root{
+  --bg:#fafafa;--bg-2:#f5f5f5;--surface:#fff;--line:#e8e8ec;--line-soft:#f0f0f3;
+  --ink:#0a0a0c;--ink-2:#3d3d44;--muted:#6c6c76;--faint:#9b9ba5;
+  --a-yellow:#ffd166;--a-peach:#ffb37a;--a-coral:#ff8a6b;--a-pink:#ff7ea8;
+  --a-violet:#a78cf7;--a-blue:#7cc0ff;--a-mint:#8fe0b0;--a-green:#3fb27f;
+  --r-lg:28px;--r-md:16px;--r-sm:10px;
+  --sh-1:0 1px 2px rgba(14,14,20,.04),0 6px 18px rgba(14,14,20,.05);
+  --sh-2:0 2px 4px rgba(14,14,20,.04),0 18px 44px rgba(14,14,20,.08);
+  --ease:cubic-bezier(.22,.68,.24,1);
+  --side-width:234px;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:#f8f8fa;color:var(--ink);font:13px/1.5 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}button:disabled{cursor:not-allowed}
+a{color:inherit;text-decoration:none}button{border:0;background:none}
+h1,h2,h3,h4,p,figure,ul{margin:0}ul{padding:0;list-style:none}
+svg{display:block;flex-shrink:0}
+.ic{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round}
+.ic.sm{width:14px;height:14px}.ic.lg{width:20px;height:20px}
+:focus-visible{outline:2px solid #a78cf7;outline-offset:3px}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+/* App frame: the screenshot's softly rounded, almost invisible white surfaces */
+.shell{display:grid;grid-template-columns:var(--side-width) minmax(0,1fr);min-height:100svh;background:#fff;transition:grid-template-columns .28s var(--ease)}
+.shell.collapsed{--side-width:70px}
+.sidebar{position:sticky;top:0;height:100svh;display:flex;flex-direction:column;min-width:0;padding:20px 14px 14px;background:#fff;border-right:1px solid var(--line-soft);z-index:40}
+.sidebar-logo{display:flex;align-items:center;gap:9px;padding:0 4px 18px;border-bottom:1px solid var(--line-soft);min-height:34px;overflow:hidden}
+.mark{height:27px;width:27px;min-width:27px;display:grid;place-items:center;color:#fff;background:linear-gradient(140deg,#22222a,#0a0a0c);border-radius:9px}
+.mark .ic{width:16px;height:16px;stroke-width:2}
+.brand-word{font-size:17px;font-weight:800;letter-spacing:-.065em;white-space:nowrap}
+.side-collapse{display:grid;place-items:center;width:26px;height:26px;margin-left:auto;color:var(--faint);border-radius:7px;flex-shrink:0;transition:background .2s,transform .28s}
+.side-collapse:hover,.icon-btn:hover{background:#f5f5f7}
+.sidebar-search{display:flex;align-items:center;gap:8px;height:35px;margin:16px 0 19px;padding:0 11px;border:1px solid var(--line);border-radius:10px;color:var(--faint);background:#fff;text-align:left;min-width:0;white-space:nowrap;overflow:hidden}
+.sidebar-search:hover{border-color:#d3d0da}
+.sidebar-search .srch-label{color:var(--faint);font-size:11px;overflow:hidden;text-overflow:ellipsis;flex:1}
+kbd{border:1px solid var(--line-soft);border-radius:5px;background:#f6f6f8;padding:1px 5px;color:var(--faint);font:10px Inter,sans-serif;white-space:nowrap}
+.side-group{margin-bottom:17px;min-width:0}
+.side-label{font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:var(--faint);font-weight:600;margin:0 6px 8px;white-space:nowrap}
+.side-nav{display:grid;gap:3px}
+.nav-link{display:flex;align-items:center;gap:10px;height:35px;border-radius:9px;padding:0 10px;width:100%;color:#55555e;font-size:12px;font-weight:500;text-align:left;transition:background .2s,color .2s;min-width:0;white-space:nowrap}
+.nav-link .ic{width:16px;height:16px;color:#a2a3ae}
+.nav-link:hover{background:#f8f8fa;color:#111}
+.nav-link.active{background:#f4f4f6;color:#111;font-weight:700}
+.nav-link.active .ic{color:var(--ink)}
+.nav-link .nav-text{overflow:hidden;text-overflow:ellipsis;flex:1}
+.nav-count{font-size:10px;font-weight:600;padding:1px 6px;border-radius:20px;color:#c5794c;background:#fff3e8}
+.side-bottom{margin-top:auto;display:grid;gap:11px}
+.side-status{background:#f8f8fa;padding:12px;border-radius:12px;display:grid;gap:7px}
+.side-status-h{display:flex;justify-content:space-between;font-size:10px;color:var(--muted)}
+.side-status-h strong{font-weight:600;color:var(--ink-2)}
+.progress{height:5px;border-radius:999px;display:block;background:#efeff2;overflow:hidden}
+.progress i{height:100%;display:block;border-radius:999px;background:linear-gradient(90deg,var(--a-peach),var(--a-pink))}
+.side-status small{font-size:10px;color:var(--faint)}
+.side-help{display:flex;align-items:center;gap:8px;padding:7px 8px;font-size:11px;color:var(--faint);border-radius:9px;text-align:left}
+.side-help:hover{background:#f8f8fa;color:var(--ink)}
+.shell.collapsed .brand-word,.shell.collapsed .side-collapse,.shell.collapsed .srch-label,.shell.collapsed .sidebar-search kbd,.shell.collapsed .side-label,.shell.collapsed .nav-text,.shell.collapsed .nav-count,.shell.collapsed .side-status,.shell.collapsed .side-help span{display:none}
+.shell.collapsed .sidebar{padding-inline:12px}
+.shell.collapsed .sidebar-logo .mark{cursor:pointer}
+.shell.collapsed .sidebar-logo{justify-content:center;padding:0 0 18px}
+.shell.collapsed .sidebar-search,.shell.collapsed .nav-link{justify-content:center;padding-inline:0}
+.shell.collapsed .sidebar-search{border-color:transparent;background:#f7f7f9}
+.shell.collapsed .side-help{justify-content:center}
+/* Topbar same 3-column centered mark as the supplied screenshot */
+.main-shell{min-width:0;background:#fff}
+.topbar{height:70px;position:sticky;top:0;z-index:30;background:rgba(255,255,255,.94);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);border-bottom:1px solid var(--line-soft);display:grid;grid-template-columns:minmax(160px,1fr) auto minmax(160px,1fr);align-items:center;gap:15px;padding:0 25px}
+.search-trigger{height:37px;width:min(330px,100%);background:#f6f6f8;border-radius:10px;padding:0 12px;display:flex;gap:9px;align-items:center;color:var(--faint);font-size:11.5px;text-align:left;min-width:0}
+.search-trigger .search-placeholder{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.search-trigger kbd{background:#fff}
+.top-logo{text-align:center;white-space:nowrap;min-width:0;line-height:1.35}
+.top-logo b{display:block;font-size:15px;font-weight:800;letter-spacing:-.055em}
+.top-logo span{display:block;font-size:10px;color:var(--faint)}
+.top-right{display:flex;align-items:center;justify-self:end;gap:12px;min-width:0}
+.icon-btn{position:relative;display:grid;place-items:center;color:#777782;height:34px;width:34px;border-radius:10px}
+.notify-dot{position:absolute;top:6px;right:5px;width:6px;height:6px;border-radius:100%;background:#ff8a6b;border:1px solid #fff}
+.profile-wrap{position:relative}
+.profile-btn{display:flex;align-items:center;gap:9px;min-width:0;padding:4px 0}
+.avatar{display:grid;place-items:center;width:29px;height:29px;flex:0 0 29px;border-radius:100%;background:linear-gradient(145deg,#f2e0ff,#dcc0ff);color:#7755bf;font-weight:700;font-size:11px;overflow:hidden}
+.profile-copy{text-align:left;line-height:1.3}
+.profile-copy b{display:block;font-size:11px;font-weight:600;white-space:nowrap}
+.profile-copy small{display:flex;align-items:center;gap:3px;font-size:10px;color:var(--ink-2);font-weight:600}
+.profile-copy .ic{width:11px;height:11px}
+.profile-menu{position:absolute;right:0;top:47px;width:245px;border:1px solid var(--line);padding:16px;background:#fff;border-radius:14px;box-shadow:var(--sh-2);z-index:80;display:none}
+.profile-menu.open{display:block}
+.profile-menu strong{display:block;font-size:12px}
+.profile-menu span{font-size:11px;color:var(--muted)}
+.profile-menu hr{border:0;border-top:1px solid var(--line);margin:13px 0}
+.profile-menu p{font-size:11px;color:var(--muted);line-height:1.5}
+.mobile-menu{display:none}
+/* Content */
+.content{width:100%;max-width:1680px;padding:20px 26px 56px;margin:auto}
+.breadcrumb{display:flex;gap:10px;align-items:center;color:var(--faint);font-size:11px;white-space:nowrap;margin:0 0 23px}
+.breadcrumb strong{color:var(--ink-2);font-weight:600}
+.breadcrumb .ic{width:12px;height:12px}
+.heading{display:flex;justify-content:space-between;align-items:flex-end;gap:18px;margin-bottom:23px}
+.eyebrow{font-size:10px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;background:linear-gradient(90deg,#ffb37a,#ff7ea8 55%,#a78cf7);-webkit-background-clip:text;background-clip:text;color:transparent;margin-bottom:7px}
+h1{font-size:clamp(25px,2.7vw,32px);line-height:1.12;letter-spacing:-.045em;font-weight:700}
+.heading p{font-size:12px;margin-top:9px;color:var(--muted)}
+.heading-actions{display:flex;align-items:center;gap:8px;padding-bottom:1px;flex-wrap:wrap}
+.btn{border-radius:999px;display:inline-flex;justify-content:center;align-items:center;gap:8px;height:37px;padding:0 16px;font-size:11.5px;font-weight:600;white-space:nowrap;transition:transform .25s var(--ease),box-shadow .25s,background-color .25s}
+.btn:hover{transform:translateY(-1px)}
+.btn-white{background:#fff;border:1px solid var(--line);color:var(--ink-2)}
+.btn-white:hover{box-shadow:var(--sh-1)}
+.btn-dark{background:var(--ink);color:#fff;border:1px solid var(--ink)}
+.btn-dark:hover{background:#25252b;box-shadow:0 9px 20px rgba(10,10,12,.13)}
+.btn .ic{width:14px;height:14px}
+/* Cards & KPIs */
+.panel,.kpi{border:1px solid var(--line);background:#fff;border-radius:16px}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:12px}
+.kpi{position:relative;min-width:0;padding:17px 18px 16px;min-height:132px;overflow:hidden;transition:box-shadow .26s,transform .26s}
+.kpi:hover{box-shadow:var(--sh-1);transform:translateY(-1px)}
+.kpi-label{font-size:11px;color:var(--faint);font-weight:500}
+.kpi-number{font-size:29px;line-height:1.2;letter-spacing:-.047em;display:block;margin-top:9px;font-weight:700;font-variant-numeric:tabular-nums}
+.kpi-note{font-size:10px;display:inline-flex;align-items:center;gap:5px;background:#eefaf3;color:#2f9367;padding:3px 9px;border-radius:999px;margin-top:7px;font-weight:600;max-width:100%}
+.kpi-note.neutral{color:#807784;background:#f4f4f6}
+.kpi-note.orange{color:#bd7848;background:#fff1e7}
+.kpi-spark{position:absolute;right:15px;top:56px;width:37%;height:30px;fill:none;stroke-width:2.1;stroke-linecap:round}
+.kpi-spark path{stroke:#ff7ea8}.kpi-spark.purple path{stroke:#a78cf7}.kpi-spark.blue path{stroke:#7cc0ff}.kpi-spark.orange path{stroke:#ffb37a}
+.finance-strip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:20px}
+.fin-card{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:17px 19px;border:1px solid var(--line);border-radius:16px;background:linear-gradient(120deg,#fff 5%,#fcfbfd 100%);min-width:0}
+.fin-card .fin-copy{min-width:0}
+.fin-card small{display:block;font-size:10.5px;color:var(--faint);font-weight:500}
+.fin-card strong{display:block;margin-top:5px;font-size:20px;font-weight:700;letter-spacing:-.035em;font-variant-numeric:tabular-nums;white-space:nowrap}
+.fin-card p{color:var(--muted);font-size:10px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fin-card .fin-icon{display:grid;place-items:center;width:36px;height:36px;flex-shrink:0;border-radius:12px;background:linear-gradient(135deg,#ffe6d4,#ffeff1);color:#cc796e}
+.fin-card:nth-child(2) .fin-icon{background:linear-gradient(135deg,#e8e3ff,#f5efff);color:#9273cb}
+.fin-card:nth-child(3) .fin-icon{background:linear-gradient(135deg,#fff1df,#fdefe7);color:#b98642}
+.fin-card .fin-icon .ic{width:18px;height:18px}
+/* Rich main layout */
+.grid-primary{display:grid;grid-template-columns:minmax(0,1.72fr) minmax(285px,.88fr);gap:14px;margin-bottom:16px}
+.grid-secondary{display:grid;grid-template-columns:minmax(0,1.72fr) minmax(285px,.88fr);gap:14px;align-items:start}
+.section-panel{padding:20px 20px 18px;min-width:0}
+.section-head{display:flex;gap:14px;align-items:flex-start;justify-content:space-between;margin-bottom:18px;min-width:0}
+.section-head h2{font-size:14px;font-weight:700;letter-spacing:-.026em}
+.section-head p{font-size:10.5px;color:var(--faint);margin-top:4px}
+.head-trail{display:flex;align-items:center;gap:9px;flex-shrink:0}
+.segment{display:flex;gap:2px;border-radius:9px;padding:3px;background:#f4f4f6}
+.segment button{font-size:10px;color:var(--faint);padding:3px 8px;border-radius:7px;line-height:18px}
+.segment button.active{background:#fff;color:#15151b;font-weight:700;box-shadow:0 1px 3px rgba(10,10,12,.08)}
+.legend{display:inline-flex;align-items:center;gap:6px;font-size:10px;color:var(--faint)}
+.legend-dot{height:7px;width:7px;flex:0 0 7px;border-radius:2px;background:#ff7ea8}
+.legend-dot.prev{background:#d6d6de}
+.legend-dot.open{background:#a78cf7}
+.chart-card{min-height:331px}
+.chart-wrap{height:222px;position:relative;padding-top:12px;user-select:none;touch-action:pan-y}
+.chart-gridline{stroke:#ececf0;stroke-width:1;vector-effect:non-scaling-stroke}
+.chart-svg{width:100%;height:184px;display:block;overflow:visible}
+.chart-x{display:flex;justify-content:space-between;font-size:10px;color:#a3a3ac;margin-top:3px;gap:5px}
+.chart-hover-line{stroke:#d7d1e5;stroke-width:1;stroke-dasharray:4 4}
+.chart-tip{position:absolute;top:12px;left:52%;transform:translateX(-15%);border:1px solid #f5f5f7;border-radius:12px;padding:11px 13px;box-shadow:var(--sh-2);background:#fff;min-width:154px;pointer-events:none;z-index:1;transition:left .12s ease}
+.chart-tip b{display:block;font-size:11px;margin-bottom:6px}
+.chart-tip-line{display:flex;gap:8px;align-items:center;font-size:10px;color:var(--faint);margin-top:4px;white-space:nowrap}
+.chart-tip-line strong{margin-left:auto;color:var(--ink);font-weight:700}
+.chart-footer{display:flex;justify-content:space-between;gap:8px;color:var(--faint);font-size:10px;border-top:1px solid var(--line-soft);padding-top:11px;margin-top:4px}
+.chart-footer .mini-gradient{width:48px;height:3px;background:linear-gradient(90deg,var(--a-peach),var(--a-pink),var(--a-violet));border-radius:20px;display:inline-block;vertical-align:3px;margin-right:7px}
+/* needs attention, compact like supplied dashboard */
+.attention{display:flex;flex-direction:column;gap:0;min-height:331px}
+.attention .section-head{margin-bottom:10px}
+.att-item{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:10px;align-items:center;padding:15px 0;border-bottom:1px solid var(--line-soft);width:100%;text-align:left}
+.att-item:hover .att-name{color:#6e51b5}
+.att-item:last-of-type{border-bottom:0}
+.att-icon{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;background:#fff0e8;color:#d18c65}
+.att-item:nth-of-type(3) .att-icon{background:#f1ebff;color:#9278d5}
+.att-item:nth-of-type(4) .att-icon{background:#edf5ff;color:#7da1de}
+.att-icon .ic{width:16px;height:16px}
+.att-name{display:block;font-weight:650;font-size:11.5px;letter-spacing:-.01em}
+.att-detail{display:block;font-size:10px;color:var(--faint);margin-top:3px}
+.att-chevron{width:15px;height:15px;color:var(--faint)}
+.att-bottom{padding:14px 16px;border-radius:12px;background:linear-gradient(110deg,#fff8f0,#fff0f5 50%,#f5efff);display:flex;align-items:center;gap:9px;margin-top:auto}
+.att-bottom svg{width:16px;height:16px;color:#b37baf}
+.att-bottom p{font-size:10.5px;color:#726b7c;line-height:1.45}
+.att-bottom strong{color:#25232b}
+/* Departures */
+.table-card .section-head{margin-bottom:11px}
+.table-controls{display:flex;align-items:center;gap:7px}
+.select-shell{position:relative}
+.select-shell select{appearance:none;background:#f6f6f8;border-radius:999px;border:none;color:#686872;font-size:10.5px;padding:7px 25px 7px 11px;cursor:pointer;max-width:160px;outline-offset:2px}
+.select-shell:after{content:"";position:absolute;right:12px;top:12px;border-right:1.5px solid #90909a;border-bottom:1.5px solid #90909a;transform:rotate(45deg);width:5px;height:5px;pointer-events:none}
+.table-scroll{width:100%;overflow-x:auto}
+.table{width:100%;border-collapse:collapse;min-width:605px}
+.table th{text-align:left;font-size:9px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);padding:0 9px 12px}
+.table th:first-child,.table td:first-child{padding-left:0}.table th:last-child,.table td:last-child{padding-right:0}
+.table tbody tr{border-top:1px solid var(--line-soft);transition:background-color .15s}
+.table tbody tr:hover{background:#fcfbfd}
+.table td{padding:13px 9px;color:var(--muted);font-size:11px;vertical-align:middle}
+.table td.main-cell{color:var(--ink-2)}
+.travel-title{display:flex;align-items:center;gap:8px;white-space:nowrap;font-weight:600;font-size:11.5px;color:var(--ink-2)}
+.travel-title .legend-dot{border-radius:50%}
+.travel-code{font-size:10px;color:var(--faint);display:block;margin:3px 0 0 15px}
+.travel-sub{display:block;font-size:10px;color:var(--faint);margin-top:3px}
+.table .num{font-weight:700;color:var(--ink);font-size:12px;white-space:nowrap}
+.occupancy{min-width:112px;max-width:145px;display:grid;gap:6px}
+.occupancy small{font-size:10px;color:var(--faint)}
+.occupancy .progress{height:5px}
+.status{display:inline-flex;align-items:center;justify-content:center;gap:4px;border-radius:999px;padding:5px 10px;font-size:10px;font-weight:650;white-space:nowrap}
+.status.green{background:#eaf8f0;color:#278b62}.status.orange{background:#fff2e6;color:#b77637}.status.gray{background:#f3f3f6;color:#81818d}.status.purple{background:#f2edff;color:#7c65b9}.status.red{background:#fff0ef;color:#c96961}
+.row-link{border-radius:8px;padding:6px;color:#9998a3;display:inline-flex}
+.row-link:hover{background:#f3eefc;color:#8064ce}
+.empty-state{font-size:12px;color:var(--faint);text-align:center;padding:30px 4px}
+.table-foot{font-size:10px;color:var(--faint);display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:10px}
+.text-action{color:#6e58ab;font-size:11px;font-weight:650;display:inline-flex;align-items:center;gap:5px;padding:5px 0;white-space:nowrap}
+.text-action:hover{color:#403265}
+.text-action .ic{width:12px;height:12px}
+/* Right bottom column */
+.right-stack{display:grid;gap:14px}
+.reservation-list{display:grid}
+.reservation-row{width:100%;display:flex;align-items:center;gap:10px;text-align:left;border-bottom:1px solid var(--line-soft);padding:13px 0}
+.reservation-row:last-child{border-bottom:none}
+.reservation-row:hover .res-number{color:#8064ce}
+.res-avatar{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;background:#f5efff;color:#9678ce;font-size:10px;font-weight:700;flex:none}
+.res-avatar.peach{background:#fff2e7;color:#ce976d}.res-avatar.blue{background:#ebf4ff;color:#78a8de}
+.res-main{flex:1;min-width:0}
+.res-number{font-size:11.5px;font-weight:700;display:block}
+.res-sub{font-size:10px;color:var(--faint);display:block;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.reservation-row .status{font-size:9px;padding:4px 7px}
+.promo-card{position:relative;overflow:hidden;border:1px solid #f0e4ea;border-radius:16px;background:linear-gradient(112deg,#fff6e9,#ffedf3 53%,#f0eaff);padding:18px 19px 19px;min-height:167px}
+.promo-card:before{content:"";position:absolute;width:260px;height:250px;right:-90px;bottom:-160px;filter:blur(40px);background:radial-gradient(closest-side,rgba(167,140,247,.36),transparent)}
+.promo-card > *{position:relative;z-index:1}
+.promo-kicker{display:inline-flex;padding:5px 9px;background:#fff;color:#bb7182;font-weight:700;font-size:9px;letter-spacing:.09em;border-radius:999px}
+.promo-card h3{font-size:17px;letter-spacing:-.035em;line-height:1.25;margin-top:12px}
+.promo-card p{font-size:10.5px;color:#786e7b;max-width:32ch;margin-top:5px;line-height:1.5}
+.promo-card .text-action{margin-top:7px;color:#513b63}
+.data-footnote{text-align:center;color:#a1a1ac;font-size:10.5px;margin-top:25px}
+/* Popups, dialogs, notifications */
+.screen-overlay{position:fixed;inset:0;background:rgba(17,17,26,.31);-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);z-index:80;opacity:0;visibility:hidden;transition:opacity .22s,visibility .22s}
+.screen-overlay.visible{opacity:1;visibility:visible}
+.drawer{position:fixed;right:0;top:0;bottom:0;z-index:90;width:min(440px,100vw);background:#fff;box-shadow:-22px 0 80px rgba(18,18,26,.12);transform:translateX(102%);transition:transform .32s var(--ease);display:flex;flex-direction:column}
+.drawer.open{transform:none}
+.drawer-head{display:flex;align-items:center;gap:14px;padding:24px 24px 20px;border-bottom:1px solid var(--line)}
+.drawer-head h2{font-size:19px;letter-spacing:-.035em;font-weight:700}
+.drawer-head p{font-size:11px;color:var(--faint);margin-top:5px}
+.drawer-close{margin-left:auto;color:var(--faint)}
+.drawer-body{overflow-y:auto;flex:1;padding:24px}
+.drawer-label{text-transform:uppercase;font-size:10px;letter-spacing:.11em;color:var(--faint);font-weight:600;margin-bottom:9px}
+.drawer-main-title{font-size:25px;font-weight:700;letter-spacing:-.04em}
+.drawer-muted{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.65}
+.drawer-data{margin-top:24px;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.drawer-data-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:13px 15px;font-size:12px;border-bottom:1px solid var(--line-soft)}
+.drawer-data-row:last-child{border-bottom:0}
+.drawer-data-row span{color:var(--muted)}.drawer-data-row strong{font-weight:600;text-align:right}
+.drawer-actions{margin-top:24px;display:flex;gap:8px;flex-wrap:wrap}
+.drawer-note{margin-top:22px;font-size:11px;line-height:1.65;color:var(--muted);padding:13px 15px;background:#faf9fc;border-radius:12px}
+.drawer-note b{color:var(--ink-2)}
+.notice-item{padding:15px 0;border-bottom:1px solid var(--line-soft);display:flex;gap:11px}
+.notice-item:last-child{border-bottom:0}
+.notice-dot{margin-top:6px;width:7px;height:7px;border-radius:100%;background:#ff8a6b;flex:none}
+.notice-item.read .notice-dot{background:#d9d9e0}
+.notice-item h3{font-size:12px;font-weight:600}
+.notice-item p{font-size:11px;line-height:1.5;color:var(--muted);margin-top:5px}
+.notice-item time{display:block;color:var(--faint);font-size:10px;margin-top:7px}
+/* Modal surface */
+.modal{position:fixed;top:50%;left:50%;transform:translate(-50%,-47%) scale(.98);z-index:95;width:min(560px,calc(100vw - 30px));max-height:calc(100svh - 40px);overflow:auto;background:#fff;border:1px solid var(--line);border-radius:22px;box-shadow:0 28px 95px rgba(14,14,26,.16);padding:25px;visibility:hidden;opacity:0;transition:opacity .22s,transform .22s,visibility .22s}
+.modal.open{opacity:1;visibility:visible;transform:translate(-50%,-50%) scale(1)}
+.modal-head{display:flex;gap:12px;align-items:flex-start;margin-bottom:20px}
+.modal-head h2{font-size:21px;letter-spacing:-.04em}
+.modal-head p{color:var(--muted);font-size:11.5px;margin-top:5px}
+.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+.field{display:grid;gap:6px;min-width:0}
+.field.full{grid-column:1/-1}
+.field label{font-size:11px;font-weight:600;color:var(--ink-2)}
+.field input,.field select{width:100%;border:1px solid var(--line);background:#fff;border-radius:10px;padding:10px 12px;height:39px;outline:0;font-size:12px}
+.field input:focus,.field select:focus{border-color:#a78cf7;box-shadow:0 0 0 3px rgba(167,140,247,.12)}
+.modal-foot{display:flex;gap:9px;align-items:center;justify-content:space-between;border-top:1px solid var(--line-soft);margin-top:22px;padding-top:16px}
+.modal-foot small{font-size:10px;color:var(--faint);max-width:220px}
+/* Command palette */
+.cmd-dialog{width:min(640px,calc(100vw - 30px));padding:0;top:24%;transform:translate(-50%,-30%) scale(.985);border-radius:17px}
+.cmd-dialog.open{transform:translate(-50%,-24%) scale(1)}
+.cmd-search{display:flex;align-items:center;gap:13px;padding:16px 19px;border-bottom:1px solid var(--line-soft)}
+.cmd-search .ic{color:var(--faint)}
+.cmd-search input{border:none;outline:none;background:transparent;width:100%;font-size:13px}
+.cmd-search kbd{padding:4px 7px}
+.cmd-results{padding:9px;max-height:390px;overflow:auto}
+.cmd-label{font-size:10px;letter-spacing:.09em;color:var(--faint);text-transform:uppercase;padding:10px 12px 5px}
+.cmd-item{border-radius:9px;width:100%;display:flex;align-items:center;gap:12px;padding:11px 12px;text-align:left;font-size:12px}
+.cmd-item:hover,.cmd-item.highlight{background:#f5f3f9}
+.cmd-item .ic{color:#aaa2b7}
+.cmd-item small{margin-left:auto;color:var(--faint);font-size:10px}
+.cmd-empty{padding:24px;text-align:center;color:var(--faint);font-size:12px}
+.cmd-footer{background:#fafafb;padding:11px 19px;color:var(--faint);font-size:10px;display:flex;align-items:center;gap:10px}
+.toast-region{position:fixed;right:20px;bottom:22px;display:grid;gap:8px;z-index:120;pointer-events:none}
+.toast{border-radius:12px;background:#1b1b22;color:#fff;padding:12px 15px;box-shadow:var(--sh-2);font-size:11.5px;max-width:350px;animation:toast-in .25s var(--ease);display:flex;gap:10px;align-items:center}
+.toast .ic{color:#ffb37a}
+@keyframes toast-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+/* Responsive */
+@media(max-width:1280px){.content{padding-inline:19px}.topbar{padding-inline:18px}.kpi-number{font-size:26px}.kpi{padding-inline:14px}.fin-card{padding:15px}.fin-card strong{font-size:18px}.grid-primary,.grid-secondary{grid-template-columns:minmax(0,1.5fr) minmax(260px,1fr)}}
+@media(max-width:1090px){.shell{--side-width:209px}.content{padding-inline:17px}.kpi-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.kpi{min-height:123px}.grid-primary,.grid-secondary{grid-template-columns:minmax(0,1fr)}.attention{min-height:auto}.attention .att-bottom{margin-top:14px}.right-stack{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.finance-strip{gap:9px}.fin-card strong{font-size:16px}}
+@media(min-width:761px) and (max-width:970px){.kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){
+ .shell,.shell.collapsed{display:block}.sidebar{position:fixed;top:0;left:0;bottom:0;width:min(275px,85vw);height:100svh;transform:translateX(-105%);transition:transform .25s;box-shadow:none;padding:17px 14px;z-index:101}.sidebar.mobile-open{transform:none;box-shadow:24px 0 80px rgba(12,12,24,.12)}
+ .shell.collapsed .brand-word,.shell.collapsed .side-collapse,.shell.collapsed .srch-label,.shell.collapsed .sidebar-search kbd,.shell.collapsed .side-label,.shell.collapsed .nav-text,.shell.collapsed .nav-count,.shell.collapsed .side-status,.shell.collapsed .side-help span{display:initial}
+ .shell.collapsed .sidebar{padding-inline:14px}.shell.collapsed .sidebar-logo{justify-content:flex-start}.shell.collapsed .sidebar-search,.shell.collapsed .nav-link{justify-content:flex-start;padding-inline:10px}.shell.collapsed .sidebar-search{border-color:var(--line);background:#fff}
+ .topbar{grid-template-columns:auto minmax(0,1fr) auto;gap:8px;height:61px;padding:0 15px}.mobile-menu{display:grid;place-items:center;height:35px;width:35px;border-radius:10px;background:#f6f6f8;color:#666}.topbar .search-trigger{display:none}.top-logo b{font-size:14px}.top-logo span{font-size:9px}.top-right{gap:3px}.profile-copy{display:none}.profile-btn{padding:0}.profile-menu{right:-10px}
+ .content{padding:17px 14px 48px}.breadcrumb{margin-bottom:17px;font-size:10px}.heading{align-items:flex-start;flex-direction:column;gap:15px}.heading p{margin-top:6px}.heading-actions{width:100%}.heading-actions .btn{flex:1}
+ .finance-strip{grid-template-columns:1fr}.fin-card{padding:13px 16px}.fin-card strong{font-size:21px}.kpi-grid{gap:9px}.kpi{padding:14px;min-height:123px}.kpi-label{font-size:10px}.kpi-number{font-size:25px}.kpi-spark{width:35%;right:9px}.kpi-note{font-size:9px}
+ .section-panel{padding:17px 15px}.section-head{gap:10px;align-items:flex-start;flex-wrap:wrap}.section-head h2{font-size:13px}.chart-wrap{height:215px}.chart-card{min-height:auto}.chart-svg{height:178px}.chart-tip{min-width:132px;padding:9px 10px;font-size:10px}
+ .right-stack{grid-template-columns:1fr}.data-footnote{line-height:1.7}
+}
+@media(max-width:390px){.content{padding-inline:11px}.heading h1{font-size:24px}.kpi-number{font-size:24px}.kpi{padding:12px}.fin-card strong{font-size:20px}.section-head .legend{display:none}.chart-footer{flex-direction:column}.field-grid{grid-template-columns:1fr}.field.full{grid-column:auto}.modal-foot{align-items:flex-start;flex-direction:column}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important}}
+</style>
+</head>
+<body>
+<svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
+ <symbol id="i-activity" viewBox="0 0 24 24"><path d="M3 17l5-5 4 4 8-9M15 7h5v5"/></symbol>
+ <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/></symbol>
+ <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m16 16 4 4"/></symbol>
+ <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+ <symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+ <symbol id="i-chevron-left" viewBox="0 0 24 24"><path d="m15 6-6 6 6 6"/></symbol>
+ <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 15v-5a6 6 0 0 0-12 0v5l-1.5 2.5h15L18 15zM10 20a2 2 0 0 0 4 0"/></symbol>
+ <symbol id="i-bus" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="16" rx="3"/><path d="M5 11h14M7.5 19v2M16.5 19v2"/><path d="M8 7h3m2 0h3"/></symbol>
+ <symbol id="i-route" viewBox="0 0 24 24"><circle cx="6" cy="5" r="2"/><circle cx="18" cy="19" r="2"/><path d="M8 5h6a4 4 0 0 1 0 8H9a3 3 0 0 0 0 6h7"/></symbol>
+ <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 10h18"/></symbol>
+ <symbol id="i-ticket" viewBox="0 0 24 24"><path d="M3 9a3 3 0 0 0 0 6v4h18v-4a3 3 0 0 0 0-6V5H3z"/><path d="M13 5v14" stroke-dasharray="2 3"/></symbol>
+ <symbol id="i-briefcase" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="14" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18"/></symbol>
+ <symbol id="i-credit" viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="3"/><path d="M2.5 10h19M6 15h4"/></symbol>
+ <symbol id="i-send" viewBox="0 0 24 24"><path d="M21 3 3 10l7 4 4 7 7-18zM10 14l11-11"/></symbol>
+ <symbol id="i-percent" viewBox="0 0 24 24"><circle cx="7" cy="7" r="3"/><circle cx="17" cy="17" r="3"/><path d="M4 20 20 4"/></symbol>
+ <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5 9-5zM3 13l9 5 9-5M3 18l9 5 9-5"/></symbol>
+ <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2M16 5a3 3 0 0 1 0 6M17 14a5 5 0 0 1 4 5v1"/></symbol>
+ <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 4v16M4 12h16"/></symbol>
+ <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4 12h15m-6-6 6 6-6 6"/></symbol>
+ <symbol id="i-close" viewBox="0 0 24 24"><path d="M5 5l14 14M19 5 5 19"/></symbol>
+ <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+ <symbol id="i-check" viewBox="0 0 24 24"><path d="m4 12 5 5L20 6"/></symbol>
+ <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5m0-8h.01"/></symbol>
+ <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+ <symbol id="i-spark" viewBox="0 0 24 24"><path d="m12 3 2.2 6.8L21 12l-6.8 2.2L12 21l-2.2-6.8L3 12l6.8-2.2L12 3z"/></symbol>
+ <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h16M4 17h16M8 4v6M16 14v6"/></symbol>
+ <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12m-4-4 4 4 4-4M4 17v4h16v-4"/></symbol>
+ <symbol id="i-log-out" viewBox="0 0 24 24"><path d="M10 4H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h5M14 8l4 4-4 4m4-4H9"/></symbol>
+</svg>
+<div id="shell" class="shell">
+  <aside id="sidebar" class="sidebar" aria-label="Menú principal">
+    <div class="sidebar-logo">
+      <button class="mark" id="expandBtn" type="button" aria-label="Expandir menú" title="Expandir menú"><svg class="ic" aria-hidden="true"><use href="#i-activity"/></svg></button>
+      <strong class="brand-word">nexoviajes</strong>
+      <button id="collapseBtn" type="button" class="side-collapse" title="Contraer barra lateral" aria-label="Contraer barra lateral"><svg class="ic sm"><use href="#i-chevron-left"/></svg></button>
+    </div>
+    <button id="sideSearchBtn" class="sidebar-search" type="button" aria-label="Buscar en NexoViajes"><svg class="ic sm"><use href="#i-search"/></svg><span class="srch-label">Buscar...</span><kbd>⌘K</kbd></button>
+    <div class="side-group">
+      <div class="side-label">GENERAL</div>
+      <nav class="side-nav" aria-label="General">
+        <button class="nav-link active" type="button" data-nav="Resumen" data-route="/dashboard" title="Resumen"><svg class="ic"><use href="#i-grid"/></svg><span class="nav-text">Resumen</span></button>
+        <button class="nav-link" type="button" data-nav="Viajes" data-route="/ofertas" title="Viajes"><svg class="ic"><use href="#i-bus"/></svg><span class="nav-text">Viajes</span></button>
+        <button class="nav-link" type="button" data-nav="Paquetes" data-route="/paquetes" title="Paquetes"><svg class="ic"><use href="#i-briefcase"/></svg><span class="nav-text">Paquetes</span></button>
+        <button class="nav-link" type="button" data-nav="Salidas" data-route="/salidas" title="Salidas"><svg class="ic"><use href="#i-calendar"/></svg><span class="nav-text">Salidas</span></button>
+        <button class="nav-link" type="button" data-nav="Reservas" data-route="/reservas" title="Reservas"><svg class="ic"><use href="#i-ticket"/></svg><span class="nav-text">Reservas</span><span class="nav-count" aria-label="5 solicitudes">5</span></button>
+      </nav>
+    </div>
+    <div class="side-group">
+      <div class="side-label">FINANZAS</div>
+      <nav class="side-nav" aria-label="Finanzas">
+        <button class="nav-link" type="button" data-nav="Pagos" data-route="/pagos" title="Pagos"><svg class="ic"><use href="#i-credit"/></svg><span class="nav-text">Pagos</span></button>
+        <button class="nav-link" type="button" data-nav="Rendiciones" data-route="/rendiciones" title="Rendiciones"><svg class="ic"><use href="#i-send"/></svg><span class="nav-text">Rendiciones</span><span class="nav-count" aria-label="3 rendiciones declaradas">3</span></button>
+        <button class="nav-link" type="button" data-nav="Comisiones" data-route="/comisiones" title="Comisiones"><svg class="ic"><use href="#i-percent"/></svg><span class="nav-text">Comisiones</span></button>
+      </nav>
+    </div>
+    <div class="side-group">
+      <div class="side-label">ADMINISTRACIÓN</div>
+      <nav class="side-nav" aria-label="Administración">
+        <button class="nav-link" type="button" data-nav="Catálogos" data-route="/catalogos" title="Catálogos"><svg class="ic"><use href="#i-layers"/></svg><span class="nav-text">Catálogos</span></button>
+        <button class="nav-link" type="button" data-nav="Equipo" data-route="/equipo" title="Equipo"><svg class="ic"><use href="#i-users"/></svg><span class="nav-text">Equipo</span></button>
+      </nav>
+    </div>
+    <div class="side-bottom">
+      <div class="side-status"><div class="side-status-h"><span>Ocupación global</span><strong>71%</strong></div><div class="progress"><i style="width:71.1%"></i></div><small>128 de 180 lugares · ejemplo</small></div>
+      <button class="side-help" id="helpBtn" type="button" title="Acerca de la demostración"><svg class="ic sm"><use href="#i-info"/></svg><span>Acerca de esta demo</span></button>
+    </div>
+  </aside>
+  <div class="main-shell">
+    <header class="topbar">
+      <div style="display:flex;align-items:center;gap:8px;min-width:0"><button id="mobileMenuBtn" type="button" class="mobile-menu" aria-label="Abrir menú" aria-expanded="false"><svg class="ic lg"><use href="#i-menu"/></svg></button><button id="topSearchBtn" type="button" class="search-trigger"><svg class="ic sm"><use href="#i-search"/></svg><span class="search-placeholder">Buscar viajes, reservas, personas...</span><kbd>⌘K</kbd></button></div>
+      <div class="top-logo"><b>NexoViajes</b><span>Panel de empresa · datos ilustrativos</span></div>
+      <div class="top-right">
+        <button class="icon-btn" type="button" id="noticeButton" aria-label="Abrir notificaciones"><svg class="ic"><use href="#i-bell"/></svg><span class="notify-dot" id="notifyDot"></span></button>
+        <div class="profile-wrap"><button type="button" id="profileBtn" class="profile-btn" aria-expanded="false"><span class="avatar">CA</span><span class="profile-copy"><b>Agencia Demo</b><small>Administrador <svg class="ic"><use href="#i-chevron-down"/></svg></small></span></button>
+          <div id="profileMenu" class="profile-menu" role="menu"><strong>Agencia Demo</strong><span>Administrador · entorno ilustrativo</span><hr><p>En producción, la agencia se identifica por el dominio y el perfil se valida con tu membresía activa.</p></div>
+        </div>
+      </div>
+    </header>
+    <main class="content" id="mainContent">
+      <nav class="breadcrumb" aria-label="Ruta de navegación"><span>Agencia Demo</span><svg class="ic"><use href="#i-chevron"/></svg><span>Administrador</span><svg class="ic"><use href="#i-chevron"/></svg><strong>Resumen</strong></nav>
+      <section class="heading" aria-labelledby="dashboardTitle">
+        <div><div class="eyebrow">TU AGENCIA, EN UNA SOLA VISTA</div><h1 id="dashboardTitle">Resumen general <span aria-hidden="true" style="background:linear-gradient(95deg,#ffb37a,#ff7ea8,#a78cf7);-webkit-background-clip:text;background-clip:text;color:transparent">↗</span></h1><p>Controlá las ventas, los cupos y el dinero de tus próximos viajes.</p></div>
+        <div class="heading-actions"><button type="button" class="btn btn-white" data-nav="Notificaciones" data-route="/notificaciones"><svg class="ic"><use href="#i-bell"/></svg>Notificaciones</button><button type="button" class="btn btn-dark" id="newOfferBtn"><svg class="ic"><use href="#i-plus"/></svg>Nueva oferta</button></div>
+      </section>
+      <section class="kpi-grid" aria-label="Indicadores operativos">
+        <article class="kpi" aria-label="4 salidas próximas"><div class="kpi-label">Salidas próximas</div><strong class="kpi-number">4</strong><span class="kpi-note">En agenda</span><svg class="kpi-spark" viewBox="0 0 110 32" preserveAspectRatio="none" aria-hidden="true"><path d="M0 24 C13 24 15 17 26 19 S45 23 53 15 70 19 82 10 97 13 110 5"/></svg></article>
+        <article class="kpi" aria-label="128 pasajeros confirmados"><div class="kpi-label">Pasajeros confirmados</div><strong class="kpi-number">128</strong><span class="kpi-note">Reservas confirmadas</span><svg class="kpi-spark purple" viewBox="0 0 110 32" preserveAspectRatio="none" aria-hidden="true"><path d="M0 24 C13 22 17 19 27 20 S46 25 57 14 75 23 85 13 99 15 110 5"/></svg></article>
+        <article class="kpi" aria-label="52 cupos disponibles"><div class="kpi-label">Cupos por vender</div><strong class="kpi-number">52</strong><span class="kpi-note neutral">Inventario compartido</span><svg class="kpi-spark blue" viewBox="0 0 110 32" preserveAspectRatio="none" aria-hidden="true"><path d="M0 6 C17 12 21 5 34 14 S50 9 63 18 83 17 94 24 100 25 110 25"/></svg></article>
+        <article class="kpi" aria-label="5 solicitudes pendientes"><div class="kpi-label">Solicitudes pendientes</div><strong class="kpi-number">5</strong><span class="kpi-note orange">No ocupan cupos</span><svg class="kpi-spark orange" viewBox="0 0 110 32" preserveAspectRatio="none" aria-hidden="true"><path d="M0 25 C14 25 19 18 28 18 S46 23 56 14 74 17 85 9 103 11 110 3"/></svg></article>
+      </section>
+      <section class="finance-strip" aria-label="Resumen financiero">
+        <article class="fin-card"><div class="fin-copy"><small>Cobros registrados</small><strong>$ 18.450.000,00</strong><p>Declarados · no equivale a verificados</p></div><span class="fin-icon"><svg class="ic"><use href="#i-credit"/></svg></span></article>
+        <article class="fin-card"><div class="fin-copy"><small>Pendiente de rendir</small><strong>$ 2.180.000,00</strong><p>Saldo no asignado de cobros de revendedores</p></div><span class="fin-icon"><svg class="ic"><use href="#i-send"/></svg></span></article>
+        <article class="fin-card"><div class="fin-copy"><small>Rendiciones por verificar</small><strong>3 <span style="font-size:12px;color:#b8b3be;font-weight:500">· $ 920.000,00</span></strong><p>Declaradas · recepción sin verificar</p></div><span class="fin-icon"><svg class="ic"><use href="#i-clock"/></svg></span></article>
+      </section>
+      <div class="grid-primary">
+        <section class="panel section-panel chart-card" aria-labelledby="chartTitle"><div class="section-head"><div><h2 id="chartTitle">Actividad de reservas</h2><p>Reservas registradas a lo largo del tiempo · simulación visual</p></div><div class="head-trail"><div class="segment" role="group" aria-label="Período del gráfico"><button type="button" data-period="12w" class="active" aria-pressed="true">12 sem</button><button type="button" data-period="30d" aria-pressed="false">30 días</button><button type="button" data-period="7d" aria-pressed="false">7 días</button></div></div></div>
+          <div class="chart-wrap" id="chartWrap" aria-label="Gráfico de actividad de reservas de ejemplo">
+            <svg class="chart-svg" id="chartSvg" viewBox="0 0 720 192" preserveAspectRatio="none" role="img" aria-label="Curva de reservas ilustrativas">
+              <defs><linearGradient id="chartAccent" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#ffb37a"/><stop offset="46%" stop-color="#ff7ea8"/><stop offset="100%" stop-color="#a78cf7"/></linearGradient><linearGradient id="chartArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ff7ea8" stop-opacity=".09"/><stop offset="100%" stop-color="#ff7ea8" stop-opacity="0"/></linearGradient></defs>
+              <g><line class="chart-gridline" x1="0" y1="25" x2="720" y2="25"/><line class="chart-gridline" x1="0" y1="70" x2="720" y2="70"/><line class="chart-gridline" x1="0" y1="115" x2="720" y2="115"/><line class="chart-gridline" x1="0" y1="160" x2="720" y2="160"/></g>
+              <path id="chartAreaPath" fill="url(#chartArea)" d="M0 168 L720 60 L720 175 L0 175Z"/><path id="chartPrevPath" d="M0 155 L720 96" stroke="#d6d6de" stroke-width="1.7" stroke-dasharray="5 6" fill="none" vector-effect="non-scaling-stroke"/><path id="chartCurrentPath" d="M0 165 L720 50" stroke="url(#chartAccent)" stroke-width="2.5" stroke-linecap="round" fill="none" vector-effect="non-scaling-stroke"/>
+              <line id="hoverLine" class="chart-hover-line" x1="535" y1="10" x2="535" y2="175"/>
+              <circle id="hoverHalo" cx="535" cy="75" r="8" fill="#ff7ea8" opacity=".17"/><circle id="hoverDot" cx="535" cy="75" r="4.5" fill="#ff7ea8" stroke="white" stroke-width="2"/>
+              <rect x="0" y="0" width="720" height="192" fill="transparent" id="chartHit" tabindex="0" aria-label="Explorar los valores del gráfico con flechas izquierda y derecha"/>
+            </svg>
+            <div id="chartTooltip" class="chart-tip"><b id="tipLabel">Semana 10</b><div class="chart-tip-line"><i class="legend-dot"></i><span>Reservas</span><strong id="tipValue">18</strong></div><div class="chart-tip-line"><i class="legend-dot prev"></i><span>Período anterior</span><strong id="tipPrev">12</strong></div></div>
+            <div id="chartXAxis" class="chart-x"><span>01 ago</span><span>22 ago</span><span>12 sep</span><span>03 oct</span><span>19 oct</span></div>
+          </div>
+          <div class="chart-footer"><span><i class="mini-gradient"></i>Comparativa ilustrativa de registros y período anterior</span><span>El dashboard actual no incluye esta serie histórica</span></div>
+        </section>
+        <section class="panel section-panel attention" aria-labelledby="attTitle"><div class="section-head"><div><h2 id="attTitle">Necesita tu atención</h2><p>Prioridades operativas y administrativas</p></div><span class="status orange">3 alertas</span></div>
+          <button type="button" class="att-item" data-nav="Rendiciones" data-route="/rendiciones"><span class="att-icon"><svg class="ic"><use href="#i-send"/></svg></span><span><span class="att-name">3 rendiciones por verificar</span><span class="att-detail">$ 920.000,00 · declaración pendiente de control</span></span><svg class="ic att-chevron"><use href="#i-arrow"/></svg></button>
+          <button type="button" class="att-item" data-nav="Reservas" data-route="/reservas"><span class="att-icon"><svg class="ic"><use href="#i-ticket"/></svg></span><span><span class="att-name">5 solicitudes sin confirmar</span><span class="att-detail">Todavía no ocupan lugar en los micros</span></span><svg class="ic att-chevron"><use href="#i-arrow"/></svg></button>
+          <button type="button" class="att-item" data-filter="low"><span class="att-icon"><svg class="ic"><use href="#i-bus"/></svg></span><span><span class="att-name">Mendoza, últimos lugares</span><span class="att-detail">8 cupos compartidos · 2 ofertas publicadas</span></span><svg class="ic att-chevron"><use href="#i-arrow"/></svg></button>
+          <div class="att-bottom"><svg class="ic"><use href="#i-spark"/></svg><p><strong>Todo conectado.</strong> Los cambios en una salida actualizan el inventario de las ofertas que comparten ese micro.</p></div>
+        </section>
+      </div>
+      <div class="grid-secondary">
+        <section class="panel section-panel table-card" aria-labelledby="departureTitle"><div class="section-head"><div><h2 id="departureTitle">Próximas salidas</h2><p>Cupos compartidos entre todas las ofertas del mismo micro</p></div><div class="table-controls"><label class="select-shell"><span style="position:absolute;width:1px;height:1px;overflow:hidden">Filtrar salidas</span><select id="departureFilter" aria-label="Filtrar salidas"><option value="all">Todas las salidas</option><option value="month">Próximos 30 días</option><option value="low">Cupos bajos</option></select></label></div></div>
+          <div class="table-scroll"><table class="table" aria-label="Salidas próximas ilustrativas"><thead><tr><th>VIAJE / SALIDA</th><th>FECHA</th><th>OCUPACIÓN</th><th>DISPONIBLES</th><th>ESTADO</th><th><span class="sr-only">Ver detalle</span></th></tr></thead>
+          <tbody id="departuresBody">
+            <tr data-departure="mendoza" data-low="true" data-month="true"><td class="main-cell"><span class="travel-title"><i class="legend-dot" style="background:#ff7ea8"></i>Mendoza</span><span class="travel-code">MZA-0411 · Micro SRM 01</span></td><td>04 nov<span class="travel-sub">14:30</span></td><td><div class="occupancy"><small>37 de 45 · 82%</small><span class="progress"><i style="width:82.2%"></i></span></div></td><td class="num">8</td><td><span class="status green">Abierta</span></td><td><button class="row-link" type="button" data-departure="mendoza" aria-label="Ver Mendoza"><svg class="ic sm"><use href="#i-chevron"/></svg></button></td></tr>
+            <tr data-departure="bariloche" data-month="true"><td class="main-cell"><span class="travel-title"><i class="legend-dot" style="background:#a78cf7"></i>Bariloche y sus lagos</span><span class="travel-code">NV-02 · Micro SRM 02</span></td><td>18 nov<span class="travel-sub">15:00</span></td><td><div class="occupancy"><small>33 de 45 · 73%</small><span class="progress"><i style="width:73.3%"></i></span></div></td><td class="num">12</td><td><span class="status green">Abierta</span></td><td><button class="row-link" type="button" data-departure="bariloche" aria-label="Ver Bariloche"><svg class="ic sm"><use href="#i-chevron"/></svg></button></td></tr>
+            <tr data-departure="mar" data-month="false"><td class="main-cell"><span class="travel-title"><i class="legend-dot" style="background:#7cc0ff"></i>Mar del Plata</span><span class="travel-code">NV-03 · Micro SRM 03</span></td><td>25 nov<span class="travel-sub">15:00</span></td><td><div class="occupancy"><small>32 de 45 · 71%</small><span class="progress"><i style="width:71.1%"></i></span></div></td><td class="num">13</td><td><span class="status green">Abierta</span></td><td><button class="row-link" type="button" data-departure="mar" aria-label="Ver Mar del Plata"><svg class="ic sm"><use href="#i-chevron"/></svg></button></td></tr>
+            <tr data-departure="cordoba" data-month="false"><td class="main-cell"><span class="travel-title"><i class="legend-dot" style="background:#ffb37a"></i>Córdoba serrana</span><span class="travel-code">NV-04 · Micro SRM 04</span></td><td>02 dic<span class="travel-sub">15:00</span></td><td><div class="occupancy"><small>26 de 45 · 58%</small><span class="progress"><i style="width:57.8%"></i></span></div></td><td class="num">19</td><td><span class="status green">Abierta</span></td><td><button class="row-link" type="button" data-departure="cordoba" aria-label="Ver Córdoba"><svg class="ic sm"><use href="#i-chevron"/></svg></button></td></tr>
+          </tbody></table><div id="noDepartures" class="empty-state" hidden>No hay salidas en este filtro.</div></div>
+          <div class="table-foot"><span id="departuresCount">4 salidas próximas · inventario por salida</span><button type="button" class="text-action" data-nav="Salidas" data-route="/salidas">Ver todas <svg class="ic"><use href="#i-arrow"/></svg></button></div>
+        </section>
+        <div class="right-stack">
+          <section class="panel section-panel" aria-labelledby="recentTitle"><div class="section-head" style="margin-bottom:4px"><div><h2 id="recentTitle">Reservas recientes</h2><p>Estado comercial, separado de cobros y rendiciones</p></div><button type="button" class="text-action" data-nav="Reservas" data-route="/reservas">Ver todas <svg class="ic"><use href="#i-arrow"/></svg></button></div>
+            <div class="reservation-list">
+              <button class="reservation-row" type="button" data-reservation="NV-DEMO-1048"><span class="res-avatar">NV</span><span class="res-main"><span class="res-number">NV-DEMO-1048</span><span class="res-sub">Mendoza Super Sale · 2 pasajeros · Revendedor</span></span><span class="status green">Confirmada</span></button>
+              <button class="reservation-row" type="button" data-reservation="NV-1051"><span class="res-avatar blue">NV</span><span class="res-main"><span class="res-number">NV-1051</span><span class="res-sub">Bariloche y sus lagos · 3 pasajeros · Directa</span></span><span class="status green">Confirmada</span></button>
+              <button class="reservation-row" type="button" data-reservation="NV-1052"><span class="res-avatar peach">NV</span><span class="res-main"><span class="res-number">NV-1052</span><span class="res-sub">Córdoba serrana · 2 pasajeros · Revendedor</span></span><span class="status orange">Solicitada</span></button>
+              <button class="reservation-row" type="button" data-reservation="NV-1053"><span class="res-avatar">NV</span><span class="res-main"><span class="res-number">NV-1053</span><span class="res-sub">Mar del Plata · 1 pasajero · Directa</span></span><span class="status green">Confirmada</span></button>
+            </div>
+          </section>
+          <section class="promo-card" aria-labelledby="promoTitle"><span class="promo-kicker">SUPER SALE · OFERTA DESTACADA</span><h3 id="promoTitle">Mendoza tiene<br>8 lugares libres.</h3><p>Dos paquetes, un mismo micro y una sola disponibilidad real.</p><button type="button" class="text-action" data-nav="Viajes" data-route="/ofertas">Gestionar oferta <svg class="ic"><use href="#i-arrow"/></svg></button></section>
+        </div>
+      </div>
+      <p class="data-footnote">Interfaz demostrativa · cifras inventadas para diseño · sin conexión con la base de datos · cada agencia debe ver exclusivamente sus propios datos.</p>
+    </main>
+  </div>
+</div>
+<div class="screen-overlay" id="screenOverlay" aria-hidden="true"></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="drawerTitle" aria-hidden="true"><div class="drawer-head"><div><h2 id="drawerTitle">Detalle</h2><p id="drawerSub">Información ilustrativa</p></div><button class="icon-btn drawer-close" type="button" id="drawerClose" aria-label="Cerrar panel"><svg class="ic"><use href="#i-close"/></svg></button></div><div class="drawer-body" id="drawerBody"></div></aside>
+<div class="modal" id="newOfferModal" role="dialog" aria-modal="true" aria-labelledby="newOfferTitle" aria-hidden="true"><div class="modal-head"><div><div class="eyebrow">GESTIÓN COMERCIAL</div><h2 id="newOfferTitle">Crear nueva oferta</h2><p>La oferta conecta un paquete y un hotel con una salida que posee los cupos.</p></div><button class="icon-btn" type="button" data-close-modal aria-label="Cerrar"><svg class="ic"><use href="#i-close"/></svg></button></div><form id="offerForm"><div class="field-grid"><div class="field full"><label for="offerPackage">Paquete turístico</label><select id="offerPackage" required><option value="">Seleccionar paquete</option><option value="Mendoza Super Sale">Mendoza Super Sale</option><option value="Mendoza Confort">Mendoza Confort</option><option value="Bariloche y sus lagos">Bariloche y sus lagos</option><option value="Córdoba serrana">Córdoba serrana</option></select></div><div class="field"><label for="offerDeparture">Salida operativa</label><select id="offerDeparture" required><option value="">Seleccionar salida</option><option value="MZA-0411">MZA-0411 · 04 nov</option><option value="NV-02">NV-02 · 18 nov</option><option value="NV-03">NV-03 · 25 nov</option><option value="NV-04">NV-04 · 02 dic</option></select></div><div class="field"><label for="offerHotel">Alojamiento</label><select id="offerHotel" required><option value="">Seleccionar hotel</option><option>Hotel Géminis</option><option>Hotel Aconcagua</option><option>Hotel Lago Azul</option><option>Hotel Las Sierras</option></select></div><div class="field full"><label for="offerSlug">Identificador público (slug)</label><input id="offerSlug" placeholder="mendoza-super-sale" required pattern="[a-z0-9-]+"></div></div><div class="drawer-note"><b>Importante:</b> este formulario no registra ofertas reales. En Rails, la acción es <code>new_departure_offer_path</code> y el modelo es <code>DepartureOffer</code>.</div><div class="modal-foot"><small>Prototipo de interfaz · ninguna información se guarda.</small><div style="display:flex;gap:8px"><button type="button" class="btn btn-white" data-close-modal>Cancelar</button><button type="submit" class="btn btn-dark">Continuar <svg class="ic"><use href="#i-arrow"/></svg></button></div></div></form></div>
+<div class="modal cmd-dialog" id="commandDialog" role="dialog" aria-modal="true" aria-label="Buscar en NexoViajes" aria-hidden="true"><div class="cmd-search"><svg class="ic"><use href="#i-search"/></svg><input id="commandInput" type="search" placeholder="Buscar módulo, viaje o reserva..." autocomplete="off" aria-label="Buscar módulo, viaje o reserva"><kbd>ESC</kbd></div><div class="cmd-results" id="commandResults"></div><div class="cmd-footer">↑ ↓ para seleccionar <span>·</span> Enter para abrir <span>·</span> Esc para cerrar</div></div>
+<div class="toast-region" id="toastRegion" role="status" aria-live="polite"></div>
+<script>
+(() => {
+  'use strict';
+  const $ = (s,root=document) => root.querySelector(s);
+  const $$ = (s,root=document) => Array.from(root.querySelectorAll(s));
+  const $shell = $('#shell'), $sidebar = $('#sidebar'), $overlay = $('#screenOverlay');
+  const $drawer = $('#drawer'), $modal = $('#newOfferModal'), $cmd = $('#commandDialog');
+  const routeNotes = {
+    'Resumen':['/dashboard','Indicadores reales calculados por DashboardController: salidas, pasajeros, cupos, solicitudes, cobros y rendiciones.'],
+    'Viajes':['/ofertas','Ofertas comerciales que conectan paquete, hotel y salida. Las ofertas comparten el inventario del micro.'],
+    'Paquetes':['/paquetes','Paquetes turísticos, destinos, servicios incluidos y condiciones.'],
+    'Salidas':['/salidas','Vehículos, capacidad, fechas, puntos de embarque y hoja de ruta.'],
+    'Reservas':['/reservas','Solicitudes, confirmaciones, cancelaciones y pasajeros. Solo una confirmada ocupa cupos.'],
+    'Pagos':['/pagos','Cobros declarados, parciales, verificados o anulados. Un comprobante no verifica dinero.'],
+    'Rendiciones':['/rendiciones','Importes enviados por revendedores y recepción verificada por la empresa.'],
+    'Comisiones':['/comisiones','Comisiones congeladas al confirmar una venta atribuida. La liquidación manual está deshabilitada.'],
+    'Catálogos':['/catalogos','Destinos, hoteles, micros y puntos de embarque.'],
+    'Equipo':['/equipo','Invitaciones, perfiles de acceso y autorizaciones comerciales por revendedor.'],
+    'Notificaciones':['/notificaciones','Centro de avisos por empresa y perfil.']
+  };
+  const demoDepartures={
+    mendoza:{title:'Mendoza',code:'MZA-0411',date:'04 de noviembre · 14:30',bus:'SRM 01',capacity:45,sold:37,available:8,offers:2,route:'Buenos Aires → Cuyo',detail:'Mendoza Super Sale y Mendoza Confort comparten este mismo micro y su disponibilidad.'},
+    bariloche:{title:'Bariloche y sus lagos',code:'NV-02',date:'18 de noviembre · 15:00',bus:'SRM 02',capacity:45,sold:33,available:12,offers:1,route:'Buenos Aires → Patagonia',detail:'Una única capacidad de 45 plazas para esta salida operativa.'},
+    mar:{title:'Mar del Plata',code:'NV-03',date:'25 de noviembre · 15:00',bus:'SRM 03',capacity:45,sold:32,available:13,offers:1,route:'Buenos Aires → Costa Atlántica',detail:'Disponibilidad calculada desde las asignaciones activas de pasajeros.'},
+    cordoba:{title:'Córdoba serrana',code:'NV-04',date:'02 de diciembre · 15:00',bus:'SRM 04',capacity:45,sold:26,available:19,offers:1,route:'Buenos Aires → Sierras',detail:'La capacidad pertenece al micro de esta salida, no al hotel.'}
+  };
+  const demoReservations={
+    'NV-DEMO-1048':{title:'NV-DEMO-1048',trip:'Mendoza Super Sale',passengers:'2',channel:'Revendedor',status:'Confirmada',explanation:'Reserva confirmada. La tarifa se congeló y los pasajeros ocupan asientos de la salida.'},
+    'NV-1051':{title:'NV-1051',trip:'Bariloche y sus lagos',passengers:'3',channel:'Directa',status:'Confirmada',explanation:'Venta directa confirmada. Las ventas directas no generan comisión por revendedor.'},
+    'NV-1052':{title:'NV-1052',trip:'Córdoba serrana',passengers:'2',channel:'Revendedor',status:'Solicitada',explanation:'Solicitud sin confirmar. Todavía no ocupa asientos; requiere confirmación y mínimo de pago.'},
+    'NV-1053':{title:'NV-1053',trip:'Mar del Plata',passengers:'1',channel:'Directa',status:'Confirmada',explanation:'Reserva confirmada. Los cobros se registran y verifican por separado.'}
+  };
+  const svgIcon=(id)=>`<svg class="ic sm" aria-hidden="true"><use href="#${id}"/></svg>`;
+  function toast(message){const el=document.createElement('div');el.className='toast';el.innerHTML=`${svgIcon('i-info')}<span></span>`;el.querySelector('span').textContent=message;$('#toastRegion').appendChild(el);setTimeout(()=>{el.style.opacity='0';el.style.transition='opacity .2s';setTimeout(()=>el.remove(),220)},3800);}
+  function lock(){document.body.style.overflow='hidden';$overlay.classList.add('visible')}
+  function unlock(){document.body.style.overflow='';$overlay.classList.remove('visible')}
+  function closeAll(){ $drawer.classList.remove('open');$drawer.setAttribute('aria-hidden','true');$modal.classList.remove('open');$modal.setAttribute('aria-hidden','true');$cmd.classList.remove('open');$cmd.setAttribute('aria-hidden','true');$sidebar.classList.remove('mobile-open');$('#mobileMenuBtn').setAttribute('aria-expanded','false');unlock() }
+  function openDrawer(title,subtitle,html){closeAll();$('#drawerTitle').textContent=title;$('#drawerSub').textContent=subtitle;$('#drawerBody').innerHTML=html;$drawer.classList.add('open');$drawer.setAttribute('aria-hidden','false');lock();$('#drawerClose').focus()}
+  function detailRows(rows){return `<div class="drawer-data">${rows.map(([label,value])=>`<div class="drawer-data-row"><span>${label}</span><strong>${value}</strong></div>`).join('')}</div>`}
+  function openDeparture(id){const d=demoDepartures[id];if(!d)return;openDrawer(d.title,'Salida · '+d.code,`<div class="drawer-label">SALIDA OPERATIVA</div><div class="drawer-main-title">${d.title}</div><p class="drawer-muted">${d.detail}</p>${detailRows([['Código',d.code],['Fecha y horario',d.date],['Micro',d.bus],['Ruta',d.route],['Capacidad',d.capacity+' pasajeros'],['Confirmados',d.sold+' pasajeros'],['Disponibles',d.available+' asientos'],['Ofertas vinculadas',d.offers]])}<div class="drawer-actions"><button class="btn btn-dark" type="button" data-route-msg="En Rails: departures_path y departure_path(departure)">Abrir salida ${svgIcon('i-arrow')}</button><button class="btn btn-white" type="button" data-route-msg="En Rails: operation_departure_path(departure)">Hoja de ruta</button></div><p class="drawer-note"><b>Regla de negocio:</b> la capacidad es de la salida y se descuenta una sola vez, aun cuando distintos paquetes utilicen el mismo micro.</p>`)}
+  function openReservation(id){const d=demoReservations[id];if(!d)return;openDrawer('Reserva '+d.title,'Consulta comercial · datos de ejemplo',`<div class="drawer-label">RESERVA</div><div class="drawer-main-title">${d.title}</div><p class="drawer-muted">${d.explanation}</p>${detailRows([['Viaje',d.trip],['Canal',d.channel],['Pasajeros',d.passengers],['Estado',d.status]])}<div class="drawer-actions"><button class="btn btn-dark" type="button" data-route-msg="En Rails: reservation_path(reservation)">Abrir reserva ${svgIcon('i-arrow')}</button></div><p class="drawer-note">Este ejemplo no incluye nombres ni números de documento de pasajeros. Los datos sensibles se manejan solo según los permisos autorizados.</p>`)}
+  function openModule(name,route){if(name==='Notificaciones'){openNotifications();return} if(name==='Resumen'){closeAll();window.scrollTo({top:0,behavior:'smooth'});return} const d=routeNotes[name]||[route||'/dashboard','Sección existente en la aplicación Rails.'];openDrawer(name,'Módulo existente · '+d[0],`<div class="drawer-label">NAVEGACIÓN DEL ADMINISTRADOR</div><div class="drawer-main-title">${name}</div><p class="drawer-muted">${d[1]}</p>${detailRows([['Ruta Rails',d[0]],['Estado','Implementado en el repositorio'],['Prototipo','Solo vista de dashboard']])}<div class="drawer-actions"><button type="button" class="btn btn-dark" data-route-msg="En la aplicación Rails, enlazar con ${d[0]}">Abrir módulo ${svgIcon('i-arrow')}</button></div><p class="drawer-note">Para Codex: en el HTML los enlaces abren este panel para que el prototipo funcione sin servidor. En Rails deben utilizar el <b>helper de ruta</b> correspondiente y mantener la autorización por empresa y rol.</p>`)}
+  document.addEventListener('click',e=>{let r=e.target.closest('[data-route-msg]');if(r){toast(r.dataset.routeMsg);return}r=e.target.closest('[data-nav]');if(r){openModule(r.dataset.nav,r.dataset.route);return}r=e.target.closest('[data-departure]');if(r){openDeparture(r.dataset.departure);return}r=e.target.closest('[data-reservation]');if(r){openReservation(r.dataset.reservation);return}});
+  // Table filter: a UI-only feature; don't pass global unscoped IDs to Rails.
+  const $filter=$('#departureFilter');
+  function updateDepartures(){const filter=$filter.value;let count=0;$$('#departuresBody tr').forEach(row=>{const show=filter==='all'||(filter==='low'&&row.dataset.low==='true')||(filter==='month'&&row.dataset.month==='true');row.hidden=!show;if(show)count++});$('#noDepartures').hidden=count>0;$('#departuresCount').textContent=count+' salidas · inventario por salida'}
+  $filter.addEventListener('change',updateDepartures);
+  document.querySelector('[data-filter="low"]').addEventListener('click',()=>{$filter.value='low';updateDepartures();document.getElementById('departureTitle').scrollIntoView({behavior:'smooth',block:'center'});toast('Filtro aplicado: cupos bajos')});
+  // Chart, illustrative only: must not be mistaken for actual aggregate stats.
+  const chartSets={
+    '12w':{now:[6,7,8,9,10,10,11,13,15,16,17,18,20,21,23,22,24,27,28,30],prev:[7,7,8,9,9,9,9,10,10,12,12,13,14,14,15,16,16,18,19,21],axis:['01 ago','22 ago','12 sep','03 oct','19 oct'],prefix:'Semana'},
+    '30d':{now:[8,10,9,12,13,15,13,16,15,18,21,22,24,22,26,28],prev:[7,7,8,8,9,11,12,11,12,13,13,16,16,16,18,19],axis:['20 sep','27 sep','04 oct','11 oct','19 oct'],prefix:'Tramo'},
+    '7d':{now:[11,16,13,19,18,23,27],prev:[9,10,12,11,14,16,18],axis:['Mar','Mié','Jue','Vie','Sáb','Dom','Lun'],prefix:'Día'}
+  };
+  const plot={period:'12w',index:14};
+  function smoothPath(values,top=17,bottom=170,clampMax=32){const arr=values.map((v,i)=>({x:i*720/(values.length-1),y:bottom-(v/clampMax)*(bottom-top)}));let path=`M ${arr[0].x.toFixed(1)} ${arr[0].y.toFixed(1)}`;for(let i=1;i<arr.length;i++){const a=arr[i-1],b=arr[i],m=(a.x+b.x)/2;path+=` C ${m.toFixed(1)} ${a.y.toFixed(1)},${m.toFixed(1)} ${b.y.toFixed(1)},${b.x.toFixed(1)} ${b.y.toFixed(1)}`;}return {path,points:arr}}
+  function chartTip(){const d=chartSets[plot.period],i=Math.min(plot.index,d.now.length-1),n=d.now.length-1,x=(i/n)*720,y=170-(d.now[i]/32)*153;$('#hoverLine').setAttribute('x1',x);$('#hoverLine').setAttribute('x2',x);$('#hoverDot').setAttribute('cx',x);$('#hoverDot').setAttribute('cy',y);$('#hoverHalo').setAttribute('cx',x);$('#hoverHalo').setAttribute('cy',y);$('#tipLabel').textContent=d.prefix+' '+(i+1);$('#tipValue').textContent=d.now[i];$('#tipPrev').textContent=d.prev[i];$('#chartTooltip').style.left=Math.min(73,Math.max(12,x/720*100))+'%'}
+  function renderChart(period){plot.period=period;const d=chartSets[period];plot.index=Math.round((d.now.length-1)*.73);const curr=smoothPath(d.now),prev=smoothPath(d.prev);$('#chartCurrentPath').setAttribute('d',curr.path);$('#chartPrevPath').setAttribute('d',prev.path);$('#chartAreaPath').setAttribute('d',curr.path+' L720 176 L0 176 Z');$('#chartXAxis').innerHTML=d.axis.map(v=>'<span>'+v+'</span>').join('');$$('[data-period]').forEach(b=>{const is=b.dataset.period===period;b.classList.toggle('active',is);b.setAttribute('aria-pressed',is)});chartTip()}
+  $$('[data-period]').forEach(b=>b.addEventListener('click',()=>renderChart(b.dataset.period)));
+  $('#chartSvg').addEventListener('pointermove',e=>{const rect=$('#chartSvg').getBoundingClientRect();let p=(e.clientX-rect.left)/Math.max(rect.width,1);const len=chartSets[plot.period].now.length;plot.index=Math.max(0,Math.min(len-1,Math.round(p*(len-1))));chartTip()});
+  $('#chartHit').addEventListener('keydown',e=>{if(e.key!=='ArrowLeft'&&e.key!=='ArrowRight')return;e.preventDefault();plot.index=Math.max(0,Math.min(chartSets[plot.period].now.length-1,plot.index+(e.key==='ArrowRight'?1:-1)));chartTip()});renderChart('12w');
+  // Notification panel uses fake alerts. Real view is notifications_path.
+  let notified=false;
+  const $dot=$('#notifyDot');
+  function openNotifications(){openDrawer('Notificaciones','Agencia Demo · Administrador',`<div class="drawer-label">AVISOS DE DEMOSTRACIÓN</div><div class="notice-item ${notified?'read':''}"><i class="notice-dot"></i><div><h3>Rendiciones declaradas</h3><p>Hay 3 rendiciones a revisar. Declarar dinero no equivale a verificar su recepción.</p><time>Hace 18 minutos</time></div></div><div class="notice-item ${notified?'read':''}"><i class="notice-dot"></i><div><h3>Nuevas solicitudes</h3><p>Se registraron solicitudes de reserva aún no confirmadas y sin cupo asignado.</p><time>Hace 48 minutos</time></div></div><div class="notice-item ${notified?'read':''}"><i class="notice-dot"></i><div><h3>Salidas próximas</h3><p>Verificá el inventario de los micros y las asignaciones de coordinadores.</p><time>Hace 3 horas</time></div></div><div class="drawer-actions"><button class="btn btn-dark" id="markDemoRead" type="button">Marcar como leídas</button><button class="btn btn-white" type="button" data-route-msg="En Rails: notifications_path">Abrir centro de avisos</button></div>`);$('#markDemoRead').addEventListener('click',()=>{notified=true;$dot.hidden=true;$$('.notice-item',$drawer).forEach(e=>e.classList.add('read'));toast('Notificaciones marcadas como leídas en esta demo')});}
+  $('#noticeButton').addEventListener('click',openNotifications);
+  function showModal(modal){closeAll();modal.classList.add('open');modal.setAttribute('aria-hidden','false');lock();const focus=modal.querySelector('input,select,button');if(focus)focus.focus()}
+  $('#newOfferBtn').addEventListener('click',()=>showModal($modal));
+  $$('[data-close-modal]').forEach(b=>b.addEventListener('click',closeAll));
+  $('#offerPackage').addEventListener('change',e=>{const slug=e.target.value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');$('#offerSlug').value=slug});
+  $('#offerForm').addEventListener('submit',e=>{e.preventDefault();if(!e.currentTarget.reportValidity())return;closeAll();toast('Oferta simulada. En Rails debe utilizarse new_departure_offer_path.')});
+  // Keyboard-accessible command palette, with actual known Rails route vocabulary.
+  const commands=[...Object.entries(routeNotes).map(([name,vals])=>({name,route:vals[0],kind:'Módulo'})), ...Object.entries(demoDepartures).map(([id,d])=>({name:d.title,route:id,kind:'Salida'})),...Object.keys(demoReservations).map(id=>({name:id,route:id,kind:'Reserva'}))];let commandItems=[],selectedCommand=0;
+  function runCommand(item){closeAll();if(item.kind==='Salida')openDeparture(item.route);else if(item.kind==='Reserva')openReservation(item.route);else openModule(item.name,item.route)}
+  function paintCommands(){const q=$('#commandInput').value.toLocaleLowerCase('es').trim();commandItems=commands.filter(c=>((c.name+' '+c.route+' '+c.kind).toLocaleLowerCase('es')).includes(q)).slice(0,11);selectedCommand=0;$('#commandResults').innerHTML=commandItems.length?'<div class="cmd-label">RESULTADOS</div>'+commandItems.map((c,i)=>`<button type="button" class="cmd-item ${i===0?'highlight':''}" data-command-index="${i}">${svgIcon(c.kind==='Módulo'?'i-grid':c.kind==='Salida'?'i-bus':'i-ticket')}<span>${c.name}</span><small>${c.kind}</small></button>`).join(''):'<div class="cmd-empty">No encontramos coincidencias.</div>'}
+  function openCommands(){showModal($cmd);$('#commandInput').value='';paintCommands();$('#commandInput').focus()}
+  $('#sideSearchBtn').addEventListener('click',openCommands);$('#topSearchBtn').addEventListener('click',openCommands);
+  $('#commandInput').addEventListener('input',paintCommands);
+  $('#commandInput').addEventListener('keydown',e=>{if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();selectedCommand=Math.max(0,Math.min(commandItems.length-1,selectedCommand+(e.key==='ArrowDown'?1:-1)));$$('.cmd-item').forEach((b,i)=>b.classList.toggle('highlight',i===selectedCommand))}if(e.key==='Enter'&&commandItems.length){e.preventDefault();runCommand(commandItems[selectedCommand])}});
+  $('#commandResults').addEventListener('click',e=>{const cmd=e.target.closest('[data-command-index]');if(!cmd)return;runCommand(commandItems[+cmd.dataset.commandIndex])});
+  document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();openCommands()}if(e.key==='Escape'){closeAll();$('#profileMenu').classList.remove('open')}});
+  $('#drawerClose').addEventListener('click',closeAll);
+  $overlay.addEventListener('click',()=>{closeAll();$('#profileMenu').classList.remove('open')});
+  $('#collapseBtn').addEventListener('click',()=>{if(matchMedia('(max-width: 760px)').matches){$sidebar.classList.remove('mobile-open');return}$shell.classList.toggle('collapsed');$('#collapseBtn').title=$shell.classList.contains('collapsed')?'Barra lateral contraída · usá doble clic en el logo para expandir':'Contraer barra lateral'});
+  $('#expandBtn').addEventListener('click',()=>{if($shell.classList.contains('collapsed'))$shell.classList.remove('collapsed')});
+  $('#mobileMenuBtn').addEventListener('click',()=>{const open=!$sidebar.classList.contains('mobile-open');closeAll();if(open){$sidebar.classList.add('mobile-open');$('#mobileMenuBtn').setAttribute('aria-expanded','true');lock()}});
+  $('#profileBtn').addEventListener('click',()=>{const open=$('#profileMenu').classList.toggle('open');$('#profileBtn').setAttribute('aria-expanded',String(open))});
+  $('#helpBtn').addEventListener('click',()=>openDrawer('Acerca del mockup','Referencia visual para integrar con Rails',`<div class="drawer-label">DOCUMENTACIÓN</div><div class="drawer-main-title">Interfaz administrativa</div><p class="drawer-muted">Este archivo reproduce el sistema visual del mockup Cadence y usa los módulos reales de NexoViajes. Los gráficos de evolución y los datos son simulados.</p>${detailRows([['Aplicación','Ruby on Rails'],['Perfil','Administrador de una empresa'],['Inquilino','Resuelto por hostname'],['Datos','Ejemplos ficticios'],['Implementación','UI independiente']])}<p class="drawer-note">Las instrucciones para Codex están en un comentario al principio de este HTML. No modificar autenticación, autorizaciones, estados ni reglas de cupos durante la adaptación visual.</p>`));
+  // Click outside profile menu.
+  document.addEventListener('pointerdown',e=>{if(!e.target.closest('.profile-wrap')){$('#profileMenu').classList.remove('open');$('#profileBtn').setAttribute('aria-expanded','false')}});
+  // Stop virtual table actions from triggering outside controls.
+})();
+</script>
+</body>
+</html>

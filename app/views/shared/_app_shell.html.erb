@@ -1,35 +1,55 @@
-<div class="app-shell">
-  <aside class="sidebar">
-    <%= link_to dashboard_path, class: "brand" do %><span class="brand-mark">↝</span><span><%= current_company.name %><small class="block text-[9px] tracking-[.2em] text-teal-300"><%= ENV.fetch("PLATFORM_NAME", "NexoViajes") %></small></span><% end %>
-    <div class="workspace">
-      <div class="text-xs font-extrabold text-white"><%= current_company.name %></div>
-      <div class="mt-1 text-[11px] text-slate-400"><%= current_role.to_s.titleize %></div>
-    </div>
-    <nav class="mt-7 flex flex-col gap-1">
-      <% navigation_items.each do |label, path, icon| %>
-        <%= link_to path, class: "nav-link #{current_page?(path) ? 'nav-link-active' : ''}" do %><span><%= icon %></span><span><%= label %></span><% end %>
+<%= render "shared/icon_symbols" %>
+<div class="app-shell cadence-shell" data-controller="app-shell" data-action="keydown@window->app-shell#handleKeydown">
+  <aside id="main-sidebar" class="sidebar" data-app-shell-target="sidebar" aria-label="Menú principal">
+    <div class="sidebar-logo">
+      <%= link_to dashboard_path, class: "sidebar-brand" do %>
+        <span class="brand-mark"><%= app_icon("activity") %></span>
+        <span><strong><%= ENV.fetch("PLATFORM_NAME", "NexoViajes").downcase %></strong><small><%= current_company.name %></small></span>
       <% end %>
-    </nav>
-    <div class="mt-auto border-t border-slate-700 pt-4 text-xs text-slate-400">
-      <p>Datos protegidos por empresa y perfil.</p>
-      <%= button_to "Cerrar sesión", session_path, method: :delete, class: "mt-3 text-slate-200" %>
+      <button class="sidebar-close" type="button" data-action="app-shell#close" aria-label="Cerrar menú"><%= app_icon("close") %></button>
+    </div>
+
+    <% navigation_sections.each do |section, items| %>
+      <section class="sidebar-group" aria-labelledby="nav-<%= section.parameterize %>">
+        <h2 id="nav-<%= section.parameterize %>" class="sidebar-label"><%= section %></h2>
+        <nav class="sidebar-nav">
+          <% items.each do |label, path, icon| %>
+            <%= link_to path, class: "nav-link #{current_page?(path) ? 'nav-link-active' : ''}" do %>
+              <%= app_icon(icon) %><span><%= label %></span>
+              <% if label.include?("Reservas") && @metrics&.dig(:pending_reservations).to_i.positive? %>
+                <span class="nav-count"><%= @metrics[:pending_reservations] %></span>
+              <% elsif label == "Rendiciones" && @metrics&.dig(:pending_remittances).to_i.positive? %>
+                <span class="nav-count"><%= @metrics[:pending_remittances] %></span>
+              <% end %>
+            <% end %>
+          <% end %>
+        </nav>
+      </section>
+    <% end %>
+
+    <div class="sidebar-bottom">
+      <div class="tenant-note"><strong><%= current_company.name %></strong><span>Datos aislados por agencia y perfil.</span></div>
+      <%= button_to session_path, method: :delete, class: "logout-button" do %><%= app_icon("log-out") %><span>Cerrar sesión</span><% end %>
     </div>
   </aside>
+
+  <button class="sidebar-overlay" type="button" data-app-shell-target="overlay" data-action="app-shell#close" aria-label="Cerrar menú" tabindex="-1"></button>
+
   <div class="main-column">
     <header class="topbar">
-      <div><span class="text-xs text-slate-400">Workspace / </span><strong class="text-sm"><%= current_company.name %></strong></div>
-      <div class="flex items-center gap-2">
-        <%= form_with url: context_path, method: :post, class: "flex gap-2" do |form| %>
+      <button class="mobile-menu-button" type="button" data-action="app-shell#open" data-app-shell-target="toggle" aria-controls="main-sidebar" aria-expanded="false" aria-label="Abrir menú"><%= app_icon("menu") %></button>
+      <div class="topbar-spacer" aria-hidden="true"></div>
+      <div class="topbar-brand"><strong>NexoViajes</strong><span>Panel de empresa · datos reales</span></div>
+      <div class="topbar-actions">
+        <%= link_to notifications_path, class: "topbar-icon-button", aria: {label: "Notificaciones"} do %><%= app_icon("bell") %><% end %>
+        <%= form_with url: context_path, method: :post, class: "profile-switcher" do |form| %>
+          <span class="profile-avatar"><%= current_user.name.split.map(&:first).first(2).join %></span>
+          <span class="profile-copy"><strong><%= current_company.name %></strong><span><%= role_label(current_role) %></span></span>
           <% roles = current_membership.roles.map { |role| [role_label(role), role] } %>
-          <%= form.select :role, roles, {selected: current_role}, {class: "!w-auto max-w-56 !py-2", onchange: "this.form.requestSubmit()", aria: {label: "Cambiar perfil dentro de #{current_company.name}"}} %>
+          <%= form.select :role, roles, { selected: current_role }, { data: {action: "change->app-shell#submitForm"}, aria: {label: "Cambiar perfil dentro de #{current_company.name}"} } %>
         <% end %>
-        <%= link_to notifications_path, class: "btn", aria: {label: "Notificaciones"} do %>🔔<% end %>
-        <span class="grid h-10 w-10 place-items-center rounded-xl bg-teal/10 text-xs font-black text-teal"><%= current_user.name.split.map(&:first).first(2).join %></span>
       </div>
     </header>
     <main class="content"><%= yield %></main>
   </div>
-  <nav class="mobile-nav">
-    <% navigation_items.first(5).each do |label, path, icon| %><%= link_to path do %><span class="text-xl"><%= icon %></span><span><%= label.split.first %></span><% end %><% end %>
-  </nav>
 </div>

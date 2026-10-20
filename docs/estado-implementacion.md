@@ -1,5 +1,12 @@
 # Estado de implementación
 
+## Dashboard administrativo Cadence
+
+- El panel privado usa el sistema visual Cadence del mockup, con componentes server-rendered y navegación Rails real.
+- Los siete indicadores se calculan sobre el alcance completo autorizado; los listados recientes mantienen límites explícitos.
+- La serie histórica ficticia del prototipo fue reemplazada por una visualización de ocupación real de próximas salidas. Cada barra representa `occupied_seats / capacity` de una `Departure`, por lo que ofertas que comparten micro no duplican inventario. Una capacidad heredada en cero se representa como 0% sin dividir por cero.
+- Los filtros de salidas se aplican sobre el conjunto tenant-scoped completo antes del límite visible. No se incorporó el buscador simulado del HTML.
+
 Actualizado: 20 de octubre de 2026.
 
 ## Operativo y probado
@@ -33,7 +40,7 @@ Actualizado: 20 de octubre de 2026.
 - OAuth central con solicitud ligada al navegador, retorno registrado, código de dos minutos, consumo atómico y protección contra replay/open redirect.
 - Cookies host-only, URLs salientes desde dominios persistidos, PWA/caché por tenant y Push asociado a empresa/origen.
 
-La suite actual contiene 78 pruebas Rails con 419 aserciones y cubre además hosts desconocidos, dominios duplicados/reservados, dominios propios, reverificación segura, concurrencia al cambiar el dominio principal, recuperación por subdominio, usuarios multiagencia, cookies por host, cruces de slugs, OAuth de retorno, invitaciones y códigos vencidos/reutilizados. Playwright ejecuta 3 recorridos en desktop y mobile (6 ejecuciones).
+La suite actual contiene 81 pruebas Rails con 456 aserciones y cubre además hosts desconocidos, dominios duplicados/reservados, dominios propios, reverificación segura, concurrencia al cambiar el dominio principal, recuperación por subdominio, usuarios multiagencia, cookies por host, cruces de slugs, OAuth de retorno, invitaciones, códigos vencidos/reutilizados y el dashboard tenant-scoped. Playwright ejecuta 4 recorridos en desktop y mobile (8 ejecuciones), incluido el dashboard administrativo a 390 px.
 
 ## Parcial
 

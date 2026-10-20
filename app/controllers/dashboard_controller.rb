@@ -18,13 +18,19 @@ class DashboardController < ApplicationController
       remittance_scope = remittance_scope.where(reseller_membership: current_membership)
     end
 
-    @departures = departure_scope.includes(:bus, :seat_allocations).order(:departs_at).limit(5)
     @offers = offer_scope.includes(:travel_package, :departure, :accommodation, :fare_versions)
       .order(created_at: :desc).limit(6)
     @reservations = reservation_scope.includes(:passengers, departure_offer: :travel_package)
       .order(created_at: :desc).limit(6)
 
-    metric_departures = departure_scope.includes(:seat_allocations).to_a
+    metric_departures = departure_scope.includes(:bus, :seat_allocations).order(:departs_at).to_a
+    @departure_filter = %w[all month low].include?(params[:departure_filter]) ? params[:departure_filter] : "all"
+    filtered_departures = filter_departures(metric_departures, @departure_filter)
+    @departure_result_count = filtered_departures.size
+    @departure_list_limit = 5
+    @departures = filtered_departures.first(@departure_list_limit)
+    @occupancy_departures = metric_departures.first(8)
+    @attention_departure = metric_departures.select { |departure| low_availability?(departure) }.min_by(&:available_seats)
     pending_remittances = remittance_scope.where(status: "declared")
     pending_payments = payment_scope.where.not(received_by_membership_id: nil)
       .where(status: %w[declared partially_remitted])
@@ -39,5 +45,23 @@ class DashboardController < ApplicationController
       pending_verification_cents: pending_remittances.sum(:amount_cents),
       pending_remittance_cents: pending_payments.sum(&:pending_remittance_cents)
     }
+  end
+
+  private
+
+  def filter_departures(departures, filter)
+    case filter
+    when "month"
+      departures.select { |departure| departure.departs_at <= 30.days.from_now.end_of_day }
+    when "low"
+      departures.select { |departure| low_availability?(departure) }
+    else
+      departures
+    end
+  end
+
+  def low_availability?(departure)
+    threshold = [ (departure.capacity.to_i * 0.2).ceil, 5 ].max
+    departure.available_seats <= threshold
   end
 end

@@ -1,0 +1,20 @@
+<% occupancy = occupancy_percentage(departure) %>
+<tr>
+  <td class="dashboard-main-cell">
+    <span class="dashboard-travel-title"><i class="dashboard-legend-dot" aria-hidden="true"></i><%= departure.code %></span>
+    <span class="dashboard-travel-sub"><%= departure.bus.name %></span>
+  </td>
+  <td><%= l departure.departs_at.to_date, format: :short %><span class="dashboard-travel-sub"><%= l departure.departs_at, format: "%H:%M" %></span></td>
+  <td>
+    <div class="dashboard-occupancy-cell">
+      <small><%= departure.occupied_seats %> de <%= departure.capacity %> · <%= occupancy %>%</small>
+      <span class="dashboard-progress"><i style="width: <%= occupancy %>%"></i></span>
+    </div>
+  </td>
+  <td class="dashboard-number"><%= departure.available_seats %></td>
+  <td><span class="dashboard-status <%= departure_status_class(departure.status) %>"><%= departure_status_label(departure.status) %></span></td>
+  <td class="dashboard-row-actions">
+    <%= link_to departure_path(departure), class: "dashboard-row-link", aria: {label: "Ver detalle de #{departure.code}"} do %><%= app_icon("chevron") %><% end %>
+    <% if current_role == "admin" %><%= link_to operation_departure_path(departure), class: "dashboard-row-link", aria: {label: "Abrir hoja de ruta de #{departure.code}"} do %><%= app_icon("route") %><% end %><% end %>
+  </td>
+</tr>
