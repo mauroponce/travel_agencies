@@ -23,7 +23,7 @@ gem "omniauth-rails_csrf_protection", "~> 2.0"
 # Authorization, abuse protection, asynchronous work and outbound Web Push.
 gem "pundit", "~> 2.5"
 gem "rack-attack", "~> 6.8"
-gem "redis", "~> 5.4"
+gem "redis", "~> 6.0"
 gem "sidekiq", "~> 8.1"
 gem "sidekiq-cron", "~> 2.3"
 gem "web-push", "~> 3.0"
