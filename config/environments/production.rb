@@ -99,7 +99,7 @@ Rails.application.configure do
       false
     end
   ]
-  config.host_authorization = { exclude: ->(request) { request.path == "/up" } }
+  config.host_authorization = { exclude: ->(request) { request.path == "/up" || (request.path == "/internal/tls/authorize" && request.host == "web") } }
   # config.hosts = [
   #   "example.com",     # Allow requests from example.com
   #   /.*\.example\.com/ # Allow requests from subdomains like `www.example.com`

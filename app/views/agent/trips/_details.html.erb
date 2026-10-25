@@ -1,0 +1,7 @@
+<dl class="agent-details"><% {description: "Descripción", destination: "Destino", region: "Provincia o región", departs_on: "Salida", returns_on: "Regreso", duration_days: "Duración en días", duration_nights: "Noches", hotel: "Hotel", meal_plan: "Comidas", transport: "Transporte", departure_location: "Lugar de salida", price_basis: "Base del precio", included_services: "Servicios incluidos", excluded_services: "Servicios excluidos", conditions: "Condiciones"}.each do |field, label| %>
+    <dt><%= label %></dt>
+    <dd><%= revision.public_send(field).presence || "A confirmar" %></dd>
+  <% end %>
+  <dt>Precio</dt>
+  <dd><%= agent_money(revision) %></dd>
+</dl>

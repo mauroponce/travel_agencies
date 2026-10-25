@@ -1,0 +1,722 @@
+<!doctype html>
+<html lang="es-AR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><meta name="theme-color" content="#fafafa"><meta name="description" content="Turistack Revendedor — prototipo interactivo Cadence, funcionalidades 1 a 5."><title>Turistack Revendedor · Mockup Cadence</title>
+<!--
+TURISTACK REVENDEDOR — MOCKUP INTERACTIVO AUTÓNOMO
+REFERENCIA: archivo dashboard admin Cadence adjunto por el usuario.
+ALCANCE: 1) proveedores, 2) importar flyers con IA (simulado),
+3) catálogo centralizado, 4) página pública del revendedor, 5) búsqueda en lenguaje natural (simulada).
+DEMO: datos ficticios; sin API de Gemini, backend, autenticación ni publicación real.
+Persistencia localStorage únicamente, dentro de este navegador. No cargar datos sensibles.
+PARA CODEX: implementar en Rails conservando controles de pertenencia y permisos,
+modelos separados para operador/proveedor y revendedor independiente, aislamiento
+multi-tenant y autorización explícita para compartir publicaciones entre cuentas.
+No asumir tarifas verificadas, cupos en tiempo real ni asociación automática a proveedores.
+Extraer los campos reales usando servicio Gemini y validar salida estructurada contra esquema.
+Lo que se simula: parseo de muestras, búsqueda NLP heurística, website preview y CRUD local.
+Los enlaces wa.me sí abren WhatsApp del número de demostración (+54 11 6034-7665).
+-->
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+:root{
+  --bg:#fafafa;--bg-2:#f5f5f5;--surface:#fff;--line:#e8e8ec;--line-soft:#f0f0f3;
+  --ink:#0a0a0c;--ink-2:#3d3d44;--muted:#6c6c76;--faint:#9b9ba5;
+  --a-yellow:#ffd166;--a-peach:#ffb37a;--a-coral:#ff8a6b;--a-pink:#ff7ea8;
+  --a-violet:#a78cf7;--a-blue:#7cc0ff;--a-mint:#8fe0b0;--a-green:#3fb27f;
+  --r-lg:28px;--r-md:16px;--r-sm:10px;
+  --sh-1:0 1px 2px rgba(14,14,20,.04),0 6px 18px rgba(14,14,20,.05);
+  --sh-2:0 2px 4px rgba(14,14,20,.04),0 18px 44px rgba(14,14,20,.08);
+  --ease:cubic-bezier(.22,.68,.24,1);
+  --side-width:234px;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:#f8f8fa;color:var(--ink);font:13px/1.5 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}button:disabled{cursor:not-allowed}
+a{color:inherit;text-decoration:none}button{border:0;background:none}
+h1,h2,h3,h4,p,figure,ul{margin:0}ul{padding:0;list-style:none}
+svg{display:block;flex-shrink:0}
+.ic{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round}
+.ic.sm{width:14px;height:14px}.ic.lg{width:20px;height:20px}
+:focus-visible{outline:2px solid #a78cf7;outline-offset:3px}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+/* App frame: the screenshot's softly rounded, almost invisible white surfaces */
+.shell{display:grid;grid-template-columns:var(--side-width) minmax(0,1fr);min-height:100svh;background:#fff;transition:grid-template-columns .28s var(--ease)}
+.shell.collapsed{--side-width:70px}
+.sidebar{position:sticky;top:0;height:100svh;display:flex;flex-direction:column;min-width:0;padding:20px 14px 14px;background:#fff;border-right:1px solid var(--line-soft);z-index:40}
+.sidebar-logo{display:flex;align-items:center;gap:9px;padding:0 4px 18px;border-bottom:1px solid var(--line-soft);min-height:34px;overflow:hidden}
+.mark{height:27px;width:27px;min-width:27px;display:grid;place-items:center;color:#fff;background:linear-gradient(140deg,#22222a,#0a0a0c);border-radius:9px}
+.mark .ic{width:16px;height:16px;stroke-width:2}
+.brand-word{font-size:17px;font-weight:800;letter-spacing:-.065em;white-space:nowrap}
+.side-collapse{display:grid;place-items:center;width:26px;height:26px;margin-left:auto;color:var(--faint);border-radius:7px;flex-shrink:0;transition:background .2s,transform .28s}
+.side-collapse:hover,.icon-btn:hover{background:#f5f5f7}
+.sidebar-search{display:flex;align-items:center;gap:8px;height:35px;margin:16px 0 19px;padding:0 11px;border:1px solid var(--line);border-radius:10px;color:var(--faint);background:#fff;text-align:left;min-width:0;white-space:nowrap;overflow:hidden}
+.sidebar-search:hover{border-color:#d3d0da}
+.sidebar-search .srch-label{color:var(--faint);font-size:11px;overflow:hidden;text-overflow:ellipsis;flex:1}
+kbd{border:1px solid var(--line-soft);border-radius:5px;background:#f6f6f8;padding:1px 5px;color:var(--faint);font:10px Inter,sans-serif;white-space:nowrap}
+.side-group{margin-bottom:17px;min-width:0}
+.side-label{font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:var(--faint);font-weight:600;margin:0 6px 8px;white-space:nowrap}
+.side-nav{display:grid;gap:3px}
+.nav-link{display:flex;align-items:center;gap:10px;height:35px;border-radius:9px;padding:0 10px;width:100%;color:#55555e;font-size:12px;font-weight:500;text-align:left;transition:background .2s,color .2s;min-width:0;white-space:nowrap}
+.nav-link .ic{width:16px;height:16px;color:#a2a3ae}
+.nav-link:hover{background:#f8f8fa;color:#111}
+.nav-link.active{background:#f4f4f6;color:#111;font-weight:700}
+.nav-link.active .ic{color:var(--ink)}
+.nav-link .nav-text{overflow:hidden;text-overflow:ellipsis;flex:1}
+.nav-count{font-size:10px;font-weight:600;padding:1px 6px;border-radius:20px;color:#c5794c;background:#fff3e8}
+.side-bottom{margin-top:auto;display:grid;gap:11px}
+.side-status{background:#f8f8fa;padding:12px;border-radius:12px;display:grid;gap:7px}
+.side-status-h{display:flex;justify-content:space-between;font-size:10px;color:var(--muted)}
+.side-status-h strong{font-weight:600;color:var(--ink-2)}
+.progress{height:5px;border-radius:999px;display:block;background:#efeff2;overflow:hidden}
+.progress i{height:100%;display:block;border-radius:999px;background:linear-gradient(90deg,var(--a-peach),var(--a-pink))}
+.side-status small{font-size:10px;color:var(--faint)}
+.side-help{display:flex;align-items:center;gap:8px;padding:7px 8px;font-size:11px;color:var(--faint);border-radius:9px;text-align:left}
+.side-help:hover{background:#f8f8fa;color:var(--ink)}
+.shell.collapsed .brand-word,.shell.collapsed .side-collapse,.shell.collapsed .srch-label,.shell.collapsed .sidebar-search kbd,.shell.collapsed .side-label,.shell.collapsed .nav-text,.shell.collapsed .nav-count,.shell.collapsed .side-status,.shell.collapsed .side-help span{display:none}
+.shell.collapsed .sidebar{padding-inline:12px}
+.shell.collapsed .sidebar-logo .mark{cursor:pointer}
+.shell.collapsed .sidebar-logo{justify-content:center;padding:0 0 18px}
+.shell.collapsed .sidebar-search,.shell.collapsed .nav-link{justify-content:center;padding-inline:0}
+.shell.collapsed .sidebar-search{border-color:transparent;background:#f7f7f9}
+.shell.collapsed .side-help{justify-content:center}
+/* Topbar same 3-column centered mark as the supplied screenshot */
+.main-shell{min-width:0;background:#fff}
+.topbar{height:70px;position:sticky;top:0;z-index:30;background:rgba(255,255,255,.94);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);border-bottom:1px solid var(--line-soft);display:grid;grid-template-columns:minmax(160px,1fr) auto minmax(160px,1fr);align-items:center;gap:15px;padding:0 25px}
+.search-trigger{height:37px;width:min(330px,100%);background:#f6f6f8;border-radius:10px;padding:0 12px;display:flex;gap:9px;align-items:center;color:var(--faint);font-size:11.5px;text-align:left;min-width:0}
+.search-trigger .search-placeholder{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.search-trigger kbd{background:#fff}
+.top-logo{text-align:center;white-space:nowrap;min-width:0;line-height:1.35}
+.top-logo b{display:block;font-size:15px;font-weight:800;letter-spacing:-.055em}
+.top-logo span{display:block;font-size:10px;color:var(--faint)}
+.top-right{display:flex;align-items:center;justify-self:end;gap:12px;min-width:0}
+.icon-btn{position:relative;display:grid;place-items:center;color:#777782;height:34px;width:34px;border-radius:10px}
+.notify-dot{position:absolute;top:6px;right:5px;width:6px;height:6px;border-radius:100%;background:#ff8a6b;border:1px solid #fff}
+.profile-wrap{position:relative}
+.profile-btn{display:flex;align-items:center;gap:9px;min-width:0;padding:4px 0}
+.avatar{display:grid;place-items:center;width:29px;height:29px;flex:0 0 29px;border-radius:100%;background:linear-gradient(145deg,#f2e0ff,#dcc0ff);color:#7755bf;font-weight:700;font-size:11px;overflow:hidden}
+.profile-copy{text-align:left;line-height:1.3}
+.profile-copy b{display:block;font-size:11px;font-weight:600;white-space:nowrap}
+.profile-copy small{display:flex;align-items:center;gap:3px;font-size:10px;color:var(--ink-2);font-weight:600}
+.profile-copy .ic{width:11px;height:11px}
+.profile-menu{position:absolute;right:0;top:47px;width:245px;border:1px solid var(--line);padding:16px;background:#fff;border-radius:14px;box-shadow:var(--sh-2);z-index:80;display:none}
+.profile-menu.open{display:block}
+.profile-menu strong{display:block;font-size:12px}
+.profile-menu span{font-size:11px;color:var(--muted)}
+.profile-menu hr{border:0;border-top:1px solid var(--line);margin:13px 0}
+.profile-menu p{font-size:11px;color:var(--muted);line-height:1.5}
+.mobile-menu{display:none}
+/* Content */
+.content{width:100%;max-width:1680px;padding:20px 26px 56px;margin:auto}
+.breadcrumb{display:flex;gap:10px;align-items:center;color:var(--faint);font-size:11px;white-space:nowrap;margin:0 0 23px}
+.breadcrumb strong{color:var(--ink-2);font-weight:600}
+.breadcrumb .ic{width:12px;height:12px}
+.heading{display:flex;justify-content:space-between;align-items:flex-end;gap:18px;margin-bottom:23px}
+.eyebrow{font-size:10px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;background:linear-gradient(90deg,#ffb37a,#ff7ea8 55%,#a78cf7);-webkit-background-clip:text;background-clip:text;color:transparent;margin-bottom:7px}
+h1{font-size:clamp(25px,2.7vw,32px);line-height:1.12;letter-spacing:-.045em;font-weight:700}
+.heading p{font-size:12px;margin-top:9px;color:var(--muted)}
+.heading-actions{display:flex;align-items:center;gap:8px;padding-bottom:1px;flex-wrap:wrap}
+.btn{border-radius:999px;display:inline-flex;justify-content:center;align-items:center;gap:8px;height:37px;padding:0 16px;font-size:11.5px;font-weight:600;white-space:nowrap;transition:transform .25s var(--ease),box-shadow .25s,background-color .25s}
+.btn:hover{transform:translateY(-1px)}
+.btn-white{background:#fff;border:1px solid var(--line);color:var(--ink-2)}
+.btn-white:hover{box-shadow:var(--sh-1)}
+.btn-dark{background:var(--ink);color:#fff;border:1px solid var(--ink)}
+.btn-dark:hover{background:#25252b;box-shadow:0 9px 20px rgba(10,10,12,.13)}
+.btn .ic{width:14px;height:14px}
+/* Cards & KPIs */
+.panel,.kpi{border:1px solid var(--line);background:#fff;border-radius:16px}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:12px}
+.kpi{position:relative;min-width:0;padding:17px 18px 16px;min-height:132px;overflow:hidden;transition:box-shadow .26s,transform .26s}
+.kpi:hover{box-shadow:var(--sh-1);transform:translateY(-1px)}
+.kpi-label{font-size:11px;color:var(--faint);font-weight:500}
+.kpi-number{font-size:29px;line-height:1.2;letter-spacing:-.047em;display:block;margin-top:9px;font-weight:700;font-variant-numeric:tabular-nums}
+.kpi-note{font-size:10px;display:inline-flex;align-items:center;gap:5px;background:#eefaf3;color:#2f9367;padding:3px 9px;border-radius:999px;margin-top:7px;font-weight:600;max-width:100%}
+.kpi-note.neutral{color:#807784;background:#f4f4f6}
+.kpi-note.orange{color:#bd7848;background:#fff1e7}
+.kpi-spark{position:absolute;right:15px;top:56px;width:37%;height:30px;fill:none;stroke-width:2.1;stroke-linecap:round}
+.kpi-spark path{stroke:#ff7ea8}.kpi-spark.purple path{stroke:#a78cf7}.kpi-spark.blue path{stroke:#7cc0ff}.kpi-spark.orange path{stroke:#ffb37a}
+.finance-strip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:20px}
+.fin-card{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:17px 19px;border:1px solid var(--line);border-radius:16px;background:linear-gradient(120deg,#fff 5%,#fcfbfd 100%);min-width:0}
+.fin-card .fin-copy{min-width:0}
+.fin-card small{display:block;font-size:10.5px;color:var(--faint);font-weight:500}
+.fin-card strong{display:block;margin-top:5px;font-size:20px;font-weight:700;letter-spacing:-.035em;font-variant-numeric:tabular-nums;white-space:nowrap}
+.fin-card p{color:var(--muted);font-size:10px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fin-card .fin-icon{display:grid;place-items:center;width:36px;height:36px;flex-shrink:0;border-radius:12px;background:linear-gradient(135deg,#ffe6d4,#ffeff1);color:#cc796e}
+.fin-card:nth-child(2) .fin-icon{background:linear-gradient(135deg,#e8e3ff,#f5efff);color:#9273cb}
+.fin-card:nth-child(3) .fin-icon{background:linear-gradient(135deg,#fff1df,#fdefe7);color:#b98642}
+.fin-card .fin-icon .ic{width:18px;height:18px}
+/* Rich main layout */
+.grid-primary{display:grid;grid-template-columns:minmax(0,1.72fr) minmax(285px,.88fr);gap:14px;margin-bottom:16px}
+.grid-secondary{display:grid;grid-template-columns:minmax(0,1.72fr) minmax(285px,.88fr);gap:14px;align-items:start}
+.section-panel{padding:20px 20px 18px;min-width:0}
+.section-head{display:flex;gap:14px;align-items:flex-start;justify-content:space-between;margin-bottom:18px;min-width:0}
+.section-head h2{font-size:14px;font-weight:700;letter-spacing:-.026em}
+.section-head p{font-size:10.5px;color:var(--faint);margin-top:4px}
+.head-trail{display:flex;align-items:center;gap:9px;flex-shrink:0}
+.segment{display:flex;gap:2px;border-radius:9px;padding:3px;background:#f4f4f6}
+.segment button{font-size:10px;color:var(--faint);padding:3px 8px;border-radius:7px;line-height:18px}
+.segment button.active{background:#fff;color:#15151b;font-weight:700;box-shadow:0 1px 3px rgba(10,10,12,.08)}
+.legend{display:inline-flex;align-items:center;gap:6px;font-size:10px;color:var(--faint)}
+.legend-dot{height:7px;width:7px;flex:0 0 7px;border-radius:2px;background:#ff7ea8}
+.legend-dot.prev{background:#d6d6de}
+.legend-dot.open{background:#a78cf7}
+.chart-card{min-height:331px}
+.chart-wrap{height:222px;position:relative;padding-top:12px;user-select:none;touch-action:pan-y}
+.chart-gridline{stroke:#ececf0;stroke-width:1;vector-effect:non-scaling-stroke}
+.chart-svg{width:100%;height:184px;display:block;overflow:visible}
+.chart-x{display:flex;justify-content:space-between;font-size:10px;color:#a3a3ac;margin-top:3px;gap:5px}
+.chart-hover-line{stroke:#d7d1e5;stroke-width:1;stroke-dasharray:4 4}
+.chart-tip{position:absolute;top:12px;left:52%;transform:translateX(-15%);border:1px solid #f5f5f7;border-radius:12px;padding:11px 13px;box-shadow:var(--sh-2);background:#fff;min-width:154px;pointer-events:none;z-index:1;transition:left .12s ease}
+.chart-tip b{display:block;font-size:11px;margin-bottom:6px}
+.chart-tip-line{display:flex;gap:8px;align-items:center;font-size:10px;color:var(--faint);margin-top:4px;white-space:nowrap}
+.chart-tip-line strong{margin-left:auto;color:var(--ink);font-weight:700}
+.chart-footer{display:flex;justify-content:space-between;gap:8px;color:var(--faint);font-size:10px;border-top:1px solid var(--line-soft);padding-top:11px;margin-top:4px}
+.chart-footer .mini-gradient{width:48px;height:3px;background:linear-gradient(90deg,var(--a-peach),var(--a-pink),var(--a-violet));border-radius:20px;display:inline-block;vertical-align:3px;margin-right:7px}
+/* needs attention, compact like supplied dashboard */
+.attention{display:flex;flex-direction:column;gap:0;min-height:331px}
+.attention .section-head{margin-bottom:10px}
+.att-item{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:10px;align-items:center;padding:15px 0;border-bottom:1px solid var(--line-soft);width:100%;text-align:left}
+.att-item:hover .att-name{color:#6e51b5}
+.att-item:last-of-type{border-bottom:0}
+.att-icon{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;background:#fff0e8;color:#d18c65}
+.att-item:nth-of-type(3) .att-icon{background:#f1ebff;color:#9278d5}
+.att-item:nth-of-type(4) .att-icon{background:#edf5ff;color:#7da1de}
+.att-icon .ic{width:16px;height:16px}
+.att-name{display:block;font-weight:650;font-size:11.5px;letter-spacing:-.01em}
+.att-detail{display:block;font-size:10px;color:var(--faint);margin-top:3px}
+.att-chevron{width:15px;height:15px;color:var(--faint)}
+.att-bottom{padding:14px 16px;border-radius:12px;background:linear-gradient(110deg,#fff8f0,#fff0f5 50%,#f5efff);display:flex;align-items:center;gap:9px;margin-top:auto}
+.att-bottom svg{width:16px;height:16px;color:#b37baf}
+.att-bottom p{font-size:10.5px;color:#726b7c;line-height:1.45}
+.att-bottom strong{color:#25232b}
+/* Departures */
+.table-card .section-head{margin-bottom:11px}
+.table-controls{display:flex;align-items:center;gap:7px}
+.select-shell{position:relative}
+.select-shell select{appearance:none;background:#f6f6f8;border-radius:999px;border:none;color:#686872;font-size:10.5px;padding:7px 25px 7px 11px;cursor:pointer;max-width:160px;outline-offset:2px}
+.select-shell:after{content:"";position:absolute;right:12px;top:12px;border-right:1.5px solid #90909a;border-bottom:1.5px solid #90909a;transform:rotate(45deg);width:5px;height:5px;pointer-events:none}
+.table-scroll{width:100%;overflow-x:auto}
+.table{width:100%;border-collapse:collapse;min-width:605px}
+.table th{text-align:left;font-size:9px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);padding:0 9px 12px}
+.table th:first-child,.table td:first-child{padding-left:0}.table th:last-child,.table td:last-child{padding-right:0}
+.table tbody tr{border-top:1px solid var(--line-soft);transition:background-color .15s}
+.table tbody tr:hover{background:#fcfbfd}
+.table td{padding:13px 9px;color:var(--muted);font-size:11px;vertical-align:middle}
+.table td.main-cell{color:var(--ink-2)}
+.travel-title{display:flex;align-items:center;gap:8px;white-space:nowrap;font-weight:600;font-size:11.5px;color:var(--ink-2)}
+.travel-title .legend-dot{border-radius:50%}
+.travel-code{font-size:10px;color:var(--faint);display:block;margin:3px 0 0 15px}
+.travel-sub{display:block;font-size:10px;color:var(--faint);margin-top:3px}
+.table .num{font-weight:700;color:var(--ink);font-size:12px;white-space:nowrap}
+.occupancy{min-width:112px;max-width:145px;display:grid;gap:6px}
+.occupancy small{font-size:10px;color:var(--faint)}
+.occupancy .progress{height:5px}
+.status{display:inline-flex;align-items:center;justify-content:center;gap:4px;border-radius:999px;padding:5px 10px;font-size:10px;font-weight:650;white-space:nowrap}
+.status.green{background:#eaf8f0;color:#278b62}.status.orange{background:#fff2e6;color:#b77637}.status.gray{background:#f3f3f6;color:#81818d}.status.purple{background:#f2edff;color:#7c65b9}.status.red{background:#fff0ef;color:#c96961}
+.row-link{border-radius:8px;padding:6px;color:#9998a3;display:inline-flex}
+.row-link:hover{background:#f3eefc;color:#8064ce}
+.empty-state{font-size:12px;color:var(--faint);text-align:center;padding:30px 4px}
+.table-foot{font-size:10px;color:var(--faint);display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:10px}
+.text-action{color:#6e58ab;font-size:11px;font-weight:650;display:inline-flex;align-items:center;gap:5px;padding:5px 0;white-space:nowrap}
+.text-action:hover{color:#403265}
+.text-action .ic{width:12px;height:12px}
+/* Right bottom column */
+.right-stack{display:grid;gap:14px}
+.reservation-list{display:grid}
+.reservation-row{width:100%;display:flex;align-items:center;gap:10px;text-align:left;border-bottom:1px solid var(--line-soft);padding:13px 0}
+.reservation-row:last-child{border-bottom:none}
+.reservation-row:hover .res-number{color:#8064ce}
+.res-avatar{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;background:#f5efff;color:#9678ce;font-size:10px;font-weight:700;flex:none}
+.res-avatar.peach{background:#fff2e7;color:#ce976d}.res-avatar.blue{background:#ebf4ff;color:#78a8de}
+.res-main{flex:1;min-width:0}
+.res-number{font-size:11.5px;font-weight:700;display:block}
+.res-sub{font-size:10px;color:var(--faint);display:block;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.reservation-row .status{font-size:9px;padding:4px 7px}
+.promo-card{position:relative;overflow:hidden;border:1px solid #f0e4ea;border-radius:16px;background:linear-gradient(112deg,#fff6e9,#ffedf3 53%,#f0eaff);padding:18px 19px 19px;min-height:167px}
+.promo-card:before{content:"";position:absolute;width:260px;height:250px;right:-90px;bottom:-160px;filter:blur(40px);background:radial-gradient(closest-side,rgba(167,140,247,.36),transparent)}
+.promo-card > *{position:relative;z-index:1}
+.promo-kicker{display:inline-flex;padding:5px 9px;background:#fff;color:#bb7182;font-weight:700;font-size:9px;letter-spacing:.09em;border-radius:999px}
+.promo-card h3{font-size:17px;letter-spacing:-.035em;line-height:1.25;margin-top:12px}
+.promo-card p{font-size:10.5px;color:#786e7b;max-width:32ch;margin-top:5px;line-height:1.5}
+.promo-card .text-action{margin-top:7px;color:#513b63}
+.data-footnote{text-align:center;color:#a1a1ac;font-size:10.5px;margin-top:25px}
+/* Popups, dialogs, notifications */
+.screen-overlay{position:fixed;inset:0;background:rgba(17,17,26,.31);-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);z-index:80;opacity:0;visibility:hidden;transition:opacity .22s,visibility .22s}
+.screen-overlay.visible{opacity:1;visibility:visible}
+.drawer{position:fixed;right:0;top:0;bottom:0;z-index:90;width:min(440px,100vw);background:#fff;box-shadow:-22px 0 80px rgba(18,18,26,.12);transform:translateX(102%);transition:transform .32s var(--ease);display:flex;flex-direction:column}
+.drawer.open{transform:none}
+.drawer-head{display:flex;align-items:center;gap:14px;padding:24px 24px 20px;border-bottom:1px solid var(--line)}
+.drawer-head h2{font-size:19px;letter-spacing:-.035em;font-weight:700}
+.drawer-head p{font-size:11px;color:var(--faint);margin-top:5px}
+.drawer-close{margin-left:auto;color:var(--faint)}
+.drawer-body{overflow-y:auto;flex:1;padding:24px}
+.drawer-label{text-transform:uppercase;font-size:10px;letter-spacing:.11em;color:var(--faint);font-weight:600;margin-bottom:9px}
+.drawer-main-title{font-size:25px;font-weight:700;letter-spacing:-.04em}
+.drawer-muted{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.65}
+.drawer-data{margin-top:24px;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.drawer-data-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:13px 15px;font-size:12px;border-bottom:1px solid var(--line-soft)}
+.drawer-data-row:last-child{border-bottom:0}
+.drawer-data-row span{color:var(--muted)}.drawer-data-row strong{font-weight:600;text-align:right}
+.drawer-actions{margin-top:24px;display:flex;gap:8px;flex-wrap:wrap}
+.drawer-note{margin-top:22px;font-size:11px;line-height:1.65;color:var(--muted);padding:13px 15px;background:#faf9fc;border-radius:12px}
+.drawer-note b{color:var(--ink-2)}
+.notice-item{padding:15px 0;border-bottom:1px solid var(--line-soft);display:flex;gap:11px}
+.notice-item:last-child{border-bottom:0}
+.notice-dot{margin-top:6px;width:7px;height:7px;border-radius:100%;background:#ff8a6b;flex:none}
+.notice-item.read .notice-dot{background:#d9d9e0}
+.notice-item h3{font-size:12px;font-weight:600}
+.notice-item p{font-size:11px;line-height:1.5;color:var(--muted);margin-top:5px}
+.notice-item time{display:block;color:var(--faint);font-size:10px;margin-top:7px}
+/* Modal surface */
+.modal{position:fixed;top:50%;left:50%;transform:translate(-50%,-47%) scale(.98);z-index:95;width:min(560px,calc(100vw - 30px));max-height:calc(100svh - 40px);overflow:auto;background:#fff;border:1px solid var(--line);border-radius:22px;box-shadow:0 28px 95px rgba(14,14,26,.16);padding:25px;visibility:hidden;opacity:0;transition:opacity .22s,transform .22s,visibility .22s}
+.modal.open{opacity:1;visibility:visible;transform:translate(-50%,-50%) scale(1)}
+.modal-head{display:flex;gap:12px;align-items:flex-start;margin-bottom:20px}
+.modal-head h2{font-size:21px;letter-spacing:-.04em}
+.modal-head p{color:var(--muted);font-size:11.5px;margin-top:5px}
+.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+.field{display:grid;gap:6px;min-width:0}
+.field.full{grid-column:1/-1}
+.field label{font-size:11px;font-weight:600;color:var(--ink-2)}
+.field input,.field select{width:100%;border:1px solid var(--line);background:#fff;border-radius:10px;padding:10px 12px;height:39px;outline:0;font-size:12px}
+.field input:focus,.field select:focus{border-color:#a78cf7;box-shadow:0 0 0 3px rgba(167,140,247,.12)}
+.modal-foot{display:flex;gap:9px;align-items:center;justify-content:space-between;border-top:1px solid var(--line-soft);margin-top:22px;padding-top:16px}
+.modal-foot small{font-size:10px;color:var(--faint);max-width:220px}
+/* Command palette */
+.cmd-dialog{width:min(640px,calc(100vw - 30px));padding:0;top:24%;transform:translate(-50%,-30%) scale(.985);border-radius:17px}
+.cmd-dialog.open{transform:translate(-50%,-24%) scale(1)}
+.cmd-search{display:flex;align-items:center;gap:13px;padding:16px 19px;border-bottom:1px solid var(--line-soft)}
+.cmd-search .ic{color:var(--faint)}
+.cmd-search input{border:none;outline:none;background:transparent;width:100%;font-size:13px}
+.cmd-search kbd{padding:4px 7px}
+.cmd-results{padding:9px;max-height:390px;overflow:auto}
+.cmd-label{font-size:10px;letter-spacing:.09em;color:var(--faint);text-transform:uppercase;padding:10px 12px 5px}
+.cmd-item{border-radius:9px;width:100%;display:flex;align-items:center;gap:12px;padding:11px 12px;text-align:left;font-size:12px}
+.cmd-item:hover,.cmd-item.highlight{background:#f5f3f9}
+.cmd-item .ic{color:#aaa2b7}
+.cmd-item small{margin-left:auto;color:var(--faint);font-size:10px}
+.cmd-empty{padding:24px;text-align:center;color:var(--faint);font-size:12px}
+.cmd-footer{background:#fafafb;padding:11px 19px;color:var(--faint);font-size:10px;display:flex;align-items:center;gap:10px}
+.toast-region{position:fixed;right:20px;bottom:22px;display:grid;gap:8px;z-index:120;pointer-events:none}
+.toast{border-radius:12px;background:#1b1b22;color:#fff;padding:12px 15px;box-shadow:var(--sh-2);font-size:11.5px;max-width:350px;animation:toast-in .25s var(--ease);display:flex;gap:10px;align-items:center}
+.toast .ic{color:#ffb37a}
+@keyframes toast-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+/* Responsive */
+@media(max-width:1280px){.content{padding-inline:19px}.topbar{padding-inline:18px}.kpi-number{font-size:26px}.kpi{padding-inline:14px}.fin-card{padding:15px}.fin-card strong{font-size:18px}.grid-primary,.grid-secondary{grid-template-columns:minmax(0,1.5fr) minmax(260px,1fr)}}
+@media(max-width:1090px){.shell{--side-width:209px}.content{padding-inline:17px}.kpi-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.kpi{min-height:123px}.grid-primary,.grid-secondary{grid-template-columns:minmax(0,1fr)}.attention{min-height:auto}.attention .att-bottom{margin-top:14px}.right-stack{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.finance-strip{gap:9px}.fin-card strong{font-size:16px}}
+@media(min-width:761px) and (max-width:970px){.kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){
+ .shell,.shell.collapsed{display:block}.sidebar{position:fixed;top:0;left:0;bottom:0;width:min(275px,85vw);height:100svh;transform:translateX(-105%);transition:transform .25s;box-shadow:none;padding:17px 14px;z-index:101}.sidebar.mobile-open{transform:none;box-shadow:24px 0 80px rgba(12,12,24,.12)}
+ .shell.collapsed .brand-word,.shell.collapsed .side-collapse,.shell.collapsed .srch-label,.shell.collapsed .sidebar-search kbd,.shell.collapsed .side-label,.shell.collapsed .nav-text,.shell.collapsed .nav-count,.shell.collapsed .side-status,.shell.collapsed .side-help span{display:initial}
+ .shell.collapsed .sidebar{padding-inline:14px}.shell.collapsed .sidebar-logo{justify-content:flex-start}.shell.collapsed .sidebar-search,.shell.collapsed .nav-link{justify-content:flex-start;padding-inline:10px}.shell.collapsed .sidebar-search{border-color:var(--line);background:#fff}
+ .topbar{grid-template-columns:auto minmax(0,1fr) auto;gap:8px;height:61px;padding:0 15px}.mobile-menu{display:grid;place-items:center;height:35px;width:35px;border-radius:10px;background:#f6f6f8;color:#666}.topbar .search-trigger{display:none}.top-logo b{font-size:14px}.top-logo span{font-size:9px}.top-right{gap:3px}.profile-copy{display:none}.profile-btn{padding:0}.profile-menu{right:-10px}
+ .content{padding:17px 14px 48px}.breadcrumb{margin-bottom:17px;font-size:10px}.heading{align-items:flex-start;flex-direction:column;gap:15px}.heading p{margin-top:6px}.heading-actions{width:100%}.heading-actions .btn{flex:1}
+ .finance-strip{grid-template-columns:1fr}.fin-card{padding:13px 16px}.fin-card strong{font-size:21px}.kpi-grid{gap:9px}.kpi{padding:14px;min-height:123px}.kpi-label{font-size:10px}.kpi-number{font-size:25px}.kpi-spark{width:35%;right:9px}.kpi-note{font-size:9px}
+ .section-panel{padding:17px 15px}.section-head{gap:10px;align-items:flex-start;flex-wrap:wrap}.section-head h2{font-size:13px}.chart-wrap{height:215px}.chart-card{min-height:auto}.chart-svg{height:178px}.chart-tip{min-width:132px;padding:9px 10px;font-size:10px}
+ .right-stack{grid-template-columns:1fr}.data-footnote{line-height:1.7}
+}
+@media(max-width:390px){.content{padding-inline:11px}.heading h1{font-size:24px}.kpi-number{font-size:24px}.kpi{padding:12px}.fin-card strong{font-size:20px}.section-head .legend{display:none}.chart-footer{flex-direction:column}.field-grid{grid-template-columns:1fr}.field.full{grid-column:auto}.modal-foot{align-items:flex-start;flex-direction:column}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important}}
+
+
+/* TURISTACK REVENDEDOR · Extension of supplied Cadence design */
+:root{--side-width:242px}
+body{background:#fff}
+.hidden,[hidden]{display:none!important}
+.shell{background:#fff}
+.sidebar{overflow-y:auto}
+.nav-link .nav-count{margin-left:auto}
+.sidebar-foot-card{background:linear-gradient(125deg,#fff6ed,#fff0f5 50%,#f0edff);border-radius:13px;padding:14px;display:grid;gap:10px}
+.sidebar-foot-card strong{font-size:12px;letter-spacing:-.01em}.sidebar-foot-card p{font-size:10px;color:#7b7081;line-height:1.5}
+.sidebar-foot-card .mini-cta{border-radius:8px;background:#fff;padding:8px 10px;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:space-between}
+.top-logo span{color:var(--muted)}
+.heading{margin-bottom:24px}.heading p{max-width:630px;line-height:1.65}
+.content{max-width:1580px;padding-top:25px}
+.nav-link{min-height:36px}
+.content .eyebrow{margin-bottom:9px}
+.btn{height:39px}
+.btn-soft{background:#f4f1fa;color:#5e4d8d;border:1px solid #eee6fc}
+.btn-soft:hover{background:#eee5fc}
+.btn-sm{height:32px;padding:0 12px;font-size:10.5px}
+.btn-icon{height:35px;width:35px;padding:0}
+.view-enter{animation:fade-in .24s ease both}@keyframes fade-in{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+.panel{box-shadow:none}.panel-pad{padding:21px}
+.panel-caption{font-size:10px;color:var(--faint)}
+.muted{color:var(--muted)}.faint{color:var(--faint)}.tiny{font-size:10px}.small{font-size:11.5px}.strong{font-weight:650}
+.section-head{margin-bottom:16px}.section-head h2{font-size:14px}
+.num{font-variant-numeric:tabular-nums}
+.kpi{cursor:default}.kpi .kpi-number{font-size:28px}
+.kpi-note.purple{color:#8066c5;background:#f3eeff}.kpi-note.pink{color:#b77190;background:#fff0f5}
+.intro-grid{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(280px,.88fr);gap:14px;margin-bottom:15px}
+.intro-hero{border-radius:17px;position:relative;overflow:hidden;background:linear-gradient(112deg,#fff6e9 0%,#fff0f5 50%,#f1ebff 100%);padding:28px 30px;min-height:257px;border:1px solid #f2e5ed;display:flex;align-items:center}
+.intro-hero:after{content:"";position:absolute;width:270px;height:270px;right:-40px;top:-80px;border-radius:50%;background:radial-gradient(circle,#d9c8ffbb,transparent 68%);filter:blur(3px)}
+.intro-hero > *{position:relative;z-index:1}.intro-hero h2{font-size:clamp(23px,2.7vw,32px);max-width:415px;letter-spacing:-.05em;line-height:1.22;margin:12px 0}.intro-hero p{color:#706c78;font-size:11.5px;max-width:350px;line-height:1.65}.intro-hero .btn{margin-top:19px}
+.hero-deco{position:absolute!important;right:28px;bottom:23px;display:grid;gap:7px;transform:rotate(-7deg)}.hero-deco span{display:flex;align-items:center;gap:7px;background:#fff9;border:1px solid #ffffffb3;box-shadow:0 8px 22px #9d7eaa24;border-radius:11px;padding:9px 12px;color:#675a76;font-size:10px;font-weight:650;backdrop-filter:blur(4px)}
+.action-list{display:grid;gap:1px}.action-row{display:flex;width:100%;align-items:center;gap:11px;text-align:left;padding:12px 0;border-bottom:1px solid var(--line-soft)}.action-row:last-child{border:0}.action-row:hover .strong{color:#7155b7}
+.action-icon{display:grid;place-items:center;width:37px;height:37px;flex:0 0 37px;border-radius:11px;background:#f5efff;color:#926ecf}.action-icon.peach{background:#fff0e5;color:#bf875b}.action-icon.mint{background:#eaf9f0;color:#4d9c72}
+.action-row .descr{flex:1;min-width:0}.action-row .descr strong{display:block;font-size:11.5px}.action-row .descr small{display:block;margin-top:3px;color:var(--faint);font-size:10px}
+.page-split{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(280px,.85fr);gap:15px;align-items:start}.stack{display:grid;gap:14px}
+.tag{display:inline-flex;align-items:center;gap:5px;border:1px solid #eeedf1;background:#f8f8fa;border-radius:999px;padding:5px 9px;font-size:10px;color:#74717d;font-weight:600;white-space:nowrap}
+.pill-dot{height:7px;width:7px;background:#a78cf7;border-radius:50%;display:inline-block;flex:0 0 auto}.pill-dot.green{background:#46b47e}.pill-dot.orange{background:#ed9b68}.pill-dot.gray{background:#bbbbc4}
+.toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:17px}.filters{display:flex;align-items:center;flex-wrap:wrap;gap:9px}.field-search{height:39px;border:1px solid var(--line);border-radius:10px;display:flex;align-items:center;gap:8px;background:white;color:var(--faint);padding:0 12px;min-width:240px}.field-search input{min-width:0;width:100%;border:0;outline:0;font-size:11.5px;background:transparent;color:var(--ink)}
+.select-real{height:39px;border:1px solid var(--line);border-radius:10px;background:#fff;padding:0 28px 0 12px;font-size:11px;color:#55535c;max-width:225px;outline-color:#a78cf7}
+.provider-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}.provider-card{border:1px solid var(--line);border-radius:17px;padding:19px;background:#fff;transition:box-shadow .2s,transform .2s;min-width:0}.provider-card:hover{box-shadow:var(--sh-1);transform:translateY(-1px)}
+.provider-avatar{height:45px;width:45px;display:grid;place-items:center;border-radius:13px;background:linear-gradient(135deg,#ffeedf,#ffe2e9);color:#b96a70;font-size:14px;font-weight:750;flex:none}.provider-avatar.violet{background:linear-gradient(135deg,#efebff,#dfd9ff);color:#8466c3}.provider-avatar.blue{background:linear-gradient(135deg,#e1f1ff,#dcf5fb);color:#538dad}.provider-avatar.mint{background:linear-gradient(135deg,#e5f8ee,#daf3e6);color:#4f9670}
+.provider-card .top{display:flex;justify-content:space-between;align-items:flex-start}.provider-card h3{font-size:13px;letter-spacing:-.02em;margin-top:15px;line-height:1.4}.provider-card p{color:var(--muted);font-size:10px;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.provider-meta{display:flex;gap:14px;border-top:1px solid var(--line-soft);padding-top:15px;margin-top:17px;justify-content:space-between;align-items:center}.provider-meta strong{font-size:16px;font-weight:700}.provider-meta small{font-size:10px;color:var(--faint)}
+.trip-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}.trip-card{border:1px solid var(--line);border-radius:16px;overflow:hidden;min-width:0;background:#fff;transition:box-shadow .2s,transform .2s}.trip-card:hover{box-shadow:var(--sh-1);transform:translateY(-2px)}
+.trip-visual{height:153px;position:relative;overflow:hidden;background:#f6f3f7}.trip-visual img{width:100%;height:100%;object-fit:cover;display:block}.trip-visual .overlay-status{position:absolute;left:12px;top:12px;background:#fff;box-shadow:0 2px 7px #0001;border-radius:999px;padding:6px 9px;font-size:9px;font-weight:700}.trip-visual .overlay-status.draft{background:#fff5ea;color:#b97a42}
+.trip-inner{padding:15px}.trip-provider{color:#9a7ec9;text-transform:uppercase;font-size:9px;letter-spacing:.09em;font-weight:700;margin-bottom:6px}.trip-inner h3{font-size:13px;line-height:1.34;letter-spacing:-.015em;min-height:35px}.trip-facts{margin-top:12px;display:grid;gap:6px}.trip-fact{font-size:10.5px;color:#777781;display:flex;gap:6px;align-items:center}.trip-fact .ic{width:13px;height:13px;color:#a9a8b1}.trip-footer{border-top:1px solid var(--line-soft);margin-top:13px;padding-top:11px;display:flex;justify-content:space-between;align-items:center;gap:8px}.trip-price{font-size:18px;font-weight:750;letter-spacing:-.035em}.trip-price small{font-weight:450;color:var(--faint);font-size:9px;display:block;letter-spacing:0}.trip-action{font-size:10.5px;color:#765eb7;font-weight:650;display:flex;gap:4px;align-items:center}
+.empty-illustration{width:65px;height:65px;display:grid;place-items:center;border-radius:19px;background:linear-gradient(130deg,#fff2e8,#f0eaff);color:#9a76ce;margin:0 auto 15px}.empty-card{text-align:center;padding:50px 25px;border:1px dashed #dfdce6;border-radius:16px;background:#fdfcff}.empty-card h3{font-size:14px;margin-bottom:7px}.empty-card p{color:var(--faint);font-size:11px;max-width:350px;margin:auto auto 16px;line-height:1.6}
+.upload-zone{position:relative;min-height:254px;border:1.7px dashed #cfc6e4;border-radius:16px;background:linear-gradient(120deg,#fffdfc,#faf8ff);display:flex;align-items:center;justify-content:center;text-align:center;flex-direction:column;padding:28px;transition:border-color .2s,background .2s;cursor:pointer}
+.upload-zone.dragging{border-color:#9577d9;background:#f5efff}.upload-icon{height:59px;width:59px;display:grid;place-items:center;background:linear-gradient(120deg,#ffe9d7,#efe2ff);color:#886cb6;border-radius:20px;margin-bottom:15px}.upload-zone h3{font-size:14px;letter-spacing:-.015em}.upload-zone p{font-size:11px;color:var(--faint);margin-top:6px;line-height:1.6}.upload-zone .btn{margin-top:14px}
+.sample-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.sample-flyer{border:1px solid var(--line);border-radius:13px;background:#fff;display:flex;align-items:center;gap:10px;padding:10px;text-align:left;min-width:0}.sample-flyer:hover{border-color:#c4b4e5;background:#fcfaff}.sample-thumb{height:65px;width:48px;border-radius:7px;overflow:hidden;flex:0 0 48px;background:linear-gradient(145deg,#8fc3d6,#8971d2);position:relative}.sample-thumb img{width:100%;height:100%;object-fit:cover}.sample-flyer strong{font-size:10.5px;line-height:1.3;display:block}.sample-flyer span{font-size:9.5px;color:var(--faint);display:block;margin-top:4px;line-height:1.35}
+.steps{display:flex;gap:9px;align-items:center;margin-bottom:20px}.step{display:flex;gap:8px;align-items:center;font-size:10.5px;color:#a3a0ac;font-weight:650}.step .step-num{display:grid;place-items:center;width:25px;height:25px;border-radius:50%;background:#f5f5f7;color:#aaa4af;font-size:10px}.step.active{color:#27232e}.step.active .step-num{background:#f1e9ff;color:#8666ba}.step.done .step-num{background:#eaf8f0;color:#39946e}.step-line{height:1px;background:#eceaf0;width:30px}
+.import-review{display:grid;grid-template-columns:minmax(230px,.9fr) minmax(0,1.2fr);gap:18px}.review-visual{border:1px solid var(--line);border-radius:15px;background:#fcfbfd;padding:12px}.flyer-sheet{width:100%;aspect-ratio:4/5;max-height:400px;background:linear-gradient(155deg,#23213f,#745aa2);color:#fff;border-radius:12px;position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;padding:20px}.flyer-sheet .flyer-art{position:absolute;inset:0;opacity:.65;background-position:center;background-size:cover}.flyer-sheet > *:not(.flyer-art){position:relative;z-index:1}.flyer-sheet .flyer-brand{font-size:10px;text-transform:uppercase;letter-spacing:.14em;font-weight:700}.flyer-sheet h3{font-size:34px;letter-spacing:-.06em;line-height:1.02;text-shadow:0 2px 16px #0005}.flyer-sheet p{font-size:11px;line-height:1.6}.flyer-sheet .flyer-value{font-weight:700;font-size:23px}.review-file-img{max-height:400px;max-width:100%;object-fit:contain;display:block;margin:auto;border-radius:10px}.upload-meta{font-size:10px;color:var(--faint);margin-top:10px;line-height:1.6}
+.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.form-grid .field input,.form-grid .field select,.form-grid .field textarea{background:#fff;width:100%;height:39px;padding:9px 11px;border:1px solid var(--line);border-radius:9px;font-size:11px;outline-color:#a78cf7}.form-grid .field textarea{height:74px;resize:vertical}.form-grid .field label{font-size:10.5px}.field-hint{font-size:9.5px;color:#a59ca9;margin-top:2px}.field .inline-field{display:flex;align-items:center;gap:6px}.field .inline-field select{flex:1;min-width:0}.field .inline-field button{border:1px solid var(--line);border-radius:10px;height:39px;width:39px;display:grid;place-items:center;flex:none;background:#fafafa}
+.validation-note{border:1px solid #ffe1c5;background:#fff9f2;color:#996b43;border-radius:11px;padding:11px 13px;font-size:10.5px;line-height:1.5;display:flex;align-items:flex-start;gap:8px}
+.progress-stage{height:9px;border-radius:20px;background:#f2eff5;overflow:hidden}.progress-stage i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ffb37a,#ff7ea8,#a78cf7);transition:width .35s;border-radius:20px}.loading-card{border:1px solid var(--line);border-radius:15px;display:grid;justify-items:center;gap:15px;padding:70px 30px;text-align:center}.loading-circle{width:48px;height:48px;border:3px solid #eae6f2;border-top-color:#a78cf7;border-radius:100%;animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+.web-frame-wrap{background:#f4f3f6;padding:22px;border:1px solid var(--line);border-radius:18px;overflow:auto;display:flex;justify-content:center}.web-frame{width:100%;max-width:1100px;background:#fff;border-radius:15px;border:1px solid #e8e6ed;overflow:hidden;box-shadow:0 17px 50px #221a3420;transition:max-width .3s;min-width:0}.web-frame.phone{max-width:380px}.browser-top{height:37px;border-bottom:1px solid #ededf0;display:flex;align-items:center;gap:7px;padding:0 13px;background:#fff}.browser-dot{height:8px;width:8px;border-radius:50%;background:#e8e4ea}.browser-url{margin:auto;background:#f6f5f8;border-radius:6px;padding:4px 20px;color:#a5a1ad;font-size:9px;white-space:nowrap;max-width:70%;overflow:hidden;text-overflow:ellipsis}
+.public-body{font-family:Inter,Arial,sans-serif}.public-nav{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:17px 25px;border-bottom:1px solid #f2f2f3}.public-logo{font-size:15px;font-weight:800;letter-spacing:-.045em}.public-nav small{color:#999;font-size:9px}.public-cover{padding:28px 28px 24px;background:linear-gradient(105deg,#fff5ec,#fff0f5 52%,#eee9ff)}.public-cover h2{font-size:clamp(23px,2.6vw,34px);letter-spacing:-.055em;line-height:1.1;max-width:400px}.public-cover p{color:#807a86;line-height:1.5;font-size:10px;margin-top:10px}.public-search{margin-top:18px;display:flex;gap:7px;flex-wrap:wrap}.public-search input,.public-search select{height:35px;border:1px solid #e9e4eb;border-radius:10px;background:#fff;padding:0 11px;min-width:0;font-size:10px;flex:1}.public-search select{flex:0 0 145px}.public-search input{flex:2}
+.public-content{padding:20px 26px 29px}.public-content h3{font-size:14px;letter-spacing:-.02em;margin-bottom:4px}.public-count{color:#aaa;font-size:10px}.public-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px;margin-top:16px}.public-trip{border:1px solid #eceaf0;border-radius:13px;overflow:hidden;text-align:left;min-width:0;background:#fff;cursor:pointer}.public-trip:hover{box-shadow:0 6px 25px #1111}.public-trip .image{height:96px;overflow:hidden}.public-trip .image img{width:100%;height:100%;object-fit:cover}.public-trip .body{padding:10px}.public-trip .body strong{font-size:10.5px;line-height:1.35;min-height:26px;display:block}.public-trip .body span{font-size:9px;color:#aaa;display:block;margin-top:6px}.public-trip .body b{font-size:12px;display:block;margin-top:7px}.public-footer{border-top:1px solid #efedf2;padding:15px 24px;color:#a9a4af;display:flex;align-items:center;justify-content:space-between;font-size:9px;gap:10px}
+.web-frame.phone .public-nav{padding:14px}.web-frame.phone .public-cover{padding:20px}.web-frame.phone .public-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.web-frame.phone .public-content{padding:17px 13px}.web-frame.phone .public-search{flex-direction:column}.web-frame.phone .public-search select{flex:auto}.web-frame.phone .public-trip .image{height:80px}
+.ai-hero{background:linear-gradient(120deg,#fff9f2,#fff1f5 55%,#f3edff);border:1px solid #eee4ef;border-radius:18px;padding:25px}.ai-input{display:block;margin-top:16px;min-height:108px;width:100%;resize:vertical;border:1px solid #e5dbe9;border-radius:12px;background:#fff;padding:15px;color:#26232c;font-size:12px;line-height:1.6;outline-color:#a78cf7}.prompt-chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:11px}.prompt-chip{padding:8px 11px;border-radius:999px;background:#fff;border:1px solid #e8dfea;color:#796d84;font-size:10.5px;text-align:left}.prompt-chip:hover{border-color:#bb9cda;color:#6b4ea5}
+.ai-result-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:15px}.ai-result-head h2{font-size:14px}.ai-criteria{display:flex;flex-wrap:wrap;gap:7px;margin:14px 0}.ai-criteria .tag{background:#f5f2fa;color:#7b69a5}.match-list{display:grid;gap:10px}.match-row{display:grid;grid-template-columns:126px minmax(0,1fr) auto;gap:15px;align-items:center;padding:12px;border-radius:13px;border:1px solid var(--line);background:#fff}.match-img{width:126px;height:91px;object-fit:cover;border-radius:9px}.match-body h3{font-size:12.5px;margin-bottom:5px}.match-body p{color:var(--faint);font-size:10px;line-height:1.5}.match-body .matches{font-size:10px;color:#659878;margin-top:7px}.match-amount{text-align:right}.match-amount strong{font-size:16px}.match-amount small{font-size:10px;color:var(--faint);display:block;margin-top:4px}.match-amount .btn{margin-top:11px}
+.drawer-body .travel-detail-image{width:100%;height:183px;object-fit:cover;border-radius:13px}.drawer-body .drawer-label{margin-top:16px}.drawer .drawer-data-row{align-items:flex-start}.drawer .drawer-data-row strong{max-width:65%;overflow-wrap:anywhere}.drawer-actions .btn{flex:1}.drawer-actions .btn:only-child{flex:0 0 auto}.drawer-note{background:#faf9fc}
+.modal .form-grid{margin-top:13px}.modal{width:min(610px,calc(100vw - 26px))}.modal.wide{width:min(740px,calc(100vw - 26px))}.modal-body{max-height:calc(100svh - 190px);overflow:auto;padding-right:3px}
+.segment{white-space:nowrap}.segmented-wrap{display:flex;gap:3px;border-radius:10px;padding:3px;background:#f4f4f6}.segmented-wrap button{font-size:10.5px;padding:7px 10px;border-radius:8px;color:#88818f}.segmented-wrap button.active{background:#fff;color:#1b1b20;box-shadow:0 1px 3px #0001}
+.detail-top{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.import-tag{font-size:9px;color:#a38ba9;background:#f7f1fb;padding:4px 8px;border-radius:20px;font-weight:700}
+.web-info{display:flex;align-items:center;gap:12px;flex-wrap:wrap;border:1px solid var(--line);padding:14px 17px;border-radius:13px;margin-bottom:16px}.web-info .web-url{flex:1;min-width:160px;font-size:12px;font-weight:700}.web-info .web-url small{font-size:10px;color:var(--faint);display:block;font-weight:400;margin-top:4px}
+.quick-help{display:flex;gap:8px;padding:12px;border-radius:11px;background:#faf9fc;color:#77717f;font-size:10.5px;line-height:1.6}.quick-help .ic{flex:none;color:#ae8ec9}
+body.modal-active{overflow:hidden}
+.profile-menu{right:0}
+@media(max-width:1330px){.provider-grid,.trip-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.hero-deco{opacity:.3}}
+@media(max-width:1050px){.intro-grid,.page-split{grid-template-columns:1fr}.hero-deco{opacity:.75}.provider-grid,.trip-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.hero-deco{display:none}.intro-hero{min-height:210px;padding:23px}.kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.provider-grid,.trip-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.sample-row{grid-template-columns:1fr}.sample-flyer{padding:8px}.sample-thumb{height:43px;width:38px;flex-basis:38px}.import-review{grid-template-columns:1fr}.review-visual{max-width:360px}.web-frame-wrap{padding:9px}.public-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.match-row{grid-template-columns:77px 1fr;gap:10px}.match-img{width:77px;height:94px}.match-amount{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;text-align:left}.match-amount .btn{margin:0}.toolbar{align-items:stretch}.filters{width:100%}.field-search{min-width:100%;flex:1}.select-real{max-width:none;flex:1;min-width:120px}.public-cover{padding:22px 16px}.public-content{padding:18px 12px}.public-nav{padding:15px}.public-search input{flex-basis:100%}}
+@media(max-width:420px){.provider-grid,.trip-grid{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.field.full{grid-column:1}.steps{gap:5px}.step-line{width:12px}.step{font-size:9px}.kpi-number{font-size:25px}.public-grid{grid-template-columns:1fr}.web-frame.phone .public-grid{grid-template-columns:2fr 2fr}.heading-actions{gap:6px}.btn{padding-inline:12px}}
+
+.compare-chip{position:absolute;right:10px;top:10px;z-index:2;border-radius:999px;padding:6px 9px;background:#ffffffed;box-shadow:0 2px 10px #0002;display:flex;gap:5px;align-items:center;font-size:9.5px;font-weight:650;color:#55505e}
+.compare-chip.selected{background:#eee8ff;color:#7658b4}
+.compare-chip .ic{width:12px;height:12px}
+.compare-bar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:15px}
+.compare-bar .btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.compare-table{min-width:520px}.compare-table th:not(:first-child){min-width:135px}
+@media(max-width:760px){.compare-chip{right:8px;top:8px;font-size:9px}}
+</style></head>
+<body>
+<svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
+ <symbol id="i-activity" viewBox="0 0 24 24"><path d="M3 17l5-5 4 4 8-9M15 7h5v5"/></symbol>
+ <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/></symbol>
+ <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m16 16 4 4"/></symbol>
+ <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+ <symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+ <symbol id="i-chevron-left" viewBox="0 0 24 24"><path d="m15 6-6 6 6 6"/></symbol>
+ <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 15v-5a6 6 0 0 0-12 0v5l-1.5 2.5h15L18 15zM10 20a2 2 0 0 0 4 0"/></symbol>
+ <symbol id="i-bus" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="16" rx="3"/><path d="M5 11h14M7.5 19v2M16.5 19v2"/><path d="M8 7h3m2 0h3"/></symbol>
+ <symbol id="i-route" viewBox="0 0 24 24"><circle cx="6" cy="5" r="2"/><circle cx="18" cy="19" r="2"/><path d="M8 5h6a4 4 0 0 1 0 8H9a3 3 0 0 0 0 6h7"/></symbol>
+ <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 10h18"/></symbol>
+ <symbol id="i-ticket" viewBox="0 0 24 24"><path d="M3 9a3 3 0 0 0 0 6v4h18v-4a3 3 0 0 0 0-6V5H3z"/><path d="M13 5v14" stroke-dasharray="2 3"/></symbol>
+ <symbol id="i-briefcase" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="14" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18"/></symbol>
+ <symbol id="i-credit" viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="3"/><path d="M2.5 10h19M6 15h4"/></symbol>
+ <symbol id="i-send" viewBox="0 0 24 24"><path d="M21 3 3 10l7 4 4 7 7-18zM10 14l11-11"/></symbol>
+ <symbol id="i-percent" viewBox="0 0 24 24"><circle cx="7" cy="7" r="3"/><circle cx="17" cy="17" r="3"/><path d="M4 20 20 4"/></symbol>
+ <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5 9-5zM3 13l9 5 9-5M3 18l9 5 9-5"/></symbol>
+ <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2M16 5a3 3 0 0 1 0 6M17 14a5 5 0 0 1 4 5v1"/></symbol>
+ <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 4v16M4 12h16"/></symbol>
+ <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4 12h15m-6-6 6 6-6 6"/></symbol>
+ <symbol id="i-close" viewBox="0 0 24 24"><path d="M5 5l14 14M19 5 5 19"/></symbol>
+ <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+ <symbol id="i-check" viewBox="0 0 24 24"><path d="m4 12 5 5L20 6"/></symbol>
+ <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5m0-8h.01"/></symbol>
+ <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+ <symbol id="i-spark" viewBox="0 0 24 24"><path d="m12 3 2.2 6.8L21 12l-6.8 2.2L12 21l-2.2-6.8L3 12l6.8-2.2L12 3z"/></symbol>
+ <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h16M4 17h16M8 4v6M16 14v6"/></symbol>
+ <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12m-4-4 4 4 4-4M4 17v4h16v-4"/></symbol>
+ <symbol id="i-log-out" viewBox="0 0 24 24"><path d="M10 4H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h5M14 8l4 4-4 4m4-4H9"/></symbol>
+
+<symbol id="i-building" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 21v-5h6v5M8 7h2m4 0h2M8 11h2m4 0h2"/></symbol>
+<symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a16 16 0 0 1 0 18M12 3a16 16 0 0 0 0 18"/></symbol>
+<symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="9" r="2"/><path d="m21 16-5-5L5 21"/></symbol>
+<symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V3m-5 5 5-5 5 5M4 16v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/></symbol>
+<symbol id="i-edit" viewBox="0 0 24 24"><path d="m15 5 4 4M4 20l4-.8L20 7a2.8 2.8 0 0 0-4-4L4 15v5z"/></symbol>
+<symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+<symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="13" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></symbol>
+<symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 .1l3-3a5 5 0 0 0-7-7l-2 2M14 11a5 5 0 0 0-7-.1l-3 3a5 5 0 0 0 7 7l2-2"/></symbol>
+<symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6m0-6-9 9M20 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h5"/></symbol>
+<symbol id="i-map-pin" viewBox="0 0 24 24"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></symbol>
+<symbol id="i-message" viewBox="0 0 24 24"><path d="M21 11.5A8.5 8.5 0 0 1 8 19l-5 2 1.7-5A8.5 8.5 0 1 1 21 11.5z"/></symbol>
+<symbol id="i-filter" viewBox="0 0 24 24"><path d="M4 5h16l-6 7v7l-4 2v-9z"/></symbol>
+<symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 4h4M6 7l1 13h10l1-13M10 11v6m4-6v6"/></symbol>
+<symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 9a8 8 0 0 0-14-3L4 9M4 4v5h5M4 15a8 8 0 0 0 14 3l2-3m0 5v-5h-5"/></symbol>
+<symbol id="i-phone" viewBox="0 0 24 24"><path d="M5 3h4l2 5-2 2c1 3 3 5 6 6l2-2 4 2v4c0 1-1 2-2 2A17 17 0 0 1 2 5c0-1 1-2 3-2z"/></symbol>
+<symbol id="i-monitor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 21h8m-4-3v3"/></symbol>
+<symbol id="i-smartphone" viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M11 18h2"/></symbol>
+<symbol id="i-check-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></symbol>
+<symbol id="i-alert" viewBox="0 0 24 24"><path d="m12 3 10 18H2L12 3zM12 9v5m0 3h.01"/></symbol>
+<symbol id="i-store" viewBox="0 0 24 24"><path d="M3 9 5 3h14l2 6v2a3 3 0 0 1-5 2 3 3 0 0 1-4 0 3 3 0 0 1-4 0 3 3 0 0 1-5-2V9zM5 14v7h14v-7M10 21v-6h4v6"/></symbol>
+<symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h12M9 12h12M9 18h12M4 6h.01M4 12h.01M4 18h.01"/></symbol>
+<symbol id="i-archive" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v12h14V9M10 13h4"/></symbol>
+<symbol id="i-magic" viewBox="0 0 24 24"><path d="m4 20 13-13 3 3L7 23l-3-3zM16 3v2m6 1-2 1m0-5v2M3 3l1 2m1 1 2 1"/></symbol>
+<symbol id="i-git-compare" viewBox="0 0 24 24"><path d="M6 4v16M18 4v16M3 8l3-4 3 4M15 16l3 4 3-4M9 12h6"/></symbol></svg>
+<div id="shell" class="shell">
+<aside id="sidebar" class="sidebar" aria-label="Navegación principal">
+ <div class="sidebar-logo"><button class="mark" id="expandBtn" title="Expandir menú" aria-label="Expandir menú"><svg class="ic"><use href="#i-activity"/></svg></button><strong class="brand-word">turistack</strong><button id="collapseBtn" class="side-collapse" aria-label="Contraer menú"><svg class="ic sm"><use href="#i-chevron-left"/></svg></button></div>
+ <button class="sidebar-search" data-action="global-search"><svg class="ic sm"><use href="#i-search"/></svg><span class="srch-label">Buscar en Turistack...</span><kbd>⌘K</kbd></button>
+ <div class="side-group"><div class="side-label">MI ESPACIO</div><nav class="side-nav">
+ <button class="nav-link active" data-view="home"><svg class="ic"><use href="#i-grid"/></svg><span class="nav-text">Resumen</span></button>
+ <button class="nav-link" data-view="providers"><svg class="ic"><use href="#i-building"/></svg><span class="nav-text">Mis empresas</span></button>
+ <button class="nav-link" data-view="import"><svg class="ic"><use href="#i-magic"/></svg><span class="nav-text">Importar con IA</span><span class="nav-count">Nuevo</span></button>
+ <button class="nav-link" data-view="catalog"><svg class="ic"><use href="#i-layers"/></svg><span class="nav-text">Mis viajes</span></button>
+ </nav></div>
+ <div class="side-group"><div class="side-label">VENDER MÁS</div><nav class="side-nav">
+ <button class="nav-link" data-view="website"><svg class="ic"><use href="#i-globe"/></svg><span class="nav-text">Mi página web</span></button>
+ <button class="nav-link" data-view="smart"><svg class="ic"><use href="#i-spark"/></svg><span class="nav-text">Buscador inteligente</span></button>
+ </nav></div>
+ <div class="side-bottom">
+ <div class="sidebar-foot-card side-status"><div class="side-status-h"><span>Tu espacio</span><strong>Plan Revendedor</strong></div><div class="progress"><i style="width:65%"></i></div><small>Catálogo en crecimiento · demo</small><button type="button" class="mini-cta" data-view="website">Ver mi página <svg class="ic sm"><use href="#i-arrow"/></svg></button></div>
+ <button class="side-help" data-action="help"><svg class="ic sm"><use href="#i-info"/></svg><span>Acerca de esta demo</span></button>
+ </div>
+</aside>
+<div class="main-shell"><header class="topbar">
+ <div style="display:flex;align-items:center;gap:8px;min-width:0"><button class="mobile-menu" id="mobileMenuBtn" aria-label="Abrir menú"><svg class="ic lg"><use href="#i-menu"/></svg></button><button class="search-trigger" data-action="global-search"><svg class="ic sm"><use href="#i-search"/></svg><span class="search-placeholder">Buscar viajes, empresas...</span><kbd>⌘K</kbd></button></div>
+ <div class="top-logo"><b>Turistack</b><span>Espacio Revendedor · demostración</span></div>
+ <div class="top-right"><button class="icon-btn" id="noticeBtn" aria-label="Avisos"><svg class="ic"><use href="#i-bell"/></svg><span class="notify-dot"></span></button>
+ <div class="profile-wrap"><button id="profileBtn" class="profile-btn" aria-expanded="false"><span class="avatar">SM</span><span class="profile-copy"><b id="profileName">Silvina Martínez</b><small>Revendedora <svg class="ic"><use href="#i-chevron-down"/></svg></small></span></button><div class="profile-menu" id="profileMenu" role="menu"><strong id="profileMenuName">Silvina Martínez</strong><span>Espacio independiente · demo</span><hr><button class="action-row" data-action="edit-profile"><svg class="ic sm"><use href="#i-edit"/></svg><span class="small">Editar perfil y WhatsApp</span></button><button class="action-row" data-action="reset"><svg class="ic sm"><use href="#i-refresh"/></svg><span class="small">Restablecer datos de demostración</span></button></div></div>
+ </div>
+</header><main class="content" id="mainContent"><div id="pageContent" aria-live="polite"></div><p class="data-footnote">Prototipo interactivo · datos turísticos ilustrativos · sin IA real ni servidor · los cambios se guardan solo en este navegador.</p></main></div></div>
+<div class="screen-overlay" id="screenOverlay"></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="drawerTitle" aria-hidden="true"><div class="drawer-head"><div><h2 id="drawerTitle">Detalle</h2><p id="drawerSub">Turistack · demo</p></div><button class="icon-btn drawer-close" data-action="close" aria-label="Cerrar"><svg class="ic"><use href="#i-close"/></svg></button></div><div id="drawerBody" class="drawer-body"></div></aside>
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" aria-hidden="true"><div class="modal-head"><div><div class="eyebrow" id="modalEyebrow">TURISTACK</div><h2 id="modalTitle">Editar</h2><p id="modalSubtitle">Información de demostración</p></div><button class="icon-btn" data-action="close" aria-label="Cerrar"><svg class="ic"><use href="#i-close"/></svg></button></div><div id="modalBody" class="modal-body"></div></div>
+<div class="modal cmd-dialog" id="commandDialog" role="dialog" aria-modal="true" aria-label="Búsqueda global" aria-hidden="true"><div class="cmd-search"><svg class="ic"><use href="#i-search"/></svg><input id="commandInput" type="search" placeholder="Buscar viaje, empresa o módulo..." autocomplete="off" aria-label="Buscar en el prototipo"><kbd>ESC</kbd></div><div class="cmd-results" id="commandResults"></div><div class="cmd-footer">Escribí para filtrar · seleccioná un resultado para abrirlo · Esc para cerrar</div></div>
+<div id="toastRegion" class="toast-region" role="status" aria-live="polite"></div>
+<script>
+(() => {
+'use strict';
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
+const ic=(n,cls='')=>`<svg class="ic ${cls}" aria-hidden="true"><use href="#i-${n}"/></svg>`;
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money=n=>'$ '+Number(n||0).toLocaleString('es-AR',{maximumFractionDigits:0});
+const fmtDate=d=>{if(!d)return 'A confirmar';const dt=new Date(d+'T12:00:00');return Number.isNaN(+dt)?'A confirmar':dt.toLocaleDateString('es-AR',{day:'2-digit',month:'short',year:'numeric'}).replace('.','')};
+const niceDate=d=>{if(!d)return 'A confirmar';const dt=new Date(d+'T12:00:00');return Number.isNaN(+dt)?'A confirmar':dt.toLocaleDateString('es-AR',{day:'numeric',month:'long',year:'numeric'})};
+const initials=n=>String(n||'').split(' ').filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase();
+const slug=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+const numId=()=>String(Date.now())+String(Math.floor(Math.random()*999));
+const colors=['violet','blue','mint',''];
+const seedProviders=[
+{id:'p1',name:'Rutas del Sur',contact:'Mariano López',phone:'1155501020',email:'comercial@rutasdelsur.test',status:'active',city:'Buenos Aires'},
+{id:'p2',name:'Andes Turismo',contact:'Cecilia Ruiz',phone:'1155501021',email:'ventas@andesturismo.test',status:'active',city:'Mendoza'},
+{id:'p3',name:'Costa Azul Viajes',contact:'Natalia Gómez',phone:'1155501022',email:'info@costaazul.test',status:'active',city:'Mar del Plata'},
+{id:'p4',name:'Senderos Travel',contact:'Pablo Duarte',phone:'1155501023',email:'reservas@senderos.test',status:'active',city:'Córdoba'},
+{id:'p5',name:'Horizonte Excursiones',contact:'Mariana Soto',phone:'1155501024',email:'contacto@horizonte.test',status:'active',city:'Buenos Aires'},
+{id:'p6',name:'Nueva Ruta Operadora',contact:'Carlos Álvarez',phone:'1155501025',email:'ventas@nuevaruta.test',status:'active',city:'Rosario'},
+{id:'p7',name:'Estrella Federal',contact:'Lucía Fernández',phone:'1155501026',email:'contacto@estrellafederal.test',status:'active',city:'Buenos Aires'},
+{id:'p8',name:'Viajá Más',contact:'Gastón Pérez',phone:'1155501027',email:'turismo@viajamas.test',status:'active',city:'La Plata'},
+{id:'p9',name:'Patagonia Mayorista',contact:'Carolina Díaz',phone:'1155501028',email:'reservas@patagoniamayorista.test',status:'active',city:'Bariloche'},
+{id:'p10',name:'Grupo Destinos',contact:'Fernanda Silva',phone:'1155501029',email:'ventas@grupodestinos.test',status:'active',city:'Buenos Aires'}];
+const baseTrips=[
+['t1','Cataratas del Iguazú · Aventura completa','Puerto Iguazú','Misiones','p1','2026-11-19','2026-11-24',479000,'Hotel Jardín del Norte','Media pensión','Buenos Aires','Micro semicama','Excursiones a Cataratas y traslados','published'],
+['t2','Bariloche y la Ruta de los Lagos','Bariloche','Río Negro','p9','2027-01-12','2027-01-20',849000,'Hotel Lago Claro','Desayuno','Buenos Aires','Micro cama','Circuito Chico y excursión lacustre','published'],
+['t3','Mar del Plata · Verano 2027','Mar del Plata','Buenos Aires','p3','2027-01-17','2027-01-25',589000,'Hotel Costa Dorada','Pensión completa','Zona Oeste','Micro semicama','Alojamiento, pensión completa y coordinador','published'],
+['t4','Sierras de Córdoba · Escapada','Villa Carlos Paz','Córdoba','p4','2026-12-04','2026-12-09',319000,'Hotel Serrano','Media pensión','Morón','Micro semicama','Visitas a Villa General Belgrano y La Cumbrecita','published'],
+['t5','Mendoza entre viñedos','Mendoza','Mendoza','p2','2026-11-07','2026-11-12',499000,'Hotel Aconcagua','Desayuno','Buenos Aires','Micro cama','City tour y bodegas','published'],
+['t6','Termas de Río Hondo · Descanso','Termas de Río Hondo','Santiago del Estero','p5','2026-12-09','2026-12-15',398000,'Hotel Termal Plaza','Pensión completa','Buenos Aires','Micro semicama','Acceso a piscinas termales y coordinador','published'],
+['t7','San Bernardo · Playa y relax','San Bernardo','Buenos Aires','p3','2027-02-05','2027-02-12',489000,'Hotel Atlántida','Pensión completa','Zona Oeste','Micro semicama','7 noches y régimen de comidas','published'],
+['t8','Salta y Jujuy · Colores del Norte','Salta','Salta','p6','2027-03-08','2027-03-17',970000,'Hotel Colonial','Media pensión','Buenos Aires','Micro cama','Quebrada de Humahuaca y excursiones','published'],
+['t9','Villa Gesell · Especial familias','Villa Gesell','Buenos Aires','p8','2027-01-23','2027-01-30',635000,'Hotel Arena','Desayuno','Laferrere','Micro semicama','7 noches de alojamiento y traslados','published'],
+['t10','Merlo San Luis · Aire puro','Merlo','San Luis','p7','2026-11-24','2026-11-29',349000,'Hotel Sierras','Media pensión','Morón','Micro semicama','Excursión a Mirador del Sol','published'],
+['t11','Puerto Madryn · Ballenas y costa','Puerto Madryn','Chubut','p9','2026-11-12','2026-11-19',769000,'Hotel Península','Desayuno','Buenos Aires','Micro cama','Península Valdés y paseo costero','published'],
+['t12','Tandil · Fin de semana largo','Tandil','Buenos Aires','p10','2026-11-21','2026-11-24',229000,'Hotel Las Piedras','Media pensión','Zona Oeste','Micro semicama','City tour y paseos serranos','published'],
+['t13','El Calafate · Patagonia soñada','El Calafate','Santa Cruz','p9','2027-03-15','2027-03-22',1490000,'Hotel Glaciar','Desayuno','Aeroparque','Avión','Visita al glaciar Perito Moreno','draft'],
+['t14','Rosario y Victoria · Escapada','Rosario','Santa Fe','p6','2026-12-13','2026-12-16',260000,'Hotel Ribera','Media pensión','Buenos Aires','Micro semicama','Recorrido histórico y paseo fluvial','published'],
+['t15','Pinamar · Temporada de verano','Pinamar','Buenos Aires','p8','2027-02-14','2027-02-21',699000,'Hotel Del Bosque','Desayuno','San Justo','Micro cama','7 noches y traslados','draft'],
+['t16','Cataratas del Iguazú · Económico','Puerto Iguazú','Misiones','p5','2027-02-18','2027-02-23',435000,'Hotel Tres Fronteras','Desayuno','Liniers','Micro semicama','Alojamiento, transporte y coordinación','published'],
+['t17','Mar del Plata · Escapada express','Mar del Plata','Buenos Aires','p10','2026-12-05','2026-12-09',299000,'Hotel Brisa','Desayuno','Morón','Micro semicama','4 noches y coordinación','published'],
+['t18','Villa Carlos Paz · Enero','Villa Carlos Paz','Córdoba','p7','2027-01-07','2027-01-14',469000,'Hotel del Valle','Pensión completa','Zona Oeste','Micro semicama','7 noches, paseos y coordinación','published']
+].map(([id,title,destination,province,companyId,start,end,price,hotel,regime,board,transport,included,status])=>({id,title,destination,province,companyId,start,end,price,hotel,regime,board,transport,included,status,source:'demo',description:'Paquete de turismo organizado. Consultá condiciones y disponibilidad con el proveedor.',updated:'2026-10-25'}));
+const STORAGE='turistack_revendedor_cadence_mockup_v2';
+function initial(){return {profile:{name:'Silvina Martínez',slug:'silvinamartinez',phone:'541160347665',business:'Viajes de Silvina'},providers:seedProviders,trips:baseTrips}}
+function restore(){try{const x=JSON.parse(localStorage.getItem(STORAGE));if(x&&Array.isArray(x.providers)&&Array.isArray(x.trips)&&x.profile)return x}catch(e){}return initial()}
+let data=restore();
+let ui={view:'home',compare:[],catalog:{search:'',provider:'all',status:'all',sort:'recent',layout:'grid'},providerSearch:'',publicSearch:'',publicDestination:'all',device:'desktop',import:{phase:0,preset:null,file:null,preview:null,draft:null,unknown:false},smartQuery:'',smartRun:false,smartMatches:[],smartInfo:null,focusProvider:null};
+const persist=()=>{try{localStorage.setItem(STORAGE,JSON.stringify(data))}catch(e){toast('No se pudo guardar en este navegador')}};
+const provider=id=>data.providers.find(p=>p.id===id)||{name:'Proveedor no encontrado',status:'inactive'};
+const tripsFor=id=>data.trips.filter(t=>t.companyId===id);
+const published=()=>data.trips.filter(t=>t.status==='published');
+const sceneCache={};
+function scene(dest='Viajes'){
+ const k=String(dest||'').toLowerCase();if(sceneCache[k])return sceneCache[k];
+ const coast=/mar del plata|gesell|san bernardo|pinamar|playa|costa/.test(k);
+ const fall=/iguaz|cataratas/.test(k);
+ const hills=/cordoba|córdoba|carlos paz|merlo|tandil|rosario|termas/.test(k);
+ const cool=/bariloche|madryn|calafate|patagonia/.test(k);
+ const valley=/mendoza|salta|jujuy/.test(k);
+ let sky=['#fbd4b7','#f9adbc','#ae9adb'],a='#5276a3',b='#7198ad',water='#73c6c8',fg='#31656c';
+ if(coast){sky=['#ffe5bf','#f9b69c','#ffd5ac'];a='#d0a174';b='#f0ca91';water='#7ab9d1';fg='#ddaf7b'}
+ else if(fall){sky=['#e4f0d9','#a6d5ba','#a8c7da'];a='#3a8b70';b='#57ae89';water='#d3eff0';fg='#256c5c'}
+ else if(cool){sky=['#d5def7','#a7bde0','#dfc4d6'];a='#566d96';b='#7392ac';water='#78acbf';fg='#3a6c7e'}
+ else if(valley){sky=['#ffe9cf','#efbdad','#c5a6c8'];a='#a7848b';b='#d5a29a';water='#91afbc';fg='#956f76'}
+ else if(hills){sky=['#f4e1cf','#efb5a6','#c4adba'];a='#9e8e85';b='#ba9e93';water='#82b4c2';fg='#648a86'}
+ const art=fall?`<path d="M0 238C110 153 225 165 306 202c72-55 187-85 334-20V390H0z" fill="${a}"/><path d="M0 286Q95 238 155 255t110-17q120-42 375 20v130H0" fill="${fg}"/><path d="M222 178h195l-35 212H255Z" fill="#e4fcf6" opacity=".92"/><path d="M248 182h142l-11 199H275Z" fill="#a4d9d6" opacity=".65"/><path d="M0 365q170-35 325 0t315-7v32H0" fill="${water}"/>`:
+ coast?`<path d="M0 221q127-42 239-12t401-12v195H0" fill="${water}"/><path d="M0 287q130-41 254 0t386-8v111H0" fill="#b9e2df" opacity=".75"/><path d="M0 340q173-28 335 6t305 2v42H0" fill="${fg}"/><path d="M92 310l33-116 30 116" stroke="#876a54" stroke-width="7" fill="none"/><path d="M125 194q-63-37-91 3 46-6 91 10 28-66 82-43-49 9-74 46 62-21 99 10-53-1-99-8" fill="#638e78"/>`:
+ `<path d="M0 265 135 108 238 229 336 83 471 250 557 139 640 220V390H0" fill="${a}"/><path d="M0 305 149 205 242 291 348 175 457 309 564 232 640 280V390H0" fill="${b}"/><path d="M0 322q145-36 277 3t363-6v71H0" fill="${water}"/><path d="M0 357q130-18 295 10t345-4v27H0" fill="${fg}"/>`;
+ const s=`<svg xmlns="http://www.w3.org/2000/svg" width="640" height="390" viewBox="0 0 640 390"><defs><linearGradient id="bg" x1="0" y1="0" x2=".7" y2="1"><stop stop-color="${sky[0]}"/><stop offset=".52" stop-color="${sky[1]}"/><stop offset="1" stop-color="${sky[2]}"/></linearGradient></defs><rect width="640" height="390" fill="url(#bg)"/><circle cx="489" cy="87" r="48" fill="#fff3d5" opacity=".78"/><path d="M0 104c70-36 124 15 198-19s170 15 243-13 114-14 199-22" stroke="#fff" opacity=".28" fill="none" stroke-width="2"/>${art}<rect width="640" height="390" fill="#fff" opacity=".025"/></svg>`;
+ return sceneCache[k]='data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(s);
+}
+const status=t=>t.status==='published'?'<span class="status green">Publicado</span>':'<span class="status orange">Borrador</span>';
+function heading(eyebrow,title,subtitle,actions='') {return `<nav class="breadcrumb"><span>${esc(data.profile.business)}</span>${ic('chevron')}<strong>${esc(title.replace(/<[^>]*>/g,''))}</strong></nav><div class="heading"><div><div class="eyebrow">${eyebrow}</div><h1>${title}</h1><p>${subtitle}</p></div>${actions?`<div class="heading-actions">${actions}</div>`:''}</div>`}
+function tripCard(t){const p=provider(t.companyId);return `<article class="trip-card"><div class="trip-visual"><button type="button" class="compare-chip ${ui.compare.includes(t.id)?'selected':''}" data-compare="${t.id}">${ui.compare.includes(t.id)?ic('check','sm'):ic('plus','sm')} ${ui.compare.includes(t.id)?'Seleccionado':'Comparar'}</button><img src="${scene(t.destination)}" alt="Ilustración de paisaje · ${esc(t.destination)}" loading="lazy"><span class="overlay-status ${t.status==='draft'?'draft':''}">${t.status==='published'?'● Publicado':'◉ Borrador'}</span></div><div class="trip-inner"><div class="trip-provider">${esc(p.name)}</div><h3>${esc(t.title)}</h3><div class="trip-facts"><div class="trip-fact">${ic('calendar')} ${fmtDate(t.start)} · ${fmtDate(t.end)}</div><div class="trip-fact">${ic('map-pin')} ${esc(t.board||'Salida a confirmar')} · ${esc(t.transport||'Transporte a confirmar')}</div></div><div class="trip-footer"><div class="trip-price">${money(t.price)}<small>por persona · precio de muestra</small></div><button type="button" class="trip-action" data-trip="${esc(t.id)}">Ver ficha ${ic('arrow','sm')}</button></div></div></article>`}
+function providerBadge(p,i){return `<span class="provider-avatar ${colors[i%colors.length]}">${esc(initials(p.name))}</span>`}
+function viewHome(){let top=data.trips.slice(-6).reverse();return heading('TU NEGOCIO, ORGANIZADO','Hola, '+esc(data.profile.name.split(' ')[0])+' <span style="background:linear-gradient(95deg,#ffb37a,#ff7ea8,#a78cf7);-webkit-background-clip:text;color:transparent">✳</span>','Todos tus proveedores, viajes y publicaciones desde un solo lugar.',`<button class="btn btn-white" data-view="website">${ic('eye')} Ver mi web</button><button class="btn btn-dark" data-view="import">${ic('plus')} Importar viaje</button>`)+`
+<section class="kpi-grid"><article class="kpi"><div class="kpi-label">Empresas proveedoras</div><strong class="kpi-number">${data.providers.filter(p=>p.status==='active').length}</strong><span class="kpi-note purple">${ic('building','sm')} Conectadas a tu espacio</span></article><article class="kpi"><div class="kpi-label">Viajes en tu catálogo</div><strong class="kpi-number">${data.trips.length}</strong><span class="kpi-note neutral">De todos tus proveedores</span></article><article class="kpi"><div class="kpi-label">Viajes publicados</div><strong class="kpi-number">${published().length}</strong><span class="kpi-note">${ic('check','sm')} Visibles en tu web</span></article><article class="kpi"><div class="kpi-label">Borradores</div><strong class="kpi-number">${data.trips.filter(t=>t.status==='draft').length}</strong><span class="kpi-note orange">Pendientes de publicar</span></article></section>
+<div class="intro-grid"><section class="intro-hero"><div><span class="import-tag">${ic('spark','sm')} TURISTACK IA</span><h2>De un flyer de WhatsApp a tu catálogo en minutos.</h2><p>Subí la imagen que te manda tu proveedor. Revisá los datos sugeridos y publicá un viaje completo en tu propia web.</p><button class="btn btn-dark" data-view="import">Probar importador ${ic('arrow','sm')}</button></div><div class="hero-deco"><span>${ic('image')} Flyer recibido</span><span>${ic('spark')} Datos listos para revisar</span><span>${ic('check-circle')} Publicado en tu web</span></div></section><section class="panel panel-pad"><div class="section-head"><div><h2>Empezá por acá</h2><p>Acciones rápidas para tu día a día</p></div></div><div class="action-list"><button class="action-row" data-view="providers"><span class="action-icon peach">${ic('building')}</span><span class="descr"><strong class="strong">Administrar mis empresas</strong><small>Organizá todos tus proveedores</small></span>${ic('chevron','sm')}</button><button class="action-row" data-view="catalog"><span class="action-icon">${ic('layers')}</span><span class="descr"><strong class="strong">Explorar mis viajes</strong><small>Buscá, filtrá y publicá fichas</small></span>${ic('chevron','sm')}</button><button class="action-row" data-view="smart"><span class="action-icon mint">${ic('spark')}</span><span class="descr"><strong class="strong">Buscar con IA</strong><small>Pedí viajes con tus propias palabras</small></span>${ic('chevron','sm')}</button></div></section></div>
+<div class="page-split"><section class="panel section-panel"><div class="section-head"><div><h2>Últimos viajes cargados</h2><p>Publicaciones de tus diferentes proveedores</p></div><button class="text-action" data-view="catalog">Ver todos ${ic('arrow','sm')}</button></div><div class="table-scroll"><table class="table" style="min-width:470px"><thead><tr><th>VIAJE</th><th>PROVEEDOR</th><th>PRECIO</th><th>ESTADO</th><th></th></tr></thead><tbody>${top.map(t=>`<tr><td class="main-cell"><strong>${esc(t.destination)}</strong><span class="travel-sub">${fmtDate(t.start)}</span></td><td>${esc(provider(t.companyId).name)}</td><td class="num">${money(t.price)}</td><td>${status(t)}</td><td><button class="row-link" data-trip="${esc(t.id)}" aria-label="Ver ${esc(t.title)}">${ic('chevron','sm')}</button></td></tr>`).join('')}</tbody></table></div></section><section class="panel section-panel"><div class="section-head"><div><h2>Tu página pública</h2><p>Así descubren tus viajes los interesados</p></div></div><div style="overflow:hidden;border-radius:12px;height:128px;margin-bottom:14px"><img src="${scene('Puerto Iguazú')}" style="width:100%;height:100%;object-fit:cover" alt="Paisaje ilustrativo"></div><div class="small strong">${esc(data.profile.slug)}.turistack.com</div><p class="tiny muted" style="margin:7px 0 14px">Tus viajes publicados con filtros y contacto directo por WhatsApp.</p><button class="btn btn-white" data-view="website">${ic('eye')} Vista previa</button></section></div>`}
+function viewProviders(){const q=ui.providerSearch.toLowerCase().trim();const ps=data.providers.filter(p=>(p.name+' '+p.contact+' '+p.city).toLowerCase().includes(q));const active=data.providers.filter(p=>p.status==='active').length;
+ return heading('01 / PROVEEDORES','Mis empresas','Administrá las empresas que te envían viajes. Cada proveedor mantiene sus propias condiciones y datos comerciales.',`<button class="btn btn-dark" data-action="new-provider">${ic('plus')} Nueva empresa</button>`)+`<div class="kpi-grid" style="grid-template-columns:repeat(3,minmax(0,1fr))"><article class="kpi"><div class="kpi-label">Empresas registradas</div><strong class="kpi-number">${data.providers.length}</strong><span class="kpi-note purple">Tu red de proveedores</span></article><article class="kpi"><div class="kpi-label">Empresas activas</div><strong class="kpi-number">${active}</strong><span class="kpi-note">${ic('check','sm')} Disponibles</span></article><article class="kpi"><div class="kpi-label">Viajes de tus proveedores</div><strong class="kpi-number">${data.trips.length}</strong><span class="kpi-note neutral">Fichas registradas</span></article></div><div class="toolbar"><div class="filters"><label class="field-search">${ic('search','sm')}<input id="providerSearch" aria-label="Buscar empresas" placeholder="Buscar empresas por nombre o contacto..." value="${esc(ui.providerSearch)}"></label></div><span class="tiny faint">${ps.length} empresas encontradas</span></div><div id="providerGrid" class="provider-grid">${ps.map((p,i)=>`<article class="provider-card"><div class="top">${providerBadge(p,data.providers.indexOf(p))}<span class="status ${p.status==='active'?'green':'gray'}">${p.status==='active'?'Activa':'Pausada'}</span></div><h3>${esc(p.name)}</h3><p>${esc(p.contact||'Sin contacto')} · ${esc(p.city||'Sin localidad')}</p><div class="provider-meta"><div><strong>${tripsFor(p.id).length}</strong><small style="display:block">Viajes cargados</small></div><button class="btn btn-white btn-sm" data-provider="${p.id}">Ver empresa ${ic('arrow','sm')}</button></div></article>`).join('')||`<div style="grid-column:1/-1">${emptyState('No encontramos empresas','Probá con otra búsqueda o agregá un proveedor nuevo.','new-provider','Nueva empresa')}</div>`}</div>`}
+function emptyState(title,copy,act,label){return `<div class="empty-card"><div class="empty-illustration">${ic('search','lg')}</div><h3>${title}</h3><p>${copy}</p>${act?`<button class="btn btn-white" data-action="${act}">${label}</button>`:''}</div>`}
+function importedSamples(){return [{key:'iguazu',title:'Cataratas · Noviembre',company:'Sol del Norte Turismo',destination:'Puerto Iguazú',province:'Misiones',start:'2026-11-27',end:'2026-12-03',price:519900,hotel:'Hotel Cataratas Plaza',regime:'Media pensión',board:'Zona Oeste',transport:'Micro semicama',included:'5 noches · Coordinador · Excursiones',description:'Paquete a Cataratas para noviembre.'},{key:'cordoba',title:'Carlos Paz · Diciembre',company:'Senderos Travel',destination:'Villa Carlos Paz',province:'Córdoba',start:'2026-12-18',end:'2026-12-24',price:349900,hotel:'Hotel Sierras Altas',regime:'Pensión completa',board:'Morón',transport:'Micro semicama',included:'5 noches · Pensión completa · Excursiones',description:'Salida especial de diciembre.'},{key:'playa',title:'Mar del Plata · Enero',company:'Costa Azul Viajes',destination:'Mar del Plata',province:'Buenos Aires',start:'2027-01-29',end:'2027-02-05',price:619000,hotel:'Hotel Playa Serena',regime:'Pensión completa',board:'Zona Oeste',transport:'Micro cama',included:'7 noches · Coordinador · Traslados',description:'Vacaciones familiares en la costa.'}]}
+function steps(active){return `<div class="steps"><div class="step ${active===0?'active':'done'}"><span class="step-num">${active>0?ic('check','sm'):'1'}</span> Seleccionar flyer</div><div class="step-line"></div><div class="step ${active===1?'active':active>1?'done':''}"><span class="step-num">${active>1?ic('check','sm'):'2'}</span> Procesar con IA</div><div class="step-line"></div><div class="step ${active===2?'active':''}"><span class="step-num">3</span> Revisar y publicar</div></div>`}
+function viewImport(){const im=ui.import;return heading('02 / IMPORTADOR IA','Importar un viaje','Convertí flyers de tus proveedores en fichas estructuradas. En esta demo, la extracción está simulada.',`<button class="btn btn-white" data-action="restart-import">${ic('refresh')} Reiniciar importación</button>`)+steps(im.phase)+ (im.phase===0?`<div class="page-split"><section class="panel panel-pad"><div class="section-head"><div><h2>Subí el flyer del viaje</h2><p>Imágenes JPG, PNG o PDF · máximo sugerido 15 MB</p></div><span class="import-tag">${ic('spark','sm')} DEMO</span></div><div id="uploadZone" class="upload-zone" tabindex="0" role="button" aria-label="Seleccionar flyer"><input type="file" id="flyerFile" accept="image/png,image/jpeg,image/webp,application/pdf" hidden><div class="upload-icon">${ic('upload','lg')}</div><h3>Arrastrá tu flyer acá o seleccioná un archivo</h3><p>Tu revendedor puede cargar imágenes recibidas por WhatsApp.<br>Esta versión de demostración no ejecuta OCR real.</p><button type="button" class="btn btn-dark" data-action="pick-file">${ic('image','sm')} Seleccionar archivo</button></div><div class="section-head" style="margin:22px 0 12px"><div><h2>O probá con un flyer de ejemplo</h2><p>Con datos ficticios precargados para explorar todo el flujo</p></div></div><div class="sample-row">${importedSamples().map(s=>`<button class="sample-flyer" data-sample="${s.key}"><span class="sample-thumb"><img src="${scene(s.destination)}" alt=""></span><span><strong>${esc(s.title)}</strong><span>${esc(s.company)}</span></span></button>`).join('')}</div></section><aside class="stack"><section class="panel panel-pad"><div class="section-head"><div><h2>¿Cómo funciona?</h2><p>Tu nueva forma de cargar viajes</p></div></div>${[['1','Subí un flyer','Imagen o PDF del proveedor.'],['2','Revisá los campos','La IA sugiere datos y marca dudas.'],['3','Guardá o publicá','El viaje se suma a tu catálogo.']].map(([n,t,s])=>`<div class="action-row"><span class="action-icon">${n}</span><span class="descr"><strong>${t}</strong><small>${s}</small></span></div>`).join('')}</section><div class="quick-help">${ic('info')} <span><strong>Importante:</strong> los precios, hoteles, salidas y disponibilidades requieren validación humana. Este prototipo no llama a Gemini ni procesa realmente los documentos.</span></div></aside></div>`:
+ im.phase===1?`<div class="panel panel-pad"><div class="loading-card"><div class="loading-circle"></div><h2 style="font-size:18px;letter-spacing:-.03em">Simulando la extracción inteligente</h2><p class="muted small" id="loadingLabel">Preparando archivo de demostración...</p><div style="max-width:320px;width:100%"><div class="progress-stage"><i id="importProgress"></i></div></div><span class="tiny faint">No se está realizando ninguna llamada a una API externa.</span></div></div></div>`:
+ viewImportReview())}
+function viewImportReview(){const im=ui.import,d=im.draft||{},isSample=!im.unknown;const ps=data.providers;let matching=ps.find(p=>p.name.toLowerCase()===String(d.company||'').toLowerCase());const providerSelected=d.companyId||matching?.id||'';
+ return `<div class="panel panel-pad"><div class="section-head"><div><h2>Revisá la información antes de publicar</h2><p>${isSample?'Campos completados a partir de un flyer ficticio de ejemplo.':'Archivo seleccionado. Completá los datos manualmente: no se ha leído su contenido.'}</p></div><span class="status ${isSample?'purple':'orange'}">${isSample?'Extracción simulada':'Sin extracción automática'}</span></div><div class="import-review"><div class="review-visual">${im.preview?`<img class="review-file-img" src="${im.preview}" alt="Archivo seleccionado por el usuario">`:`<div class="flyer-sheet"><div class="flyer-art" style="background-image:linear-gradient(0deg,#22264590,#17162e33),url('${scene(d.destination||'Viajes')}')"></div><div class="flyer-brand">${esc(d.company||'FLYER DE PRUEBA')}</div><div><h3>${esc((d.destination||'VIAJE').toUpperCase())}</h3><p>${fmtDate(d.start)} · ${esc(d.regime||'Servicios a confirmar')}</p></div><div><div class="flyer-value">${money(d.price)}</div><p>SIMULACIÓN · SOLO PARA DEMO</p></div></div>`}<div class="upload-meta">${ic('image','sm')} ${esc(im.file?.name||'Ejemplo predefinido')}<br>Datos de prueba. Verificá todo con el proveedor.</div></div><form id="importForm" class="form-grid">
+ <div class="field full"><label for="impTitle">Nombre del viaje *</label><input id="impTitle" name="title" value="${esc(d.title||'')}" required placeholder="Ej. Cataratas · Noviembre"></div>
+ <div class="field full"><label for="impCompany">Empresa proveedora *</label><div class="inline-field"><select id="impCompany" name="companyId" required><option value="">Elegí una empresa...</option>${ps.map(p=>`<option value="${p.id}" ${p.id===providerSelected?'selected':''}>${esc(p.name)}</option>`).join('')}</select><button type="button" data-action="new-provider" title="Crear empresa">${ic('plus','sm')}</button></div>${d.company&&!matching&&!d.companyId?`<small class="field-hint">El proveedor sugerido “${esc(d.company)}” todavía no existe. Usá + para registrarlo.</small>`:''}</div>
+ <div class="field"><label for="impDestination">Destino *</label><input id="impDestination" name="destination" value="${esc(d.destination||'')}" required></div><div class="field"><label for="impProvince">Provincia</label><input id="impProvince" name="province" value="${esc(d.province||'')}"></div>
+ <div class="field"><label for="impStart">Fecha de salida *</label><input id="impStart" type="date" name="start" value="${esc(d.start||'')}" required></div><div class="field"><label for="impEnd">Fecha de regreso</label><input id="impEnd" type="date" name="end" value="${esc(d.end||'')}"></div>
+ <div class="field"><label for="impPrice">Precio por persona (ARS) *</label><input id="impPrice" type="number" min="1" name="price" value="${esc(d.price||'')}" required></div><div class="field"><label for="impBoard">Lugar de salida</label><input id="impBoard" name="board" value="${esc(d.board||'')}"></div>
+ <div class="field"><label for="impHotel">Hotel</label><input id="impHotel" name="hotel" value="${esc(d.hotel||'')}"></div><div class="field"><label for="impRegime">Régimen de comidas</label><select id="impRegime" name="regime">${['A confirmar','Solo alojamiento','Desayuno','Media pensión','Pensión completa','All inclusive'].map(v=>`<option ${d.regime===v?'selected':''}>${v}</option>`).join('')}</select></div>
+ <div class="field full"><label for="impTransport">Transporte</label><input id="impTransport" name="transport" value="${esc(d.transport||'')}"></div><div class="field full"><label for="impIncluded">Servicios incluidos / notas</label><textarea id="impIncluded" name="included">${esc(d.included||'')}</textarea></div>
+ <div class="field full"><div class="validation-note">${ic('alert','sm')} <span>Verificá precio por persona, fechas, régimen y condiciones. La IA no confirma disponibilidad ni reemplaza la información oficial del operador.</span></div></div>
+ <div class="field full" style="display:flex;justify-content:flex-end;flex-direction:row;gap:9px;margin-top:5px;flex-wrap:wrap"><button class="btn btn-white" type="button" data-action="restart-import">Cancelar</button><button class="btn btn-soft" name="saveAs" value="draft" type="submit">${ic('archive','sm')} Guardar borrador</button><button class="btn btn-dark" name="saveAs" value="published" type="submit">${ic('check','sm')} Publicar viaje</button></div>
+ </form></div></div>`}
+function filteredTrips(){const f=ui.catalog;let rows=data.trips.filter(t=>(f.provider==='all'||t.companyId===f.provider)&&(f.status==='all'||t.status===f.status));const q=f.search.trim().toLowerCase();if(q)rows=rows.filter(t=>[t.title,t.destination,t.province,t.hotel,t.included,t.board,provider(t.companyId).name].join(' ').toLowerCase().includes(q));if(f.sort==='priceasc')rows.sort((a,b)=>a.price-b.price);if(f.sort==='pricedesc')rows.sort((a,b)=>b.price-a.price);if(f.sort==='date')rows.sort((a,b)=>(a.start||'z').localeCompare(b.start||'z'));if(f.sort==='recent')rows.sort((a,b)=>String(b.id).localeCompare(String(a.id),undefined,{numeric:true}));return rows}
+function viewCatalog(){const f=ui.catalog,rows=filteredTrips();return heading('03 / CATÁLOGO','Mis viajes','Todos los viajes de tus proveedores, organizados en un único catálogo. Publicá solamente los que quieras mostrar en tu web.',`<button class="btn btn-white" data-view="smart">${ic('spark')} Buscar con IA</button><button class="btn btn-dark" data-view="import">${ic('plus')} Nuevo viaje</button>`)+`<div class="toolbar"><div class="filters"><label class="field-search">${ic('search','sm')} <input id="catalogSearch" placeholder="Buscar destino, hotel, viaje..." value="${esc(f.search)}" aria-label="Buscar viajes"></label><select id="catalogProvider" class="select-real" aria-label="Filtrar empresa"><option value="all">Todas las empresas</option>${data.providers.map(p=>`<option value="${p.id}" ${f.provider===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select><select id="catalogStatus" class="select-real"><option value="all">Todos los estados</option><option value="published" ${f.status==='published'?'selected':''}>Publicados</option><option value="draft" ${f.status==='draft'?'selected':''}>Borradores</option></select></div><div class="filters"><select id="catalogSort" class="select-real"><option value="recent" ${f.sort==='recent'?'selected':''}>Más recientes</option><option value="date" ${f.sort==='date'?'selected':''}>Fecha de salida</option><option value="priceasc" ${f.sort==='priceasc'?'selected':''}>Menor precio</option><option value="pricedesc" ${f.sort==='pricedesc'?'selected':''}>Mayor precio</option></select><div class="segmented-wrap"><button class="${f.layout==='grid'?'active':''}" data-layout="grid" aria-label="Vista tarjetas">${ic('grid','sm')}</button><button class="${f.layout==='list'?'active':''}" data-layout="list" aria-label="Vista lista">${ic('list','sm')}</button></div></div></div><div class="compare-bar"><span class="tiny faint">${rows.length} viajes encontrados · ${published().length} publicados</span><div class="filters"><span class="tiny muted" id="compareCount">${ui.compare.length} de 3 viajes seleccionados</span><button class="btn btn-soft btn-sm" data-action="compare-selected" ${ui.compare.length<2?'disabled':''}>${ic('git-compare','sm')} Comparar viajes</button>${ui.compare.length?`<button class="btn btn-white btn-sm" data-action="clear-compare">Limpiar</button>`:''}</div></div><div id="catalogResults">${catalogContent(rows)}</div>`}
+function catalogContent(rows){if(!rows.length)return emptyState('No hay viajes para estos filtros','Probá cambiar los filtros o importá tu primer viaje.','clear-catalog','Limpiar filtros');if(ui.catalog.layout==='grid')return `<div class="trip-grid">${rows.map(tripCard).join('')}</div>`;return `<section class="panel panel-pad"><div class="table-scroll"><table class="table"><thead><tr><th>VIAJE</th><th>PROVEEDOR</th><th>SALIDA</th><th>PRECIO</th><th>ESTADO</th><th>COMPARAR</th><th></th></tr></thead><tbody>${rows.map(t=>`<tr><td class="main-cell"><div class="travel-title">${esc(t.title)}</div><span class="travel-sub">${esc(t.destination)}</span></td><td>${esc(provider(t.companyId).name)}</td><td>${fmtDate(t.start)}</td><td class="num">${money(t.price)}</td><td>${status(t)}</td><td><button class="btn btn-white btn-sm" data-compare="${t.id}">${ui.compare.includes(t.id)?'Seleccionado':'Agregar'}</button></td><td><button class="row-link" data-trip="${t.id}">${ic('chevron','sm')}</button></td></tr>`).join('')}</tbody></table></div></section>`}
+function publicTrip(t){return `<button type="button" class="public-trip" data-public-trip="${t.id}"><div class="image"><img src="${scene(t.destination)}" alt="Paisaje ilustrativo de ${esc(t.destination)}"></div><div class="body"><strong>${esc(t.title)}</strong><span>${fmtDate(t.start)} · ${esc(t.regime||'Servicios a confirmar')}</span><b>Desde ${money(t.price)}</b></div></button>`}
+function publicRows(){const q=ui.publicSearch.toLowerCase().trim();return published().filter(t=>(ui.publicDestination==='all'||t.destination===ui.publicDestination)&&(!q||[t.title,t.destination,t.hotel,t.province].join(' ').toLowerCase().includes(q)))}
+function viewWebsite(){const allDest=Array.from(new Set(published().map(t=>t.destination))).sort((a,b)=>a.localeCompare(b,'es'));const rows=publicRows();return heading('04 / TU VIDRIERA ONLINE','Mi página web','Cada revendedor tiene su propia página con viajes publicados y botones de WhatsApp. Los visitantes no necesitan registrarse.',`<button class="btn btn-white" data-action="edit-profile">${ic('edit')} Personalizar</button><button class="btn btn-dark" data-action="copy-site">${ic('copy')} Copiar enlace</button>`)+`<div class="web-info"><span class="action-icon">${ic('globe')}</span><div class="web-url">${esc(data.profile.slug)}.turistack.com<small>URL de ejemplo · aún no está publicada en Internet</small></div><div class="segmented-wrap"><button class="${ui.device==='desktop'?'active':''}" data-device="desktop">${ic('monitor','sm')} Escritorio</button><button class="${ui.device==='phone'?'active':''}" data-device="phone">${ic('smartphone','sm')} Celular</button></div></div><div class="web-frame-wrap"><div id="webFrame" class="web-frame ${ui.device==='phone'?'phone':''}"><div class="browser-top"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-url">https://${esc(data.profile.slug)}.turistack.com</span></div><div class="public-body"><div class="public-nav"><div><div class="public-logo">${esc(data.profile.business)}</div><small>Tu próximo viaje comienza acá</small></div><span class="tag">${ic('message','sm')} WhatsApp</span></div><div class="public-cover"><div class="eyebrow">DESCUBRÍ TU PRÓXIMO DESTINO</div><h2>Viajá a donde siempre soñaste.</h2><p>Explorá nuestra selección de experiencias. Consultanos personalmente por WhatsApp.</p><div class="public-search"><input id="publicSearch" aria-label="Buscar viajes en página pública" placeholder="¿A dónde te gustaría viajar?" value="${esc(ui.publicSearch)}"><select id="publicDestination" aria-label="Filtrar destino"><option value="all">Todos los destinos</option>${allDest.map(d=>`<option ${ui.publicDestination===d?'selected':''}>${esc(d)}</option>`).join('')}</select></div></div><div class="public-content"><h3>Próximos viajes</h3><span id="publicCount" class="public-count">${rows.length} propuestas para descubrir</span><div id="publicResults" class="public-grid">${rows.length?rows.map(publicTrip).join(''):'<p class="public-count" style="grid-column:1/-1">No encontramos viajes con esos filtros.</p>'}</div></div><div class="public-footer"><span>Atención personalizada por WhatsApp</span><span>Creado con <strong>Turistack</strong></span></div></div></div></div><div class="quick-help" style="margin-top:15px">${ic('info')} <span><strong>Vista previa interactiva:</strong> probá buscar destinos, cambiar el dispositivo y abrir un viaje. Los botones de consulta usan el número de WhatsApp configurado, pero no existe todavía un sitio publicado.</span></div>`}
+function parseSmart(q){const raw=q.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');const months=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];const month=months.findIndex(m=>new RegExp('\\b'+m+'\\b').test(raw));const yearMatch=raw.match(/\b20(26|27|28)\b/);const year=yearMatch?Number(yearMatch[0]):null;let ceiling=null;const spans=[...raw.matchAll(/(?:menos de|hasta|presupuesto(?: de)?|maximo(?: de)?|no mas de)\s*\$?\s*([\d.,]+)\s*(millones?|millon|mil|k)?/g)];if(spans.length){const z=spans[spans.length-1];let n=Number(z[1].replace(/\./g,'').replace(',','.'));if(/mill/.test(z[2]||''))n*=1e6;else if(/mil|k/.test(z[2]||''))n*=1000;ceiling=n>0?n:null}
+ const destTerms=[['Puerto Iguazú',['iguazu','cataratas']],['Bariloche',['bariloche']],['Mar del Plata',['mar del plata']],['Villa Carlos Paz',['cordoba','carlos paz']],['Mendoza',['mendoza']],['Termas de Río Hondo',['termas']],['Salta',['salta','jujuy']],['Villa Gesell',['villa gesell','gesell']],['San Bernardo',['san bernardo']],['Merlo',['merlo']],['Puerto Madryn',['madryn']],['Tandil',['tandil']],['El Calafate',['calafate']],['Rosario',['rosario']],['Pinamar',['pinamar']]];
+ const direct=destTerms.filter(([dest,terms])=>terms.some(term=>raw.includes(term))).map(x=>x[0]);const beach=/playa|costa|mar(?! del plata)|balneario/.test(raw);const mountain=/montana|sierras?|lagos?|patagonia/.test(raw);const food=/pension completa|todo incluido|all inclusive|media pension|desayuno/.exec(raw);const board=/(?:sale|salida|saliendo|desde)\s+(?:de\s+)?(zona oeste|moron|laferrere|liniers|san justo|buenos aires)/.exec(raw);
+ const criteria={month:month>=0?month:null,year,ceiling,direct,beach,mountain,food:food?food[0]:null,board:board?board[1]:null};
+ const labels=[];if(criteria.direct.length)labels.push('Destino: '+criteria.direct.join(' / '));if(beach)labels.push('Preferencia: playa');if(mountain)labels.push('Preferencia: sierras / montaña');if(month>=0)labels.push('Mes: '+months[month]+(year?' '+year:''));if(ceiling)labels.push('Hasta '+money(ceiling));if(food)labels.push('Comidas: '+food[0]);if(board)labels.push('Salida desde '+board[1]);return {criteria,labels}}
+function scoreTrip(t,c){let score=0,max=0,why=[],miss=[];const d=t.destination.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');if(c.direct.length){max+=35;const ok=c.direct.some(v=>d.includes(v.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')));if(ok){score+=35;why.push('Destino solicitado')}else miss.push('Destino diferente')}
+ if(c.beach){max+=25;const ok=/mar del plata|gesell|san bernardo|pinamar|madryn/.test(d);if(ok){score+=25;why.push('Destino de playa')}else miss.push('No es playa')}
+ if(c.mountain){max+=20;const ok=/bariloche|mendoza|merlo|carlos paz|calafate|tandil|salta/.test(d);if(ok){score+=20;why.push('Paisaje serrano o de montaña')}else miss.push('Paisaje diferente')}
+ if(c.month!==null){max+=25;const date=new Date((t.start||'2000-01-01')+'T12:00:00');if(date.getMonth()===c.month&&(!c.year||date.getFullYear()===c.year)){score+=25;why.push('Salida en el mes solicitado')}else miss.push('Otra fecha')}
+ if(c.ceiling){max+=25;if(t.price<=c.ceiling){score+=25;why.push('Dentro del presupuesto')}else miss.push('Supera presupuesto por persona')}
+ if(c.food){max+=15;const fr=String(t.regime||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');if(fr.includes(c.food)){score+=15;why.push('Régimen de comidas')}else miss.push('Comidas diferentes')}
+ if(c.board){max+=10;const br=String(t.board||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');if(br.includes(c.board)){score+=10;why.push('Lugar de salida')}else miss.push('Otro lugar de salida')}
+ return {t,percentage:max?Math.round(score/max*100):75,score,max,why,miss}}
+function smartSearch(q){const parsed=parseSmart(q);const all=data.trips.filter(t=>t.status==='published');const matches=all.map(t=>scoreTrip(t,parsed.criteria)).sort((a,b)=>b.percentage-a.percentage||a.t.price-b.t.price);const exact=matches.filter(r=>!r.miss.length);return {...parsed,results:exact.length?exact.slice(0,9):matches.filter(x=>x.percentage>0).slice(0,6),exact:exact.length>0,allCount:all.length}}
+function renderSmartMatches(){const s=ui.smartInfo;if(!ui.smartRun||!s)return `<div class="empty-card"><div class="empty-illustration">${ic('spark','lg')}</div><h3>Buscá como si hablaras con alguien</h3><p>Escribí un destino, mes, presupuesto o el tipo de viaje que te pidieron por WhatsApp.</p></div>`;
+ if(!s.results.length)return emptyState('No encontramos viajes compatibles','Probá una búsqueda más amplia o revisá tu catálogo.','reset-smart','Limpiar búsqueda');return `<div class="ai-result-head"><div><h2>${s.exact?'Viajes compatibles':'Alternativas aproximadas'} (${s.results.length})</h2><p class="tiny faint">${s.exact?'Coinciden con los criterios reconocidos':'No hay coincidencias completas; estas opciones no cumplen todos los criterios.'}</p></div><span class="status purple">${ic('spark','sm')} Simulación</span></div>${s.labels.length?`<div class="ai-criteria">${s.labels.map(x=>`<span class="tag">${ic('check','sm')} ${esc(x)}</span>`).join('')}</div>`:`<div class="ai-criteria"><span class="tag">Sin restricciones específicas detectadas</span></div>`}<div class="match-list">${s.results.map(m=>`<article class="match-row"><img class="match-img" src="${scene(m.t.destination)}" alt="Paisaje ilustrativo"><div class="match-body"><h3>${esc(m.t.title)}</h3><p>${esc(provider(m.t.companyId).name)} · ${fmtDate(m.t.start)} · ${esc(m.t.regime||'A confirmar')}</p><div class="matches">${m.why.length?ic('check','sm')+' '+esc(m.why.join(' · ')):'Revisar compatibilidad'}</div>${m.miss.length?`<p style="margin-top:5px;color:#bd8251">Atención: ${esc(m.miss.join(' · '))}</p>`:''}</div><div class="match-amount"><div><strong>${money(m.t.price)}</strong><small>por persona · demo</small></div><button class="btn btn-white btn-sm" data-trip="${m.t.id}">Ver viaje ${ic('arrow','sm')}</button></div></article>`).join('')}</div><p class="tiny faint" style="margin-top:15px">Búsqueda heurística simulada en el navegador. En el producto real Gemini interpretará la intención y el backend filtrará el catálogo autorizado. Nunca inferir tarifas grupales a partir del precio por persona.</p>`}
+function viewSmart(){return heading('05 / ASISTENTE COMERCIAL','Buscador inteligente <span style="background:linear-gradient(95deg,#ffb37a,#ff7ea8,#a78cf7);-webkit-background-clip:text;color:transparent">✳</span>','Escribí lo que te pidió un cliente por WhatsApp. Turistack encontrará viajes compatibles entre todos tus proveedores.')+`<div class="page-split"><section class="stack"><div class="ai-hero"><div class="detail-top"><span class="import-tag">${ic('spark','sm')} BUSCADOR IA · DEMO</span><span class="tiny muted">Solo para uso del revendedor</span></div><h2 style="font-size:20px;letter-spacing:-.035em;margin-top:12px">¿Qué viaje está buscando tu cliente?</h2><textarea id="smartInput" class="ai-input" aria-label="Consulta de viaje" placeholder="Ej. Necesito un viaje a la playa en enero de 2027, pensión completa, hasta $700.000 por persona...">${esc(ui.smartQuery)}</textarea><div class="toolbar" style="margin-top:13px;margin-bottom:0"><span class="tiny muted">Consulta libre · origen: mensaje copiado manualmente</span><button class="btn btn-dark" id="runSmart">${ic('spark')} Buscar viajes</button></div><div class="prompt-chips">${['Viajes a la playa en enero de 2027 hasta $700.000','Cataratas en noviembre con media pensión','Sierras de Córdoba en diciembre hasta $500.000','Bariloche en enero de 2027'].map(q=>`<button class="prompt-chip" data-prompt="${esc(q)}">${esc(q)} ${ic('arrow','sm')}</button>`).join('')}</div></div><div class="panel panel-pad"><div id="smartResults">${renderSmartMatches()}</div></div></section><aside class="stack"><section class="panel panel-pad"><div class="section-head"><div><h2>Cómo te ayuda</h2><p>De una consulta a opciones concretas</p></div></div><div class="action-list"><div class="action-row"><span class="action-icon peach">${ic('message')}</span><span class="descr"><strong>Copiá una consulta</strong><small>El mensaje sigue llegando a tu WhatsApp.</small></span></div><div class="action-row"><span class="action-icon">${ic('spark')}</span><span class="descr"><strong>Interpretá la intención</strong><small>Destino, fecha, presupuesto y preferencias.</small></span></div><div class="action-row"><span class="action-icon mint">${ic('layers')}</span><span class="descr"><strong>Compará alternativas</strong><small>Solo tus viajes, de tus proveedores.</small></span></div></div></section><div class="quick-help">${ic('info')} <span>Los resultados de este HTML se calculan con reglas locales; no hay conexión a Gemini. Los precios son <strong>por persona y de ejemplo</strong>. El revendedor conserva el contacto con el cliente.</span></div></aside></div>`}
+const $shell=$('#shell'),$overlay=$('#screenOverlay'),$drawer=$('#drawer'),$modal=$('#modal'),$cmd=$('#commandDialog');
+function render(){let html='';switch(ui.view){case 'providers':html=viewProviders();break;case 'import':html=viewImport();break;case 'catalog':html=viewCatalog();break;case 'website':html=viewWebsite();break;case 'smart':html=viewSmart();break;default:html=viewHome()}
+ $('#pageContent').innerHTML=`<div class="view-enter">${html}</div>`;$$('[data-view].nav-link').forEach(x=>{x.classList.toggle('active',x.dataset.view===ui.view);x.setAttribute('aria-current',x.dataset.view===ui.view?'page':'false')});$('#profileName').textContent=data.profile.name;$('#profileMenuName').textContent=data.profile.name;}
+function toast(msg){const el=document.createElement('div');el.className='toast';el.innerHTML=`${ic('info','sm')}<span></span>`;el.lastElementChild.textContent=msg;$('#toastRegion').appendChild(el);setTimeout(()=>{el.style.opacity='0';setTimeout(()=>el.remove(),220)},3400)}
+function lock(){document.body.classList.add('modal-active');$overlay.classList.add('visible')}
+function closeAll(){$modal.classList.remove('wide');[$drawer,$modal,$cmd].forEach(x=>{x.classList.remove('open');x.setAttribute('aria-hidden','true')});$('#sidebar').classList.remove('mobile-open');$('#profileMenu').classList.remove('open');$('#profileBtn').setAttribute('aria-expanded','false');$overlay.classList.remove('visible');document.body.classList.remove('modal-active')}
+function drawer(title,sub,html){closeAll();$('#drawerTitle').textContent=title;$('#drawerSub').textContent=sub;$('#drawerBody').innerHTML=html;$drawer.classList.add('open');$drawer.setAttribute('aria-hidden','false');lock();$drawer.querySelector('.drawer-close').focus()}
+function modal(title,sub,html,eyebrow='EDITAR INFORMACIÓN'){closeAll();$('#modalTitle').textContent=title;$('#modalSubtitle').textContent=sub;$('#modalEyebrow').textContent=eyebrow;$('#modalBody').innerHTML=html;$modal.classList.add('open');$modal.setAttribute('aria-hidden','false');lock();const focus=$modal.querySelector('input,select,textarea');if(focus)focus.focus()}
+function drows(xs){return `<div class="drawer-data">${xs.map(([k,v])=>`<div class="drawer-data-row"><span>${esc(k)}</span><strong>${esc(v||'A confirmar')}</strong></div>`).join('')}</div>`}
+function go(view){if(!['home','providers','import','catalog','website','smart'].includes(view))view='home';closeAll();ui.view=view;render();window.scrollTo({top:0,behavior:'smooth'})}
+function openProvider(id){const p=provider(id),n=tripsFor(id).length;drawer(p.name,'Empresa proveedora · datos de ejemplo',`<div class="detail-top">${providerBadge(p,data.providers.indexOf(p))}<span class="status ${p.status==='active'?'green':'gray'}">${p.status==='active'?'Activa':'Pausada'}</span></div><div class="drawer-label">EMPRESA PROVEEDORA</div><div class="drawer-main-title">${esc(p.name)}</div><p class="drawer-muted">Esta empresa es uno de tus proveedores. Sus viajes se administran desde tu espacio independiente.</p>${drows([['Contacto',p.contact],['Localidad',p.city],['Teléfono',p.phone],['Correo',p.email],['Viajes cargados',String(n)],['Estado',p.status==='active'?'Activa':'Pausada']])}<div class="drawer-actions"><button class="btn btn-dark" data-action="filter-provider" data-id="${p.id}">${ic('layers','sm')} Ver sus ${n} viajes</button><button class="btn btn-white" data-action="edit-provider" data-id="${p.id}">${ic('edit','sm')} Editar</button></div><div class="drawer-actions"><button class="btn btn-white" data-action="toggle-provider" data-id="${p.id}">${p.status==='active'?'Pausar empresa':'Reactivar empresa'}</button>${n===0?`<button class="btn btn-white" data-action="remove-provider" data-id="${p.id}">${ic('trash','sm')} Eliminar</button>`:''}</div><div class="drawer-note">${ic('info','sm')} Las empresas que registres acá son parte de tu cartera. En producción, vincular una empresa con la red Turistack debe requerir autorización explícita.</div>`)}
+function providerForm(id){const p=data.providers.find(x=>x.id===id)||{name:'',contact:'',phone:'',email:'',city:'',status:'active'};
+ modal(id?'Editar empresa':'Nueva empresa','Guardá los datos del proveedor con el que trabajás.',`<form id="providerForm" data-id="${esc(id||'')}" class="form-grid"><div class="field full"><label for="provName">Nombre comercial *</label><input id="provName" name="name" value="${esc(p.name)}" required maxlength="80" placeholder="Ej. Sol del Norte Turismo"></div><div class="field"><label for="provContact">Persona de contacto</label><input id="provContact" name="contact" value="${esc(p.contact)}" placeholder="Nombre y apellido"></div><div class="field"><label for="provCity">Localidad</label><input id="provCity" name="city" value="${esc(p.city)}" placeholder="Buenos Aires"></div><div class="field"><label for="provPhone">Teléfono</label><input id="provPhone" name="phone" value="${esc(p.phone)}" placeholder="+54 11..."></div><div class="field"><label for="provEmail">Correo electrónico</label><input id="provEmail" name="email" value="${esc(p.email)}" type="email" placeholder="ventas@empresa.com"></div><div class="field full"><div class="quick-help">${ic('info')} <span>Crear un proveedor no lo conecta automáticamente con otras cuentas Turistack. Los datos son privados de este espacio.</span></div></div><div class="field full" style="display:flex;justify-content:flex-end;flex-direction:row;gap:9px"><button class="btn btn-white" type="button" data-action="close">Cancelar</button><button class="btn btn-dark" type="submit">${ic('check','sm')} Guardar empresa</button></div></form>`,'GESTIÓN DE PROVEEDORES')}
+function waUrl(t){const msg=`Hola, soy cliente de ${data.profile.business}. Quisiera consultar por el viaje "${t.title}" (${fmtDate(t.start)}). ¿Me pasás información y disponibilidad?`;return `https://wa.me/${String(data.profile.phone||'541160347665').replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`}
+function openTrip(id){const t=data.trips.find(x=>x.id===id);if(!t)return;drawer(t.title,'Ficha de viaje · '+provider(t.companyId).name,`<img class="travel-detail-image" src="${scene(t.destination)}" alt="Ilustración de ${esc(t.destination)}"><div class="drawer-label">${esc(provider(t.companyId).name.toUpperCase())}</div><div class="drawer-main-title">${esc(t.title)}</div><p class="drawer-muted">${esc(t.description||'Detalles del viaje para revisión comercial.')}</p><div style="margin-top:13px" class="detail-top">${status(t)}<span class="tag">${ic('calendar','sm')} ${fmtDate(t.start)}</span></div>${drows([['Destino',t.destination+', '+(t.province||'')],['Fecha de salida',niceDate(t.start)],['Fecha de regreso',niceDate(t.end)],['Hotel',t.hotel],['Comidas',t.regime],['Lugar de salida',t.board],['Transporte',t.transport],['Servicios incluidos',t.included],['Precio por persona',money(t.price)],['Proveedor',provider(t.companyId).name]])}<div class="drawer-actions"><button class="btn btn-dark" data-action="edit-trip" data-id="${t.id}">${ic('edit','sm')} Editar viaje</button><button class="btn btn-white" data-action="toggle-trip" data-id="${t.id}">${t.status==='published'?'Pasar a borrador':'Publicar viaje'}</button></div>${t.status==='published'?`<div class="drawer-actions"><button class="btn btn-white" data-action="show-on-site" data-id="${t.id}">${ic('eye','sm')} Ver en mi página web</button></div>`:''}<div class="drawer-note">Precio y fechas ilustrativos. Verificá siempre condiciones y disponibilidad con ${esc(provider(t.companyId).name)}.</div>`)}
+function tripForm(id){const t=data.trips.find(x=>x.id===id);if(!t)return;modal('Editar viaje','Actualizá la ficha antes de compartirla.',`<form id="tripForm" class="form-grid" data-id="${t.id}"><div class="field full"><label>Nombre del viaje *</label><input name="title" required value="${esc(t.title)}"></div><div class="field"><label>Destino *</label><input name="destination" required value="${esc(t.destination)}"></div><div class="field"><label>Provincia</label><input name="province" value="${esc(t.province||'')}"></div><div class="field full"><label>Proveedor *</label><select name="companyId" required>${data.providers.map(p=>`<option value="${p.id}" ${t.companyId===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select></div><div class="field"><label>Fecha de salida</label><input type="date" name="start" value="${esc(t.start||'')}"></div><div class="field"><label>Fecha de regreso</label><input type="date" name="end" value="${esc(t.end||'')}"></div><div class="field"><label>Precio por persona *</label><input name="price" type="number" min="1" required value="${t.price}"></div><div class="field"><label>Hotel</label><input name="hotel" value="${esc(t.hotel||'')}"></div><div class="field"><label>Comidas</label><select name="regime">${['A confirmar','Solo alojamiento','Desayuno','Media pensión','Pensión completa','All inclusive'].map(v=>`<option ${t.regime===v?'selected':''}>${v}</option>`).join('')}</select></div><div class="field"><label>Lugar de salida</label><input name="board" value="${esc(t.board||'')}"></div><div class="field full"><label>Transporte</label><input name="transport" value="${esc(t.transport||'')}"></div><div class="field full"><label>Servicios incluidos</label><textarea name="included">${esc(t.included||'')}</textarea></div><div class="field full"><label>Estado de publicación</label><select name="status"><option value="published" ${t.status==='published'?'selected':''}>Publicado</option><option value="draft" ${t.status==='draft'?'selected':''}>Borrador</option></select></div><div class="field full" style="display:flex;justify-content:flex-end;flex-direction:row;gap:8px"><button class="btn btn-white" type="button" data-action="close">Cancelar</button><button class="btn btn-dark">Guardar cambios</button></div></form>`,'CATÁLOGO DE VIAJES')}
+function publicDetail(id){const t=data.trips.find(x=>x.id===id&&x.status==='published');if(!t){toast('Este viaje no está publicado');return};modal(t.title,'Vista de ficha pública · datos ilustrativos',`<div style="height:190px;border-radius:13px;overflow:hidden"><img src="${scene(t.destination)}" alt="Ilustración del destino" style="width:100%;height:100%;object-fit:cover"></div><div style="margin:17px 0 10px" class="detail-top"><span class="status green">Viaje publicado</span><span class="tag">${ic('map-pin','sm')} ${esc(t.destination)}</span></div><h3 style="font-size:22px;letter-spacing:-.035em">${esc(t.title)}</h3><p class="drawer-muted" style="margin:7px 0 15px">${esc(t.description||'Consultá condiciones y disponibilidad.')}</p>${drows([['Fechas',fmtDate(t.start)+' — '+fmtDate(t.end)],['Hotel',t.hotel],['Régimen',t.regime],['Transporte',t.transport],['Lugar de salida',t.board],['Servicios',t.included],['Desde, por persona',money(t.price)]])}<div class="modal-foot"><small>El interesado escribe personalmente al revendedor. Los valores son ficticios y sujetos a confirmación.</small><a class="btn btn-dark" href="${esc(waUrl(t))}" target="_blank" rel="noopener noreferrer">${ic('message','sm')} Consultar por WhatsApp</a></div>`,'VISTA PÚBLICA · DEMOSTRACIÓN')}
+function compareTrips(){const xs=ui.compare.map(id=>data.trips.find(t=>t.id===id)).filter(Boolean);if(xs.length<2){toast('Seleccioná al menos dos viajes para comparar.');return}
+ const specs=[['Proveedor',t=>provider(t.companyId).name],['Destino',t=>t.destination],['Salida',t=>niceDate(t.start)],['Regreso',t=>niceDate(t.end)],['Hotel',t=>t.hotel],['Comidas',t=>t.regime],['Transporte',t=>t.transport],['Lugar de salida',t=>t.board],['Precio por persona',t=>money(t.price)],['Servicios',t=>t.included],['Estado',t=>t.status==='published'?'Publicado':'Borrador']];
+ modal('Comparar viajes','Revisá las diferencias entre tus proveedores. Precios y condiciones ficticios.',`<div class="table-scroll"><table class="table compare-table"><thead><tr><th>CARACTERÍSTICA</th>${xs.map(t=>`<th>${esc(t.destination)}</th>`).join('')}</tr></thead><tbody>${specs.map(([name,fn])=>`<tr><td class="main-cell strong">${name}</td>${xs.map(t=>`<td>${esc(fn(t)||'A confirmar')}</td>`).join('')}</tr>`).join('')}</tbody></table></div><div class="quick-help" style="margin-top:15px">${ic('info')} <span>La comparación es orientativa. Confirmá tarifas, cupos y condiciones directamente con cada proveedor.</span></div><div class="modal-foot"><small>${xs.length} viajes seleccionados</small><button type="button" class="btn btn-dark" data-action="close">Cerrar comparación</button></div>`,'COMPARADOR · CATÁLOGO');$modal.classList.add('wide')}
+function editProfile(){modal('Personalizar mi página','Configurá los datos visibles en tu catálogo público.',`<form id="profileForm" class="form-grid"><div class="field full"><label>Nombre del revendedor *</label><input required name="name" value="${esc(data.profile.name)}"></div><div class="field full"><label>Nombre comercial *</label><input required name="business" value="${esc(data.profile.business)}"></div><div class="field full"><label>Subdominio *</label><input required name="slug" pattern="[a-z0-9-]+" value="${esc(data.profile.slug)}"><span class="field-hint">Ejemplo: silvinamartinez.turistack.com (solo vista previa)</span></div><div class="field full"><label>WhatsApp para consultas *</label><input name="phone" required pattern="[+0-9 ()-]{8,25}" value="${esc(data.profile.phone)}"><span class="field-hint">Con código de país, por ejemplo +541160347665</span></div><div class="field full" style="display:flex;justify-content:flex-end;flex-direction:row;gap:8px"><button class="btn btn-white" data-action="close" type="button">Cancelar</button><button class="btn btn-dark">Guardar perfil</button></div></form>`,'TU IDENTIDAD COMERCIAL')}
+function globalSearch(){closeAll();$cmd.classList.add('open');$cmd.setAttribute('aria-hidden','false');lock();$('#commandInput').value='';drawCommands();$('#commandInput').focus()}
+function drawCommands(){const q=$('#commandInput').value.trim().toLowerCase();const views=[['home','Resumen'],['providers','Mis empresas'],['import','Importar con IA'],['catalog','Mis viajes'],['website','Mi página web'],['smart','Buscador inteligente']].filter(x=>x[1].toLowerCase().includes(q));const comp=data.providers.filter(p=>p.name.toLowerCase().includes(q)).slice(0,6);const trips=data.trips.filter(t=>(t.title+' '+t.destination).toLowerCase().includes(q)).slice(0,7);$('#commandResults').innerHTML=[...views.map(x=>`<button class="cmd-item" data-view="${x[0]}">${ic('grid')} <span>${esc(x[1])}</span><small>Módulo</small></button>`),...comp.map(p=>`<button class="cmd-item" data-provider="${p.id}">${ic('building')} <span>${esc(p.name)}</span><small>Empresa</small></button>`),...trips.map(t=>`<button class="cmd-item" data-trip="${t.id}">${ic('bus')} <span>${esc(t.title)}</span><small>Viaje</small></button>`)].join('')||'<div class="cmd-empty">No encontramos resultados.</div>'}
+function startImport(preset,file,preview){ui.import={phase:1,preset,file,preview,draft:null,unknown:!preset};render();const step=$('#importProgress'),label=$('#loadingLabel');if(step)step.style.width='20%';setTimeout(()=>{if(ui.view!=='import'||ui.import.phase!==1)return;if(step)step.style.width='60%';if(label)label.textContent='Organizando campos del viaje...'},320);setTimeout(()=>{if(ui.view!=='import'||ui.import.phase!==1)return;if(step)step.style.width='100%';if(label)label.textContent='Preparando ficha para revisión...'},700);setTimeout(()=>{if(ui.view!=='import'||ui.import.phase!==1)return;const s=importedSamples().find(x=>x.key===preset);ui.import.draft=s?{...s,title:s.title,company:s.company}:{title:'',company:'',companyId:'',destination:'',province:'',start:'',end:'',price:'',hotel:'',regime:'A confirmar',board:'',transport:'',included:''};ui.import.phase=2;render()},1070)}
+function readFile(file){if(!file)return;if(!['image/jpeg','image/png','image/webp','application/pdf'].includes(file.type)){toast('Usá imágenes JPG, PNG, WebP o archivos PDF.');return}if(file.size>15*1024*1024){toast('El archivo supera los 15 MB permitidos por la demo.');return}if(file.type.startsWith('image/')){const fr=new FileReader();fr.onload=()=>startImport(null,{name:file.name,size:file.size,type:file.type},fr.result);fr.readAsDataURL(file)}else startImport(null,{name:file.name,size:file.size,type:file.type},null)}
+function captureImportDraft(){if(ui.view!=='import'||ui.import.phase!==2)return;const form=$('#importForm');if(!form)return;const val=Object.fromEntries(new FormData(form).entries());ui.import.draft={...ui.import.draft,...val,price:Number(val.price)||0}}
+function refreshKeep(selector){const el=$(selector);const start=el&&['text','search'].includes(el.type)?el.selectionStart:null;render();const target=$(selector);if(target){target.focus();if(start!==null&&start<=target.value.length)target.setSelectionRange(start,start)}}
+function setCatalogueFilter(prop,value){ui.catalog[prop]=value;refreshKeep(prop==='search'?'#catalogSearch':'#catalogProvider')}
+function refreshPublic(){const rows=publicRows();const el=$('#publicResults');if(!el)return;el.innerHTML=rows.length?rows.map(publicTrip).join(''):'<p class="public-count" style="grid-column:1/-1">No encontramos viajes con esos filtros.</p>';$('#publicCount').textContent=rows.length+' propuestas para descubrir'}
+function runSmart(){ui.smartQuery=$('#smartInput')?.value||ui.smartQuery;if(!ui.smartQuery.trim()){toast('Escribí qué viaje necesita tu cliente.');return}ui.smartInfo=smartSearch(ui.smartQuery);ui.smartRun=true;$('#smartResults').innerHTML=renderSmartMatches();$('#smartResults').scrollIntoView({behavior:'smooth',block:'nearest'})}
+function routeAction(el){const a=el.dataset.action,id=el.dataset.id;if(a==='close'){closeAll();return}
+ if(a==='help'){drawer('Acerca del prototipo','Referencia de diseño Cadence para Codex',`<div class="drawer-label">ALCANCE DE ESTA DEMOSTRACIÓN</div><div class="drawer-main-title">Turistack Revendedor</div><p class="drawer-muted">Se tomó el estilo visual del dashboard administrador Cadence adjunto y se adaptó a un revendedor independiente que trabaja con múltiples operadores turísticos.</p>${drows([['Módulos','Proveedores · Importador IA · Viajes · Web · Buscador'],['Persistencia','localStorage de este navegador'],['IA Gemini','Simulada; sin llamadas externas'],['Web pública','Vista previa, no publicada'],['WhatsApp','Enlace con mensaje precargado'],['Datos','Completamente ficticios']])}<p class="drawer-note"><b>Para Codex:</b> conservar aislamiento multi-tenant y permisos, validar datos extraídos de Gemini y no compartir viajes entre empresas y revendedores sin autorización explícita. Los precios no implican cupos garantizados.</p>`);return}
+ if(a==='global-search'){globalSearch();return}if(a==='new-provider'){if(ui.view==='import')captureImportDraft();providerForm(null);return}
+ if(a==='edit-provider'){providerForm(id);return}if(a==='edit-trip'){tripForm(id);return}if(a==='edit-profile'){editProfile();return}
+ if(a==='reset'){if(confirm('¿Restablecer todas las empresas, viajes y perfil a los datos ficticios iniciales de esta demo?')){data=initial();persist();ui.import={phase:0,preset:null,file:null,preview:null,draft:null,unknown:false};go('home');toast('Se restablecieron los datos de demostración.')}return}
+ if(a==='toggle-provider'){const p=data.providers.find(p=>p.id===id);if(p){p.status=p.status==='active'?'inactive':'active';persist();render();openProvider(id);toast('Estado del proveedor actualizado.')}return}
+ if(a==='remove-provider'){const p=data.providers.find(x=>x.id===id);if(p&&tripsFor(id).length===0&&confirm('¿Eliminar esta empresa de demostración?')){data.providers=data.providers.filter(x=>x.id!==id);persist();go('providers');toast('Empresa eliminada.')}return}
+ if(a==='toggle-trip'){const t=data.trips.find(x=>x.id===id);if(t){t.status=t.status==='published'?'draft':'published';persist();render();openTrip(id);toast(t.status==='published'?'Viaje publicado en la demo.':'Viaje pasado a borrador.')}return}
+ if(a==='filter-provider'){ui.catalog.provider=id;ui.catalog.search='';go('catalog');return}
+ if(a==='compare-selected'){compareTrips();return}
+ if(a==='clear-compare'){ui.compare=[];render();return}
+ if(a==='clear-catalog'){ui.catalog={search:'',provider:'all',status:'all',sort:'recent',layout:'grid'};render();return}
+ if(a==='reset-smart'){ui.smartQuery='';ui.smartRun=false;ui.smartInfo=null;render();return}
+ if(a==='show-on-site'){go('website');toast('Vista previa: buscá el viaje entre las publicaciones.');return}
+ if(a==='restart-import'){ui.import={phase:0,preset:null,file:null,preview:null,draft:null,unknown:false};render();return}
+ if(a==='pick-file'){const f=$('#flyerFile');if(f)f.click();return}
+ if(a==='copy-site'){const value=`https://${data.profile.slug}.turistack.com`;if(navigator.clipboard?.writeText)navigator.clipboard.writeText(value).then(()=>toast('Enlace de demostración copiado.')).catch(()=>fallbackCopy(value));else fallbackCopy(value);return}
+ if(a==='notice'){drawer('Avisos de Turistack','Notificaciones ilustrativas',`<div class="notice-item"><i class="notice-dot"></i><div><h3>Tu catálogo público está disponible en la vista previa</h3><p>Probá filtrar viajes y abrir sus fichas para consultar por WhatsApp.</p><time>Demostración</time></div></div><div class="notice-item"><i class="notice-dot"></i><div><h3>Podés probar la importación con IA</h3><p>Elegí uno de los tres flyers de muestra y revisá la ficha generada.</p><time>Demostración</time></div></div>`);return}
+}
+function fallbackCopy(text){const t=document.createElement('textarea');t.value=text;t.style.position='fixed';t.style.opacity='0';document.body.appendChild(t);t.select();let ok=false;try{ok=document.execCommand('copy')}catch(e){}t.remove();toast(ok?'Enlace de demostración copiado.':'Enlace de demostración: '+text)}
+// Global navigation and action delegation
+ document.addEventListener('click',e=>{
+ const target=e.target;
+ const act=target.closest('[data-action]');if(act){e.preventDefault();routeAction(act);return}
+ const nav=target.closest('[data-view]');if(nav){e.preventDefault();go(nav.dataset.view);return}
+ const pv=target.closest('[data-provider]');if(pv){e.preventDefault();openProvider(pv.dataset.provider);return}
+ const tr=target.closest('[data-trip]');if(tr){e.preventDefault();openTrip(tr.dataset.trip);return}
+ const pub=target.closest('[data-public-trip]');if(pub){e.preventDefault();publicDetail(pub.dataset.publicTrip);return}
+ const sam=target.closest('[data-sample]');if(sam){e.preventDefault();startImport(sam.dataset.sample,null,null);return}
+ const compare=target.closest('[data-compare]');if(compare){const id=compare.dataset.compare;const index=ui.compare.indexOf(id);if(index>=0)ui.compare.splice(index,1);else if(ui.compare.length<3)ui.compare.push(id);else{toast('Podés comparar hasta tres viajes a la vez.');return}render();return}
+ const layout=target.closest('[data-layout]');if(layout){ui.catalog.layout=layout.dataset.layout;render();return}
+ const device=target.closest('[data-device]');if(device){ui.device=device.dataset.device;render();return}
+ const prompt=target.closest('[data-prompt]');if(prompt){ui.smartQuery=prompt.dataset.prompt;$('#smartInput').value=ui.smartQuery;runSmart();return}
+ if(target.closest('#runSmart')){runSmart();return}
+ const zone=target.closest('#uploadZone');if(zone&&target.id!=='flyerFile'){const f=$('#flyerFile');if(f)f.click();return}
+ });
+ document.addEventListener('input',e=>{const el=e.target;
+ if(el.id==='providerSearch'){ui.providerSearch=el.value;refreshKeep('#providerSearch')}
+ if(el.id==='catalogSearch'){ui.catalog.search=el.value;refreshKeep('#catalogSearch')}
+ if(el.id==='publicSearch'){ui.publicSearch=el.value;refreshPublic()}
+ if(el.id==='smartInput')ui.smartQuery=el.value;
+ if(el.id==='commandInput')drawCommands();
+ });
+ document.addEventListener('change',e=>{const el=e.target;
+ if(el.id==='flyerFile'){readFile(el.files&&el.files[0]);return}
+ if(el.id==='catalogProvider'){ui.catalog.provider=el.value;render()}
+ if(el.id==='catalogStatus'){ui.catalog.status=el.value;render()}
+ if(el.id==='catalogSort'){ui.catalog.sort=el.value;render()}
+ if(el.id==='publicDestination'){ui.publicDestination=el.value;refreshPublic()}
+ });
+ document.addEventListener('submit',e=>{
+ const form=e.target;if(!form.id)return;e.preventDefault();if(!form.reportValidity())return;const vals=Object.fromEntries(new FormData(form).entries());
+ if(form.id==='providerForm'){const id=form.dataset.id;let obj;if(id){obj=data.providers.find(x=>x.id===id);if(obj)Object.assign(obj,vals)}else{obj={id:'p'+numId(),status:'active',...vals};data.providers.push(obj)}persist();const fromImport=ui.view==='import'&&ui.import.phase===2;if(fromImport){ui.import.draft={...ui.import.draft,companyId:obj.id,company:obj.name};closeAll();render();toast('Empresa creada y asignada al viaje.')}else{closeAll();go('providers');toast('Empresa guardada correctamente.')}return}
+ if(form.id==='profileForm'){const p={...vals,slug:slug(vals.slug),phone:vals.phone.replace(/\D/g,'')};if(!p.slug){toast('Ingresá un subdominio válido');return}if(p.phone.length<9){toast('Ingresá un WhatsApp con código de país.');return}data.profile=p;persist();closeAll();render();toast('Tu perfil de demostración fue actualizado.');return}
+ if(form.id==='tripForm'){const t=data.trips.find(x=>x.id===form.dataset.id);if(t){Object.assign(t,vals,{price:Number(vals.price),updated:new Date().toISOString().slice(0,10)});persist();closeAll();render();openTrip(t.id);toast('Ficha del viaje actualizada.')}return}
+ if(form.id==='importForm'){let t={...ui.import.draft,...vals,price:Number(vals.price),id:'t'+numId(),source:ui.import.unknown?'archivo-demo':'flyer-demo',updated:new Date().toISOString().slice(0,10),description:ui.import.draft?.description||'Viaje cargado mediante el importador de Turistack.'};let status=(e.submitter?.value||'draft');t.status=status==='published'?'published':'draft';const dup=data.trips.find(x=>x.companyId===t.companyId&&x.destination.toLowerCase()===t.destination.toLowerCase()&&x.start===t.start);if(dup&&!confirm(`Ya existe un viaje de este proveedor a ${t.destination} con la misma fecha. ¿Querés guardar igualmente una ficha duplicada?`))return;if(t.end&&t.start&&t.end<t.start){toast('La fecha de regreso no puede ser anterior a la salida.');return}data.trips.push(t);persist();ui.import={phase:0,preset:null,file:null,preview:null,draft:null,unknown:false};ui.catalog={search:'',provider:'all',status:'all',sort:'recent',layout:'grid'};go('catalog');toast(t.status==='published'?'Viaje publicado: ya aparece en tu web.':'Borrador guardado en tu catálogo.');return}
+ });
+ // Dropzone
+ document.addEventListener('dragover',e=>{const z=$('#uploadZone');if(z&&z.contains(e.target)){e.preventDefault();z.classList.add('dragging')}});
+ document.addEventListener('dragleave',e=>{const z=$('#uploadZone');if(z&&!z.contains(e.relatedTarget))z.classList.remove('dragging')});
+ document.addEventListener('drop',e=>{const z=$('#uploadZone');if(z&&z.contains(e.target)){e.preventDefault();z.classList.remove('dragging');readFile(e.dataTransfer?.files?.[0])}});
+ document.addEventListener('keydown',e=>{
+ if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();globalSearch()}
+ if(e.key==='Escape'){closeAll()}
+ if(e.key==='Enter'&&e.target.id==='smartInput'&&(e.metaKey||e.ctrlKey)){e.preventDefault();runSmart()}
+ if(e.key==='Enter'&&e.target.id==='uploadZone'){e.preventDefault();$('#flyerFile')?.click()}
+ if(e.key==='Enter'&&e.target.id==='commandInput'){e.preventDefault();$('#commandResults .cmd-item')?.click()}
+ });
+ $overlay.addEventListener('click',closeAll);
+ $('#collapseBtn').addEventListener('click',()=>{if(matchMedia('(max-width:760px)').matches){closeAll();return}$shell.classList.toggle('collapsed')});
+ $('#expandBtn').addEventListener('click',()=>{$shell.classList.remove('collapsed')});
+ $('#mobileMenuBtn').addEventListener('click',()=>{const open=!$('#sidebar').classList.contains('mobile-open');closeAll();if(open){$('#sidebar').classList.add('mobile-open');lock()}});
+ $('#profileBtn').addEventListener('click',()=>{const is=$('#profileMenu').classList.toggle('open');$('#profileBtn').setAttribute('aria-expanded',String(is))});
+ document.addEventListener('pointerdown',e=>{if(!e.target.closest('.profile-wrap')){$('#profileMenu').classList.remove('open');$('#profileBtn').setAttribute('aria-expanded','false')}});
+ $('#noticeBtn').addEventListener('click',()=>routeAction({dataset:{action:'notice'}}));
+ $('#commandInput').addEventListener('keydown',e=>{if(e.key==='ArrowDown'){e.preventDefault();const buttons=$$('#commandResults .cmd-item');const active=buttons.findIndex(x=>x.classList.contains('highlight'));buttons.forEach(x=>x.classList.remove('highlight'));if(buttons.length)buttons[(active+1)%buttons.length].classList.add('highlight')}if(e.key==='ArrowUp'){e.preventDefault();const buttons=$$('#commandResults .cmd-item');const active=buttons.findIndex(x=>x.classList.contains('highlight'));buttons.forEach(x=>x.classList.remove('highlight'));if(buttons.length)buttons[(active-1+buttons.length)%buttons.length].classList.add('highlight')}});
+ render();
+})();
+</script></body></html>

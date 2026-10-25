@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="es-AR"><head><title><%= content_for?(:title) ? yield(:title) : "Turistack Revendedor#{" · #{current_agent_workspace.business_name}" if current_agent_workspace}" %></title><%= yield :head %><meta name="viewport" content="width=device-width,initial-scale=1"><%= csrf_meta_tags %><%= csp_meta_tag %><%= stylesheet_link_tag :app, "data-turbo-track": "reload" %><%= javascript_importmap_tags %><link rel="icon" href="/icon.svg"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"><% if current_agent_workspace %><link rel="manifest" href="/manifest.json"><% end %></head>
+  <body class="agent-body" <%= 'data-controller=pwa' if current_agent_workspace %>>
+<%= render "shared/icon_symbols" %>
+<% if current_agent_workspace && current_user && current_user.id == current_agent_workspace.owner_id && !@public_view %>
+<div class="app-shell cadence-shell agent-shell" data-controller="app-shell agent-navigation" data-action="keydown@window->app-shell#handleKeydown">
+    <aside id="main-sidebar" class="sidebar" data-app-shell-target="sidebar" aria-label="Menú principal">
+      <div class="sidebar-logo"><%= link_to agent_root_path, class: "sidebar-brand" do %><span class="brand-mark"><%= app_icon("activity") %></span><span><strong>turistack</strong><small>REVENDEDOR INDEPENDIENTE</small></span><% end %><button class="sidebar-close" type="button" data-action="app-shell#close" aria-label="Cerrar menú"><%= app_icon("close") %></button><button type="button" class="agent-collapse" data-action="agent-navigation#toggle" aria-label="Contraer menú lateral" aria-expanded="true" aria-controls="main-sidebar" data-agent-navigation-target="toggle">‹</button></div>
+      <section class="sidebar-group">
+        <h2 class="sidebar-label">TU ESPACIO COMERCIAL</h2>
+        <nav class="sidebar-nav"><% [["Resumen", agent_root_path, "grid"], ["Mis empresas", agent_suppliers_path, "users"], ["Importar con IA", agent_imports_path, "file"], ["Mis viajes", agent_trips_path, "bus"], ["Mi página web", agent_website_path, "layers"], ["Buscador inteligente", agent_searches_path, "search"]].each do |label, path, icon| %><%= link_to path, class: "nav-link #{'nav-link-active' if current_page?(path)}" do %><%= app_icon(icon) %><span><%= label %></span><% end %><% end %></nav></section>
+      <div class="sidebar-bottom">
+        <div class="agent-plan"><strong>Turistack Revendedor</strong><span>Piloto de lanzamiento</span></div>
+        <%= button_to "Cerrar sesión", session_path, method: :delete, class: "logout-button" %></div>
+    </aside>
+    <button class="sidebar-overlay" type="button" data-app-shell-target="overlay" data-action="app-shell#close" aria-label="Cerrar menú" tabindex="-1"></button>
+    <div class="main-column">
+      <header class="topbar"><button class="mobile-menu-button" type="button" data-action="app-shell#open" data-app-shell-target="toggle" aria-controls="main-sidebar" aria-expanded="false" aria-label="Abrir menú"><%= app_icon("menu") %></button>
+        <div class="topbar-brand"><strong>Turistack Revendedor</strong><span>Tu catálogo, tus proveedores, tu identidad</span></div>
+        <div class="topbar-actions"><%= link_to "Ver mi web ↗", agent_public_catalog_path, class: "agent-link", target: "_blank", rel: "noopener" %><span class="profile-avatar"><%= current_user.name.first.upcase %></span><strong><%= current_agent_workspace.business_name %></strong></div>
+      </header>
+      <main class="content"><%= yield %></main></div>
+  </div>
+<% else %><main class="agent-standalone"><%= yield %></main><% end %>
+<% flash.each do |type, message| %>
+  <div class="flash" role="status" data-controller="dismiss"><%= message %></div>
+<% end %>
+</body></html>

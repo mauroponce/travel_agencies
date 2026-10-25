@@ -10,10 +10,11 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_20_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_25_130000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
+  enable_extension "unaccent"
 
   create_table "accommodations", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.uuid "company_id", null: false
@@ -64,6 +65,177 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_20_120000) do
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
   end
 
+  create_table "agent_ai_executions", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "agent_workspace_id", null: false
+    t.uuid "agent_import_id"
+    t.uuid "agent_search_id"
+    t.string "model", null: false
+    t.string "contract_version", null: false
+    t.string "status", null: false
+    t.string "error_code"
+    t.integer "duration_ms"
+    t.jsonb "usage", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["agent_import_id"], name: "index_agent_ai_executions_on_agent_import_id"
+    t.index ["agent_search_id"], name: "index_agent_ai_executions_on_agent_search_id"
+    t.index ["agent_workspace_id"], name: "index_agent_ai_executions_on_agent_workspace_id"
+    t.check_constraint "(agent_import_id IS NULL) <> (agent_search_id IS NULL)", name: "agent_ai_execution_source"
+  end
+
+  create_table "agent_import_items", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "agent_workspace_id", null: false
+    t.uuid "agent_import_id", null: false
+    t.integer "position", null: false
+    t.jsonb "extracted", default: {}, null: false
+    t.uuid "agent_trip_id"
+    t.uuid "agent_trip_revision_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.jsonb "review_data", default: {}, null: false
+    t.index ["agent_import_id", "position"], name: "index_agent_import_items_on_agent_import_id_and_position", unique: true
+    t.index ["agent_import_id"], name: "index_agent_import_items_on_agent_import_id"
+    t.index ["agent_trip_id"], name: "index_agent_import_items_on_agent_trip_id"
+    t.index ["agent_trip_revision_id"], name: "index_agent_import_items_on_agent_trip_revision_id"
+    t.index ["agent_workspace_id"], name: "index_agent_import_items_on_agent_workspace_id"
+    t.check_constraint "(agent_trip_id IS NULL) = (agent_trip_revision_id IS NULL)", name: "agent_import_item_saved_revision"
+  end
+
+  create_table "agent_imports", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "agent_workspace_id", null: false
+    t.string "idempotency_key", null: false
+    t.string "status", default: "pending", null: false
+    t.string "processing_token"
+    t.datetime "started_at"
+    t.integer "attempts", default: 0, null: false
+    t.string "error_code"
+    t.string "file_digest"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["agent_workspace_id", "idempotency_key"], name: "uidx_agent_imports_request", unique: true
+    t.index ["agent_workspace_id"], name: "index_agent_imports_on_agent_workspace_id"
+    t.index ["id", "agent_workspace_id"], name: "index_agent_imports_on_id_and_agent_workspace_id", unique: true
+    t.index ["status", "started_at"], name: "index_agent_imports_on_status_and_started_at"
+    t.check_constraint "status::text = ANY (ARRAY['pending'::character varying, 'processing'::character varying, 'completed'::character varying, 'error'::character varying]::text[])", name: "agent_imports_status"
+  end
+
+  create_table "agent_searches", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "agent_workspace_id", null: false
+    t.string "idempotency_key", null: false
+    t.string "status", default: "pending", null: false
+    t.string "processing_token"
+    t.datetime "started_at"
+    t.integer "attempts", default: 0, null: false
+    t.string "error_code"
+    t.text "query"
+    t.jsonb "filters", default: {}, null: false
+    t.jsonb "interpretation", default: [], null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["agent_workspace_id", "idempotency_key"], name: "uidx_agent_searches_request", unique: true
+    t.index ["agent_workspace_id"], name: "index_agent_searches_on_agent_workspace_id"
+    t.index ["id", "agent_workspace_id"], name: "index_agent_searches_on_id_and_agent_workspace_id", unique: true
+    t.index ["status", "started_at"], name: "index_agent_searches_on_status_and_started_at"
+    t.check_constraint "status::text = ANY (ARRAY['pending'::character varying, 'processing'::character varying, 'completed'::character varying, 'error'::character varying]::text[])", name: "agent_searches_status"
+  end
+
+  create_table "agent_suppliers", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "agent_workspace_id", null: false
+    t.string "name", null: false
+    t.string "contact_name"
+    t.string "phone"
+    t.string "email"
+    t.text "commercial_terms"
+    t.text "commission_terms"
+    t.string "status", default: "active", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "website"
+    t.text "notes"
+    t.index "agent_workspace_id, lower(btrim((name)::text))", name: "uidx_agent_supplier_name", unique: true
+    t.index ["agent_workspace_id", "name"], name: "index_agent_suppliers_on_agent_workspace_id_and_name"
+    t.index ["agent_workspace_id"], name: "index_agent_suppliers_on_agent_workspace_id"
+    t.index ["id", "agent_workspace_id"], name: "index_agent_suppliers_on_id_and_agent_workspace_id", unique: true
+    t.check_constraint "status::text = ANY (ARRAY['active'::character varying, 'paused'::character varying]::text[])", name: "agent_supplier_status"
+  end
+
+  create_table "agent_trip_revisions", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "agent_workspace_id", null: false
+    t.uuid "agent_trip_id", null: false
+    t.uuid "agent_supplier_id", null: false
+    t.string "title"
+    t.string "destination"
+    t.string "region"
+    t.date "departs_on"
+    t.date "returns_on"
+    t.integer "duration_days"
+    t.bigint "price_cents"
+    t.string "currency"
+    t.string "price_unit"
+    t.string "price_basis"
+    t.string "hotel"
+    t.string "meal_plan"
+    t.string "transport"
+    t.string "departure_location"
+    t.text "included_services"
+    t.text "excluded_services"
+    t.text "conditions"
+    t.jsonb "warnings", default: [], null: false
+    t.jsonb "evidence", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.text "description"
+    t.integer "duration_nights"
+    t.index ["agent_supplier_id"], name: "index_agent_trip_revisions_on_agent_supplier_id"
+    t.index ["agent_trip_id"], name: "index_agent_trip_revisions_on_agent_trip_id"
+    t.index ["agent_workspace_id", "currency", "price_unit", "price_cents"], name: "idx_agent_revision_price"
+    t.index ["agent_workspace_id", "departs_on"], name: "idx_on_agent_workspace_id_departs_on_4571d05f3a"
+    t.index ["agent_workspace_id"], name: "index_agent_trip_revisions_on_agent_workspace_id"
+    t.index ["id", "agent_trip_id", "agent_workspace_id"], name: "uidx_agent_revision_trip_workspace", unique: true
+    t.index ["id", "agent_workspace_id"], name: "index_agent_trip_revisions_on_id_and_agent_workspace_id", unique: true
+    t.check_constraint "currency IS NULL OR currency::text = ''::text OR (currency::text = ANY (ARRAY['ARS'::character varying, 'USD'::character varying, 'EUR'::character varying, 'BRL'::character varying]::text[]))", name: "agent_currency"
+    t.check_constraint "duration_days IS NULL OR duration_days > 0", name: "agent_days_positive"
+    t.check_constraint "duration_nights IS NULL OR duration_nights >= 0", name: "agent_nights_nonnegative"
+    t.check_constraint "price_cents IS NULL OR price_cents >= 0", name: "agent_price_nonnegative"
+    t.check_constraint "returns_on IS NULL OR departs_on IS NULL OR returns_on >= departs_on", name: "agent_trip_dates"
+  end
+
+  create_table "agent_trips", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "agent_workspace_id", null: false
+    t.string "slug", null: false
+    t.string "status", default: "draft", null: false
+    t.uuid "current_revision_id"
+    t.uuid "published_revision_id"
+    t.integer "lock_version", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["agent_workspace_id", "slug"], name: "index_agent_trips_on_agent_workspace_id_and_slug", unique: true
+    t.index ["agent_workspace_id"], name: "index_agent_trips_on_agent_workspace_id"
+    t.index ["id", "agent_workspace_id"], name: "index_agent_trips_on_id_and_agent_workspace_id", unique: true
+    t.check_constraint "status::text <> 'published'::text OR published_revision_id IS NOT NULL", name: "agent_trip_published_revision"
+    t.check_constraint "status::text = ANY (ARRAY['draft'::character varying, 'published'::character varying, 'unpublished'::character varying, 'archived'::character varying]::text[])", name: "agent_trip_status"
+  end
+
+  create_table "agent_workspaces", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "owner_id"
+    t.string "business_name", null: false
+    t.string "public_name", null: false
+    t.string "whatsapp", null: false
+    t.string "subdomain", null: false
+    t.string "timezone", default: "America/Argentina/Buenos_Aires", null: false
+    t.string "status", default: "active", null: false
+    t.string "plan", default: "agent_pilot", null: false
+    t.text "presentation"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "invited_email"
+    t.index "lower((invited_email)::text)", name: "uidx_agent_invited_email", unique: true, where: "(invited_email IS NOT NULL)"
+    t.index ["owner_id"], name: "index_agent_workspaces_on_owner_id", unique: true
+    t.index ["subdomain"], name: "index_agent_workspaces_on_subdomain", unique: true
+    t.check_constraint "owner_id IS NOT NULL OR invited_email IS NOT NULL AND invited_email::text <> ''::text", name: "agent_workspace_identity"
+    t.check_constraint "status::text = ANY (ARRAY['active'::character varying, 'suspended'::character varying]::text[])", name: "agent_workspace_status"
+  end
+
   create_table "audit_events", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.uuid "company_id"
     t.uuid "actor_id"
@@ -76,7 +248,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_20_120000) do
     t.datetime "occurred_at", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.uuid "agent_workspace_id"
     t.index ["actor_id"], name: "index_audit_events_on_actor_id"
+    t.index ["agent_workspace_id"], name: "index_audit_events_on_agent_workspace_id"
     t.index ["company_id", "occurred_at"], name: "index_audit_events_on_company_id_and_occurred_at"
     t.index ["company_id"], name: "index_audit_events_on_company_id"
   end
@@ -93,12 +267,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_20_120000) do
     t.datetime "consumed_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.uuid "agent_workspace_id"
+    t.string "purpose", null: false
+    t.index ["agent_workspace_id"], name: "index_authentication_codes_on_agent_workspace_id"
     t.index ["authentication_request_id"], name: "index_authentication_codes_on_authentication_request_id"
     t.index ["company_id"], name: "index_authentication_codes_on_company_id"
+    t.index ["id", "agent_workspace_id"], name: "index_authentication_codes_on_id_and_agent_workspace_id", unique: true
     t.index ["membership_id"], name: "index_authentication_codes_on_membership_id"
     t.index ["token_digest"], name: "index_authentication_codes_on_token_digest", unique: true
     t.index ["user_id"], name: "index_authentication_codes_on_user_id"
     t.check_constraint "company_id IS NULL AND membership_id IS NULL OR company_id IS NOT NULL AND membership_id IS NOT NULL", name: "authentication_codes_scope_consistent"
+    t.check_constraint "purpose IS NULL AND agent_workspace_id IS NULL OR purpose::text = 'company'::text AND company_id IS NOT NULL AND membership_id IS NOT NULL AND agent_workspace_id IS NULL OR purpose::text = 'agent'::text AND company_id IS NULL AND membership_id IS NULL AND agent_workspace_id IS NOT NULL OR (purpose::text = ANY (ARRAY['operator'::character varying, 'agent_onboarding'::character varying]::text[])) AND company_id IS NULL AND membership_id IS NULL AND agent_workspace_id IS NULL", name: "authentication_codes_purpose"
   end
 
   create_table "authentication_requests", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -111,11 +290,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_20_120000) do
     t.datetime "used_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.uuid "agent_workspace_id"
+    t.string "purpose", null: false
+    t.index ["agent_workspace_id"], name: "index_authentication_requests_on_agent_workspace_id"
     t.index ["company_domain_id"], name: "index_authentication_requests_on_company_domain_id"
     t.index ["company_id"], name: "index_authentication_requests_on_company_id"
+    t.index ["id", "agent_workspace_id"], name: "index_authentication_requests_on_id_and_agent_workspace_id", unique: true
     t.index ["id", "company_id"], name: "uidx_authentication_requests_id_company", unique: true
+    t.index ["id", "purpose"], name: "uidx_auth_request_purpose", unique: true
     t.index ["token_digest"], name: "index_authentication_requests_on_token_digest", unique: true
     t.check_constraint "company_id IS NULL AND company_domain_id IS NULL OR company_id IS NOT NULL AND company_domain_id IS NOT NULL", name: "authentication_requests_scope_consistent"
+    t.check_constraint "purpose IS NULL AND agent_workspace_id IS NULL OR purpose::text = 'company'::text AND company_id IS NOT NULL AND company_domain_id IS NOT NULL AND agent_workspace_id IS NULL OR purpose::text = 'agent'::text AND company_id IS NULL AND company_domain_id IS NULL AND agent_workspace_id IS NOT NULL OR (purpose::text = ANY (ARRAY['operator'::character varying, 'agent_onboarding'::character varying]::text[])) AND company_id IS NULL AND company_domain_id IS NULL AND agent_workspace_id IS NULL", name: "authentication_requests_purpose"
   end
 
   create_table "boarding_events", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -233,9 +418,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_20_120000) do
     t.index ["id", "company_id"], name: "uidx_company_domains_id_company", unique: true
     t.check_constraint "NOT \"primary\" OR status::text = 'active'::text", name: "company_domains_primary_active"
     t.check_constraint "hostname::text = lower(hostname::text) AND hostname::text !~ '\\.$'::text", name: "company_domains_hostname_normalized"
-    t.check_constraint "kind::text = ANY (ARRAY['platform_subdomain'::character varying, 'custom'::character varying]::text[])", name: "company_domains_kind_valid"
-    t.check_constraint "status::text = ANY (ARRAY['pending'::character varying, 'verified'::character varying, 'active'::character varying, 'disabled'::character varying]::text[])", name: "company_domains_status_valid"
-    t.check_constraint "tls_status::text = ANY (ARRAY['pending'::character varying, 'ready'::character varying, 'failed'::character varying]::text[])", name: "company_domains_tls_status_valid"
+    t.check_constraint "kind::text = ANY (ARRAY['platform_subdomain'::character varying::text, 'custom'::character varying::text])", name: "company_domains_kind_valid"
+    t.check_constraint "status::text = ANY (ARRAY['pending'::character varying::text, 'verified'::character varying::text, 'active'::character varying::text, 'disabled'::character varying::text])", name: "company_domains_status_valid"
+    t.check_constraint "tls_status::text = ANY (ARRAY['pending'::character varying::text, 'ready'::character varying::text, 'failed'::character varying::text])", name: "company_domains_tls_status_valid"
   end
 
   create_table "company_invitations", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -371,6 +556,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_20_120000) do
     t.index ["departure_offer_id", "valid_from"], name: "index_fare_versions_on_departure_offer_id_and_valid_from"
     t.index ["departure_offer_id"], name: "index_fare_versions_on_departure_offer_id"
     t.check_constraint "price_cents >= 0 AND service_fee_cents >= 0 AND deposit_cents >= 0", name: "fare_amounts_nonnegative"
+  end
+
+  create_table "hostname_registrations", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "hostname", null: false
+    t.uuid "company_id"
+    t.uuid "agent_workspace_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index "lower((hostname)::text)", name: "uidx_registered_hostname", unique: true
+    t.index ["agent_workspace_id"], name: "index_hostname_registrations_on_agent_workspace_id", unique: true
+    t.index ["company_id"], name: "index_hostname_registrations_on_company_id"
+    t.index ["hostname", "company_id"], name: "uidx_host_company", unique: true
+    t.check_constraint "(company_id IS NULL) <> (agent_workspace_id IS NULL)", name: "registered_host_owner"
+    t.check_constraint "hostname::text = lower(hostname::text) AND hostname::text !~ '\\.$'::text", name: "registered_host_normalized"
   end
 
   create_table "membership_roles", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -684,14 +883,43 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_20_120000) do
   add_foreign_key "accommodations", "destinations", column: ["destination_id", "company_id"], primary_key: ["id", "company_id"], name: "fk_accommodations_destination_id_tenant"
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "agent_ai_executions", "agent_imports"
+  add_foreign_key "agent_ai_executions", "agent_imports", column: ["agent_import_id", "agent_workspace_id"], primary_key: ["id", "agent_workspace_id"]
+  add_foreign_key "agent_ai_executions", "agent_searches"
+  add_foreign_key "agent_ai_executions", "agent_searches", column: ["agent_search_id", "agent_workspace_id"], primary_key: ["id", "agent_workspace_id"]
+  add_foreign_key "agent_ai_executions", "agent_workspaces"
+  add_foreign_key "agent_import_items", "agent_imports"
+  add_foreign_key "agent_import_items", "agent_imports", column: ["agent_import_id", "agent_workspace_id"], primary_key: ["id", "agent_workspace_id"]
+  add_foreign_key "agent_import_items", "agent_trip_revisions"
+  add_foreign_key "agent_import_items", "agent_trip_revisions", column: ["agent_trip_revision_id", "agent_trip_id", "agent_workspace_id"], primary_key: ["id", "agent_trip_id", "agent_workspace_id"], name: "fk_agent_import_item_revision"
+  add_foreign_key "agent_import_items", "agent_trips"
+  add_foreign_key "agent_import_items", "agent_trips", column: ["agent_trip_id", "agent_workspace_id"], primary_key: ["id", "agent_workspace_id"]
+  add_foreign_key "agent_import_items", "agent_workspaces"
+  add_foreign_key "agent_imports", "agent_workspaces"
+  add_foreign_key "agent_searches", "agent_workspaces"
+  add_foreign_key "agent_suppliers", "agent_workspaces"
+  add_foreign_key "agent_trip_revisions", "agent_suppliers"
+  add_foreign_key "agent_trip_revisions", "agent_suppliers", column: ["agent_supplier_id", "agent_workspace_id"], primary_key: ["id", "agent_workspace_id"]
+  add_foreign_key "agent_trip_revisions", "agent_trips"
+  add_foreign_key "agent_trip_revisions", "agent_trips", column: ["agent_trip_id", "agent_workspace_id"], primary_key: ["id", "agent_workspace_id"]
+  add_foreign_key "agent_trip_revisions", "agent_workspaces"
+  add_foreign_key "agent_trips", "agent_trip_revisions", column: ["current_revision_id", "id", "agent_workspace_id"], primary_key: ["id", "agent_trip_id", "agent_workspace_id"], name: "fk_agent_trip_current_revision_id"
+  add_foreign_key "agent_trips", "agent_trip_revisions", column: ["published_revision_id", "id", "agent_workspace_id"], primary_key: ["id", "agent_trip_id", "agent_workspace_id"], name: "fk_agent_trip_published_revision_id"
+  add_foreign_key "agent_trips", "agent_workspaces"
+  add_foreign_key "agent_workspaces", "users", column: "owner_id"
+  add_foreign_key "audit_events", "agent_workspaces"
   add_foreign_key "audit_events", "companies"
   add_foreign_key "audit_events", "users", column: "actor_id"
+  add_foreign_key "authentication_codes", "agent_workspaces"
   add_foreign_key "authentication_codes", "authentication_requests"
+  add_foreign_key "authentication_codes", "authentication_requests", column: ["authentication_request_id", "agent_workspace_id"], primary_key: ["id", "agent_workspace_id"], name: "fk_auth_code_agent_request"
   add_foreign_key "authentication_codes", "authentication_requests", column: ["authentication_request_id", "company_id"], primary_key: ["id", "company_id"], name: "fk_auth_codes_request_company"
+  add_foreign_key "authentication_codes", "authentication_requests", column: ["authentication_request_id", "purpose"], primary_key: ["id", "purpose"], name: "fk_auth_code_request_purpose"
   add_foreign_key "authentication_codes", "companies"
   add_foreign_key "authentication_codes", "memberships"
   add_foreign_key "authentication_codes", "memberships", column: ["membership_id", "company_id"], primary_key: ["id", "company_id"], name: "fk_auth_codes_membership_company"
   add_foreign_key "authentication_codes", "users"
+  add_foreign_key "authentication_requests", "agent_workspaces"
   add_foreign_key "authentication_requests", "companies"
   add_foreign_key "authentication_requests", "company_domains"
   add_foreign_key "authentication_requests", "company_domains", column: ["company_domain_id", "company_id"], primary_key: ["id", "company_id"], name: "fk_auth_requests_domain_company"
@@ -712,6 +940,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_20_120000) do
   add_foreign_key "commission_rules", "memberships", column: "reseller_membership_id"
   add_foreign_key "commission_rules", "memberships", column: ["reseller_membership_id", "company_id"], primary_key: ["id", "company_id"], name: "fk_commission_rules_reseller_membership_id_tenant"
   add_foreign_key "company_domains", "companies"
+  add_foreign_key "company_domains", "hostname_registrations", column: ["hostname", "company_id"], primary_key: ["hostname", "company_id"], name: "fk_company_domain_registered_host"
   add_foreign_key "company_invitations", "companies"
   add_foreign_key "company_invitations", "users", column: "invited_by_id"
   add_foreign_key "customer_payments", "companies"
@@ -739,6 +968,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_20_120000) do
   add_foreign_key "destinations", "companies"
   add_foreign_key "fare_versions", "departure_offers"
   add_foreign_key "fare_versions", "users", column: "created_by_id"
+  add_foreign_key "hostname_registrations", "agent_workspaces"
+  add_foreign_key "hostname_registrations", "companies"
   add_foreign_key "membership_roles", "memberships"
   add_foreign_key "memberships", "companies"
   add_foreign_key "memberships", "users"

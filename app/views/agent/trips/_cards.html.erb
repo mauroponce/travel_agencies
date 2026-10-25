@@ -1,0 +1,26 @@
+<% if trips.empty? %>
+  <section class="agent-empty"><span class="agent-empty-icon">↝</span>
+    <h2>Todavía no hay viajes para mostrar</h2>
+    <p>Cargá tu primer viaje o ajustá los filtros de búsqueda.</p>
+  </section>
+<% else %>
+  <div class="agent-grid <%= 'agent-list' if params[:view] == 'list' %>"><% trips.each do |trip| %><% revision = public_view ? trip.published_revision : trip.current_revision; next unless revision %>
+      <article class="agent-trip-card">
+        <div class="agent-trip-visual"><% if revision.cover.attached? %><%= image_tag(public_view ? agent_public_image_path(slug: trip.slug, revision_id: revision.id) : cover_agent_trip_path(trip, revision_id: revision.id), alt: revision.title, loading: "lazy") %><% else %><span aria-hidden="true">↝</span><% end %><% unless public_view %><span class="agent-badge"><%= agent_status(trip) %></span><% end %></div>
+        <div class="agent-trip-content"><span class="agent-eyebrow"><%= revision.agent_supplier.name %></span>
+          <h2><%= link_to revision.title.presence || "Viaje sin título", public_view ? agent_public_trip_path(slug: trip.slug) : agent_trip_path(trip) %></h2>
+          <p><%= revision.destination.presence || "Destino a confirmar" %> · <%= revision.departs_on&.strftime('%d/%m/%Y') || "Fecha a confirmar" %></p>
+          <p><%= revision.hotel.presence || "Hotel a confirmar" %></p>
+          <p><%= revision.meal_plan.presence || "Comidas a confirmar" %></p>
+          <% if @search&.status == "completed" %>
+            <details class="agent-match"><summary>Por qué aparece</summary>
+              <ul><% agent_match_reasons(revision, @search.filters).each do |reason| %>
+                  <li><%= reason %></li>
+                <% end %></ul>
+            </details>
+          <% end %>
+          <div class="agent-trip-footer"><strong><%= agent_money(revision) %></strong><% if public_view %><%= link_to "Consultar", agent_whatsapp(revision), target: "_blank", rel: "noopener", class: "agent-link" %><% elsif local_assigns[:compare] %><label class="agent-compare-check"><%= check_box_tag "ids[]", trip.id, false, form: "compare-form", aria: { label: "Comparar #{revision.title}" } %> Comparar</label><% else %><%= link_to "Ver ficha →", agent_trip_path(trip), class: "agent-link" %><% end %></div>
+        </div>
+      </article>
+    <% end %></div>
+<% end %>

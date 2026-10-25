@@ -7,7 +7,7 @@ class CompanyDomainAuditTest < ActiveSupport::TestCase
 
   test "detects old base domains, missing primaries and unconfigured active hosts" do
     platform = @company.platform_domain
-    platform.update_columns(hostname: "#{@company.slug}.old.example", primary: false)
+    corrupt_hostname(platform, "#{@company.slug}.old.example", primary: false)
 
     result = CompanyDomains::Audit.call(caddy_site_addresses: PlatformHosts.platform_host)
 
@@ -19,7 +19,7 @@ class CompanyDomainAuditTest < ActiveSupport::TestCase
   test "detects invalid custom domains and stale CNAME targets" do
     custom = @company.company_domains.create!(hostname: "custom.example.net", kind: "custom", status: "pending",
       cname_target: PlatformHosts.custom_domain_cname_target)
-    custom.update_columns(hostname: "nested.#{PlatformHosts.base_domain}", cname_target: "old-target.example.net")
+    corrupt_hostname(custom, "nested.#{PlatformHosts.base_domain}", cname_target: "old-target.example.net")
 
     result = CompanyDomains::Audit.call(caddy_site_addresses: @company.platform_domain.hostname)
 
@@ -29,7 +29,7 @@ class CompanyDomainAuditTest < ActiveSupport::TestCase
 
   test "base domain migration plans and applies without touching company data" do
     CompanyDomain.where(kind: "platform_subdomain").includes(:company).find_each do |domain|
-      domain.update_columns(hostname: "#{domain.company.slug}.example.test")
+      corrupt_hostname(domain, "#{domain.company.slug}.example.test")
     end
     original_host = @company.platform_domain.reload.hostname
     new_base = "next.example.test"
@@ -53,6 +53,15 @@ class CompanyDomainAuditTest < ActiveSupport::TestCase
   end
 
   private
+
+  # The audit still needs invalid namespace data; the new FK correctly rejects
+  # an unregistered hostname before namespace validation can be audited.
+  def corrupt_hostname(domain, hostname, **attributes)
+    previous = domain.hostname
+    HostnameRegistration.reserve_company!(hostname, domain.company_id)
+    domain.update_columns(attributes.merge(hostname:))
+    HostnameRegistration.where(hostname: previous, company_id: domain.company_id).delete_all if previous != hostname
+  end
 
   def with_environment(name, value)
     previous = ENV[name]

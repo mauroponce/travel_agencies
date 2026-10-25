@@ -78,6 +78,9 @@ services:
     restart: unless-stopped
     environment:
       CADDY_SITE_ADDRESSES: ${CADDY_SITE_ADDRESSES:?Definí CADDY_SITE_ADDRESSES}
+      CADDY_ASK_SECRET: ${CADDY_ASK_SECRET:-}
+      PLATFORM_BASE_DOMAIN: ${PLATFORM_BASE_DOMAIN:?Definí PLATFORM_BASE_DOMAIN}
+      PLATFORM_HOST: ${PLATFORM_HOST:?Definí PLATFORM_HOST}
     ports:
       - "80:80"
       - "443:443"

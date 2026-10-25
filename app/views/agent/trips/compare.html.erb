@@ -1,0 +1,34 @@
+<div class="agent-heading">
+  <h1>Comparar viajes</h1>
+</div>
+<section class="agent-panel agent-table-scroll">
+  <table class="agent-table">
+    <thead>
+      <tr>
+        <th>Característica</th>
+        <% @trips.each do |trip| %>
+          <th><%= link_to trip.current_revision.title.presence || "Sin título", agent_trip_path(trip) %></th>
+        <% end %></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th>Proveedor</th>
+        <% @trips.each do |trip| %>
+          <td><%= trip.current_revision.agent_supplier.name %></td>
+        <% end %></tr>
+      <% {destination: "Destino", departs_on: "Salida", returns_on: "Regreso", hotel: "Hotel", meal_plan: "Comidas", transport: "Transporte", departure_location: "Lugar de salida", included_services: "Servicios incluidos", price_basis: "Base del precio"}.each do |field,label| %>
+        <tr>
+          <th><%= label %></th>
+          <% @trips.each do |trip| %>
+            <td><%= trip.current_revision.public_send(field).presence || "A confirmar" %></td>
+          <% end %></tr>
+      <% end %>
+      <tr>
+        <th>Precio</th>
+        <% @trips.each do |trip| %>
+          <td><%= agent_money(trip.current_revision) %></td>
+        <% end %></tr>
+    </tbody>
+  </table>
+  <p>Verificá moneda, unidad, base, tarifas y disponibilidad con cada proveedor.</p>
+</section>

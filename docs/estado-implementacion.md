@@ -60,3 +60,13 @@ La suite actual contiene 81 pruebas Rails con 456 aserciones y cubre además hos
 - Validación legal de privacidad/retención y capacitación operativa.
 - Resolver las reglas comerciales de `docs/decisiones-pendientes.md`.
 - Ejecutar `tenant_integrity:audit` sobre una copia reciente de producción antes de aplicar las restricciones compuestas.
+
+## Turistack Agente — 25 de octubre de 2026
+
+Implementado como contexto independiente: onboarding Google, propietario individual, proveedores privados, importación multificha con Gemini, revisión persistente, catálogo manual/versionado, comparador, web pública, WhatsApp del propietario, editor/vista previa, buscador privado y suspensión global. Los proveedores pausados y las salidas vencidas se ocultan públicamente. Las revisiones importadas nunca sustituyen la versión pública sin publicación expresa.
+
+El piloto es gratuito, sin cobro recurrente, colaboradores ni conexiones automáticas con empresas. Subdominio fijo durante el MVP. La habilitación productiva requiere el procedimiento de dos pasos y DNS/TLS de `despliegue-dominios.md`; todavía no se realizó un despliegue en Hetzner.
+
+Se verificó Gemini 3.5 Flash-Lite con credenciales locales: extracción estructurada de un PDF de prueba con precio correcto y búsqueda de Córdoba en enero de 2027 con presupuesto ARS por persona. El modelo rechazó `maxItems` dentro del esquema de extracción; se omite esa restricción en la solicitud y se conserva la validación estricta del máximo de 50 candidatos en Rails.
+
+Verificación del MVP: 139 pruebas Rails con 801 aserciones, 14 recorridos Playwright en escritorio/celular, comprobación Zeitwerk, RuboCop, Brakeman sin advertencias de seguridad, auditorías de dependencias e integridad y validación de Caddy/Compose. Las cuatro migraciones nuevas se aplicaron, revirtieron y reaplicaron sobre una base descartable, incluida la finalización de hosts. DNS, OAuth productivo, SMTP/S3 y despliegue real requieren configurar Hetzner.

@@ -1,0 +1,22 @@
+<div class="agent-heading">
+  <div><span class="agent-eyebrow">TUS PROVEEDORES</span>
+    <h1>Mis empresas</h1>
+    <p>Trabajá con todas tus empresas desde un único lugar.</p>
+  </div>
+  <%= link_to "Registrar empresa", new_agent_supplier_path, class: "btn btn-primary" %></div>
+<%= form_with url: agent_suppliers_path, method: :get, class: "agent-filters" do |f| %><%= f.search_field :q, value: params[:q], placeholder: "Buscar por empresa o contacto", aria: { label: "Buscar empresas" } %><%= f.submit "Buscar", class: "btn" %><% end %>
+<div class="agent-grid"><% @suppliers.each do |supplier| %>
+    <article class="agent-panel"><span class="agent-badge"><%= supplier.active? ? "Activa" : "Pausada" %></span>
+      <h2><%= link_to supplier.name, agent_supplier_path(supplier) %></h2>
+      <p><%= supplier.contact_name.presence || "Contacto pendiente" %></p>
+      <p><%= supplier.phone %></p>
+      <strong><%= @counts[supplier.id].to_i %> viajes cargados</strong>
+      <div class="agent-actions"><%= link_to "Ver catálogo →", agent_trips_path(supplier_id: supplier.id) %></div>
+    </article>
+  <% end %></div>
+<% if @suppliers.empty? %>
+  <div class="agent-empty">
+    <h2>Tu próximo proveedor empieza acá</h2>
+    <p>Registrá las empresas que te autorizan a comercializar sus viajes.</p>
+  </div>
+<% end %><%= render "agent/pagination", pagination: @pagination %>

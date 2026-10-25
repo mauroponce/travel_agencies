@@ -1,5 +1,8 @@
 module Platform
   class CompaniesController < ApplicationController
+    rescue_from ActiveRecord::RecordNotUnique do
+      render plain: "El subdominio ya está registrado. Elegí otro.", status: :unprocessable_entity
+    end
     before_action :require_operator
     before_action :set_company, only: :update
 

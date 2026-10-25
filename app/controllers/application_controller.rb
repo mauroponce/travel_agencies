@@ -11,7 +11,7 @@ class ApplicationController < ActionController::Base
   before_action :enforce_host_scope
   before_action :require_authentication
   before_action :set_current_context
-  helper_method :current_user, :current_company, :current_membership, :current_role
+  helper_method :current_user, :current_company, :current_membership, :current_role, :current_agent_workspace
 
   rescue_from Pundit::NotAuthorizedError, with: :forbidden
   rescue_from ActiveRecord::RecordNotFound, with: :not_found
@@ -26,6 +26,7 @@ class ApplicationController < ActionController::Base
   def current_company = Current.company
   def current_membership = Current.membership
   def current_role = Current.role
+  def current_agent_workspace = Current.agent_workspace
 
   def resolve_request_host
     Current.request_id = request.request_id
@@ -34,6 +35,7 @@ class ApplicationController < ActionController::Base
     Current.host_scope = resolution.scope.to_s
     Current.company = resolution.company
     Current.company_domain = resolution.company_domain
+    Current.agent_workspace = resolution.agent_workspace
   end
 
   def enforce_host_scope
@@ -42,10 +44,18 @@ class ApplicationController < ActionController::Base
       true
     when "sessions"
       action_name == "destroy" || (Current.host_scope == "auth" && %w[create failure].include?(action_name)) || Rails.env.test?
+    when "agent/onboarding"
+      AgentWorkspace.enabled? && AgentWorkspace.self_signup_enabled? && Current.host_scope == "platform"
     when "landing", "onboardings"
-      %w[tenant platform].include?(Current.host_scope)
+      %w[tenant platform agent].include?(Current.host_scope)
+    when "pwa"
+      %w[tenant agent].include?(Current.host_scope)
     else
-      platform_request? ? Current.host_scope == "platform" : Current.host_scope == "tenant"
+      if controller_path.start_with?("agent/")
+        Current.host_scope == "agent"
+      else
+        platform_request? ? Current.host_scope == "platform" : Current.host_scope == "tenant"
+      end
     end
     raise ActionController::RoutingError, "Not Found" unless allowed
   end
@@ -56,6 +66,13 @@ class ApplicationController < ActionController::Base
 
   def set_current_context
     return unless current_user
+
+    if Current.host_scope == "agent"
+      raise Pundit::NotAuthorizedError unless current_agent_workspace.active? && current_agent_workspace.owner_id == current_user.id
+      Current.role = "agent"
+      Time.zone = current_agent_workspace.timezone
+      return
+    end
 
     if platform_request? && current_user.platform_operator?
       Current.role = "operator"

@@ -1,0 +1,17 @@
+<section class="agent-onboarding agent-panel"><span class="agent-eyebrow">TURISTACK REVENDEDOR</span>
+  <h1>Tu espacio para vender viajes</h1>
+  <p>Centralizá tus proveedores, prepará fichas con IA y compartí tu catálogo. Piloto de lanzamiento.</p>
+  <% unless current_user %><%= button_to "Ingresar con Google", auth_start_path(purpose: "agent_onboarding"), data: { turbo: false }, class: "btn btn-primary" %>
+  <% else %>
+    <% if @workspace.persisted? %>
+      <h2><%= @workspace.business_name %></h2>
+      <p><%= @workspace.hostname %></p>
+      <% if @workspace.active? %><%= link_to "Ingresar a mi espacio", agent_root_url(host: @workspace.hostname_registration.hostname, protocol: PlatformHosts.protocol, port: PlatformHosts.port), class: "btn btn-primary" %>
+        <p>Por seguridad, iniciá sesión con Google también en este subdominio.</p>
+      <% else %>
+        <p>Tu espacio está suspendido. Contactá a la plataforma.</p>
+      <% end %>
+    <% else %><%= render "agent/errors", record: @workspace %><%= form_with model: @workspace, url: agent_onboarding_path, class: "agent-form" do |f| %><%= f.label :business_name, "Nombre comercial" %><%= f.text_field :business_name, required: true %><%= f.label :public_name, "Nombre público" %><%= f.text_field :public_name, required: true, value: @workspace.public_name.presence || current_user.name %><%= f.label :whatsapp, "WhatsApp con código de país" %><%= f.telephone_field :whatsapp, required: true, placeholder: "5491155551234" %><%= f.label :subdomain, "Subdominio (permanente durante el MVP)" %>
+        <div class="agent-inline"><%= f.text_field :subdomain, required: true, pattern: "[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?" %><span>.<%= PlatformHosts.base_domain %></span></div>
+        <%= f.submit "Crear mi espacio", class: "btn btn-primary" %><% end %><% end %>
+  <% end %></section>

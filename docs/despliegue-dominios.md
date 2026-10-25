@@ -34,7 +34,7 @@ Los ejemplos completos están en `deploy/env.staging.example` y `deploy/env.prod
 7. Desplegar un tag inmutable con `bin/deploy-hetzner`. El servicio `migrate` es el único que ejecuta `db:migrate`; no carga seeds, y web/worker rechazan `RUN_MIGRATIONS=true`.
 8. Verificar `/up`, logs, Sidekiq, envío de correo, OAuth, Active Storage y las rutas críticas. No incorporar agencias reales hasta completar staging.
 
-Caddy recibe solamente los hosts listados y persiste certificados en `caddy_data`. `reverse_proxy` informa el protocolo original y Rails usa `assume_ssl`; las cookies siguen siendo host-only. No se habilita TLS on-demand para hostnames arbitrarios.
+Caddy recibe los hosts empresariales listados y autoriza los subdominios de agentes mediante el registro persistido descrito más abajo. Persiste certificados en `caddy_data`. `reverse_proxy` informa el protocolo original y Rails usa `assume_ssl`; las cookies siguen siendo host-only. No se habilita TLS on-demand para hostnames arbitrarios.
 
 ## Staging reproducible
 
@@ -143,3 +143,37 @@ Antes de una restauración productiva, sacar un backup del estado actual y valid
 - [ ] Migraciones revisadas por compatibilidad; migrador único y rollback/forward-fix acordado.
 - [ ] Monitoreo de salud, logs, espacio en disco, backups y alertas operativo.
 - [ ] Alta del primer cliente se realiza solo después de aprobar esta lista.
+
+## Producción: turistack.com
+
+El dominio de producción es **turistack.com**. El host de plataforma y acceso inicial es `https://turistack.com`; Google OAuth usa exclusivamente `https://auth.turistack.com/auth/google_oauth2/callback`. `https://www.turistack.com` redirige al dominio raíz. Los agentes usan `https://<subdominio>.turistack.com`.
+
+Antes del primer despliegue, configurar estos registros en el proveedor DNS, reemplazando el destino por la IP pública del futuro servidor Hetzner:
+
+| Nombre | Tipo | Destino |
+| --- | --- | --- |
+| `@` | A | IPv4 pública de Hetzner |
+| `auth` | A | La misma IPv4 |
+| `*` | A | La misma IPv4; permite altas inmediatas de agentes |
+| `www` | CNAME | `turistack.com` |
+| `tenants` | A | La misma IPv4; destino técnico para dominios propios empresariales |
+
+Agregar AAAA solamente si el servidor tiene IPv6 configurada y accesible. No publicar una IPv6 provisional. Para esta primera instalación usar DNS directo hacia Caddy, con puertos 80/443 accesibles. Configurar por separado los registros de correo indicados por el proveedor SMTP; comprar el dominio no habilita por sí solo `no-reply@turistack.com`.
+
+La IP, el usuario SSH, la llave y la ubicación definitiva del despliegue se incorporarán cuando esté disponible el servidor. Este cambio prepara archivos y validaciones; no modifica DNS ni despliega a un servidor.
+
+## Turistack Agente: alta inmediata y despliegue en dos pasos
+
+Los hosts empresariales continúan explícitos en `CADDY_SITE_ADDRESSES`. El bloque adicional de Caddy acepta TLS on-demand **solo para agentes registrados y activos**. Consulta `GET /internal/tls/authorize?domain=...&token=...` sobre la red privada Docker. El endpoint exige `CADDY_ASK_SECRET`, no inicia sesiones, no consulta DNS y queda bloqueado por Caddy para solicitudes públicas. La autorización Rails del host interno `web` se limita a ese endpoint. La configuración fue validada con Caddy 2.10.
+
+1. Desplegar la versión con `AGENT_ENABLED=false`. La migración crea espacios, revisiones, tareas de IA y el registro de hosts; preserva los hosts existentes. Los propósitos OAuth admiten temporalmente escrituras del código anterior y se interpretan de manera compatible. Las nuevas escrituras empresariales reservan el hostname dentro de su transacción.
+2. Esperar que **todos** los procesos web y worker usen esta versión. Ejecutar `bin/rails agent:finalize_hosts` mediante el contenedor del entorno. El comando completa el registro bajo bloqueo, agrega/valida la FK compuesta de hostname y empresa, rellena propósitos OAuth heredados y activa su restricción NOT NULL.
+3. Crear un secreto exclusivo de al menos 32 caracteres (`bin/rails secret`) para `CADDY_ASK_SECRET`, compartido entre web y Caddy. Guardarlo en el archivo privado del entorno. Configurar `GEMINI_API_KEY` y `GEMINI_MODEL=gemini-3.5-flash-lite` también para el worker. Nunca copiar la clave de desarrollo a documentación o Git.
+4. Configurar el DNS comodín y los hosts raíz/auth/www. Actualizar Compose/Caddy y verificar HTTPS y el callback Google. Habilitar `AGENT_ENABLED=true` y recrear web/worker/Caddy con el mismo tag. En staging/producción el producto no se habilita mientras falte la FK de hosts.
+5. Crear el revendedor desde el operador y verificar invitación y acceso con el correo Google indicado, subdominio, original privado, importación real, revisión, publicación, web anónima y WhatsApp. El alta autónoma se limita a development/test. Ejecutar `tenant_integrity:audit`, `company_domains:audit` y `agent:audit`. El primer acceso a un host nuevo puede demorar mientras Caddy emite el certificado.
+
+Para revertir, deshabilitar `AGENT_ENABLED` y conservar las tablas, las reservas de hostname y la versión que conoce el registro. No volver al código anterior a ese registro después de finalizar la FK. No ejecutar migraciones destructivas para deshabilitar el piloto. Un cambio global de dominio base incluye los hosts empresariales y de agentes, y rechaza autenticaciones en curso o colisiones.
+
+Los logs de Gemini contienen únicamente el identificador del trabajo y metadatos operativos. El endpoint interno filtra su token de los logs de Rails; el proxy nunca expone ese endpoint. No publicar la salida JSON completa de `caddy adapt` con secretos reales, porque incluye la URL interna de autorización.
+
+El MVP de Revendedor y su procedimiento completo (flyers originales, Poppler, variables, CI, rollback y matriz WhatsApp) están en [turistack-revendedor-lanzamiento.md](turistack-revendedor-lanzamiento.md).

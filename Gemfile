@@ -68,3 +68,6 @@ end
 group :test do
   gem "webmock", "~> 3.26"
 end
+
+# Parse uploaded PDFs before sending them to Gemini.
+gem "pdf-reader", "~> 2.15"

@@ -5,6 +5,13 @@ class ProtectedEnvironmentBootTest < ActiveSupport::TestCase
   test "staging boots with forced SSL and secure host-only cookies" do
     env = {
       "RAILS_ENV" => "staging",
+      "DATABASE_URL" => nil,
+      "DB_PORT" => "5432",
+      "CONTAINERIZED" => nil,
+      "POSTGRES_USER" => nil,
+      "POSTGRES_PASSWORD" => nil,
+      "POSTGRES_DB" => nil,
+      "AGENT_ENABLED" => "false",
       "SECRET_KEY_BASE" => "a" * 64,
       "ACTIVE_RECORD_ENCRYPTION_KEY" => "b" * 64,
       "DB_HOST" => "localhost",
@@ -25,7 +32,7 @@ class ProtectedEnvironmentBootTest < ActiveSupport::TestCase
     script = <<~'RUBY'
       options = Rails.application.config.session_options
       print [Rails.application.config.force_ssl, Rails.application.config.assume_ssl,
-        options[:secure], options[:httponly], options[:same_site], options[:domain].inspect].join("|")
+        options[:secure], options[:httponly], options[:same_site], options[:domain].inspect, AgentWorkspace.self_signup_enabled?].join("|")
       STDOUT.flush
       exit! 0
     RUBY
@@ -33,6 +40,6 @@ class ProtectedEnvironmentBootTest < ActiveSupport::TestCase
     output, error, status = Open3.capture3(env, "bin/rails", "runner", script, chdir: Rails.root.to_s)
 
     assert status.success?, error
-    assert_equal "true|true|true|true|lax|nil", output
+    assert_equal "true|true|true|true|lax|nil|false", output
   end
 end

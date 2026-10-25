@@ -1,4 +1,36 @@
 Rails.application.routes.draw do
+  get "/internal/tls/authorize", to: "internal_tls#show"
+  resource :agent_onboarding, path: "agente/alta", controller: "agent/onboarding", only: %i[show create]
+  agent_host = ->(request) { AgentWorkspace.enabled? && HostnameRegistration.where(company_id: nil).exists?(hostname: PlatformHosts.normalize(request.host)) }
+  get "/", to: "agent/public_catalog#index", as: :agent_public_catalog, constraints: agent_host
+  get "/viajes/:slug", to: "agent/public_catalog#show", as: :agent_public_trip, constraints: agent_host
+  get "/agente/imagenes/:slug/:revision_id", to: "agent/public_catalog#image", as: :agent_public_image
+  namespace :agent, path: "agente" do
+    root "dashboard#show"
+    resources :suppliers, path: "empresas"
+    resources :trips, path: "viajes", except: :destroy do
+      collection { get :compare }
+      member do
+        post :publish
+        post :unpublish
+        post :archive
+        get :cover
+        get :source
+      end
+    end
+    resources :imports, path: "importaciones", only: %i[index create show] do
+      member do
+        post "retry", action: :retry_processing, as: :retry
+        get :source
+        get :preview
+      end
+      resources :items, controller: "import_items", only: %i[edit update]
+    end
+    resources :searches, path: "buscador", only: %i[index create show]
+    resource :website, path: "mi-web", controller: "website", only: %i[show update] do
+      get :preview
+    end
+  end
   get "up" => "rails/health#show", as: :rails_health_check
   get "manifest" => "pwa#manifest", as: :pwa_manifest
   get "service-worker" => "pwa#service_worker", as: :pwa_service_worker
@@ -58,6 +90,7 @@ Rails.application.routes.draw do
   resources :commissions, path: "comisiones", only: :index
 
   namespace :platform do
+    resources :agent_workspaces, only: %i[index new create update]
     resources :companies, only: %i[index new create update]
     resources :companies, only: [] do
       resources :company_domains, only: :create do

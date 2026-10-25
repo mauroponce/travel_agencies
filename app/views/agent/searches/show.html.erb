@@ -1,0 +1,32 @@
+<div class="agent-heading">
+  <div><span class="agent-eyebrow">BÚSQUEDA PRIVADA</span>
+    <h1>Alternativas para tu cliente</h1>
+    <p><%= @search.query %></p>
+  </div>
+  <%= link_to "Nueva búsqueda", agent_searches_path, class: "btn" %></div>
+<% if %w[pending processing].include?(@search.status) %>
+  <section class="agent-panel agent-loading" data-controller="agent-poll">
+    <div class="agent-spinner"></div>
+    <p><%= agent_ai_status(@search) %></p>
+  </section>
+<% elsif @search.status == "error" %>
+  <section class="agent-panel">
+    <h2>El asistente no está disponible</h2>
+    <p><%= agent_ai_error(@search.error_code) %></p>
+    <p>Esta falla no significa que no haya viajes.</p>
+    <%= link_to "Usar filtros tradicionales", agent_trips_path, class: "btn btn-primary" %></section>
+<% else %>
+  <section class="agent-panel">
+    <h2>Criterios interpretados</h2>
+    <dl class="agent-details"><% @search.filters.each do |key,value| %>
+        <dt><%= agent_filter_label(key) %></dt>
+        <dd><%= value %></dd>
+      <% end %></dl>
+    <% @search.interpretation.each do |note| %>
+      <p class="agent-alert"><%= note %></p>
+    <% end %>
+    <p>Las alternativas cumplen los filtros mostrados según los datos registrados. Los requisitos pendientes necesitan confirmación.</p>
+    <%= link_to "Editar filtros en el catálogo", agent_trips_path(@search.filters), class: "btn" %></section>
+  <%= form_with url: compare_agent_trips_path, method: :get, id: "compare-form" do |f| %><%= f.submit "Comparar seleccionados (2–3)", class: "btn" %><% end %><% if @trips.empty? %>
+    <p class="agent-alert">No encontramos viajes que cumplan estos criterios. Podés ajustarlos desde el catálogo.</p>
+  <% end %><%= render "agent/trips/cards", trips: @trips, public_view: false, compare: true %><%= render "agent/pagination", pagination: @pagination %><% end %>

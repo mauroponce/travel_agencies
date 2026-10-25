@@ -1,7 +1,7 @@
 {
-  "id": "<%= Current.company.id %>",
-  "name": "<%= j Current.company.name %>",
-  "short_name": "<%= j Current.company.name.truncate(24) %>",
+  "id": "<%= @pwa_id %>",
+  "name": <%= raw @pwa_name.to_json %>,
+  "short_name": <%= raw @pwa_name.truncate(24).to_json %>,
   "icons": [
     {
       "src": "/icon.png",

@@ -1,4 +1,5 @@
 class User < ApplicationRecord
+  has_one :agent_workspace, foreign_key: :owner_id, dependent: :restrict_with_error
   has_many :memberships, dependent: :destroy
   has_many :companies, through: :memberships
   has_many :notifications, dependent: :destroy

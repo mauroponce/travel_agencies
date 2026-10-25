@@ -86,7 +86,7 @@ jobs:
 
     steps:
       - name: Install packages
-        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libpq-dev libvips
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libpq-dev libvips poppler-utils
 
       - name: Checkout code
         uses: actions/checkout@v6
@@ -102,7 +102,12 @@ jobs:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432
           # RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
           # REDIS_URL: redis://localhost:6379/0
-        run: bin/rails db:test:prepare test
+        run: |
+          bin/rails db:test:prepare test
+          bin/rails zeitwerk:check
+          bin/rails tenant_integrity:audit
+          bin/rails agent:audit
+          git diff --check
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -117,3 +122,18 @@ jobs:
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432
         run: npm run test:e2e
+
+  required_checks:
+    name: Required checks
+    if: always()
+    needs: [scan_ruby, scan_js, lint, test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every quality job to succeed
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          python3 - <<'PYTHON'
+          import json, os
+          assert all(job["result"] == "success" for job in json.loads(os.environ["RESULTS"]).values()), "A required job failed or was skipped"
+          PYTHON

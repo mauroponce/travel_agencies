@@ -20,6 +20,10 @@ class CompanyDomain < ApplicationRecord
   scope :resolvable, -> { active.joins(:company).where(companies: { status: "active" }) }
 
   before_destroy :preserve_platform_subdomain
+  before_create :reserve_hostname
+  before_update :reserve_hostname, if: :will_save_change_to_hostname?
+  after_update :release_previous_hostname, if: :saved_change_to_hostname?
+  after_destroy :release_hostname
 
   def self.find_resolvable(hostname)
     resolvable.find_by("lower(hostname) = ?", PlatformHosts.normalize(hostname))
@@ -39,6 +43,18 @@ class CompanyDomain < ApplicationRecord
   def self.digest(value) = Digest::SHA256.hexdigest(value.to_s)
 
   private
+
+  def reserve_hostname
+    HostnameRegistration.reserve_company!(hostname, company_id)
+  end
+
+  def release_previous_hostname
+    HostnameRegistration.where(hostname: hostname_before_last_save, company_id:).delete_all
+  end
+
+  def release_hostname
+    HostnameRegistration.where(hostname:, company_id:).delete_all
+  end
 
   def platform_subdomain_is_valid
     return unless platform_subdomain?

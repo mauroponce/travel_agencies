@@ -2,7 +2,7 @@ module CompanyDomains
   class BaseDomainMigration
     class Unsafe < StandardError; end
 
-    Mapping = Data.define(:domain_id, :company_id, :from, :to)
+    Mapping = Struct.new(:domain_id, :company_id, :from, :to, :agent_workspace_id, keyword_init: true)
     Plan = Data.define(:mappings, :errors) do
       def safe? = errors.empty?
     end
@@ -30,9 +30,19 @@ module CompanyDomains
         end
         label = domain.hostname.delete_suffix(suffix)
         target = "#{label}.#{@to}"
-        conflict = CompanyDomain.where("lower(hostname) = ?", target).where.not(id: domain.id).exists?
+        conflict = HostnameRegistration.where(hostname: target).exists? || CompanyDomain.where("lower(hostname) = ?", target).where.not(id: domain.id).exists?
         errors << "#{target} ya está registrado" if conflict
         Mapping.new(domain_id: domain.id, company_id: domain.company_id, from: domain.hostname, to: target)
+      end
+      HostnameRegistration.where.not(agent_workspace_id: nil).find_each do |registration|
+        suffix = ".#{@from}"
+        unless registration.hostname.end_with?(suffix)
+          errors << "#{registration.hostname} no pertenece al dominio de origen #{@from}"
+          next
+        end
+        target = "#{registration.hostname.delete_suffix(suffix)}.#{@to}"
+        errors << "#{target} ya está registrado" if HostnameRegistration.where(hostname: target).where.not(id: registration.id).exists?
+        mappings << Mapping.new(from: registration.hostname, to: target, agent_workspace_id: registration.agent_workspace_id)
       end
       errors << "no hay subdominios permanentes para migrar" if mappings.empty?
 
@@ -53,14 +63,21 @@ module CompanyDomains
 
       ApplicationRecord.transaction do
         CompanyDomain.where(kind: "platform_subdomain").lock.load
+        HostnameRegistration.where.not(agent_workspace_id: nil).lock.load
         current_plan = plan
         raise Unsafe, current_plan.errors.join("; ") unless current_plan.safe?
 
         now = Time.current
         current_plan.mappings.each do |mapping|
-          CompanyDomain.where(id: mapping.domain_id, hostname: mapping.from).update_all(hostname: mapping.to, updated_at: now)
+          if mapping.agent_workspace_id
+            HostnameRegistration.find_by!(agent_workspace_id: mapping.agent_workspace_id, hostname: mapping.from).update!(hostname: mapping.to)
+          else
+            HostnameRegistration.reserve_company!(mapping.to, mapping.company_id)
+            CompanyDomain.where(id: mapping.domain_id, hostname: mapping.from).update_all(hostname: mapping.to, updated_at: now)
+            HostnameRegistration.where(hostname: mapping.from, company_id: mapping.company_id).delete_all
+          end
         end
-        current_plan.mappings.each { |mapping| CompanyDomain.find(mapping.domain_id).validate! }
+        current_plan.mappings.each { |mapping| CompanyDomain.find(mapping.domain_id).validate! if mapping.domain_id }
         current_plan
       end
     end

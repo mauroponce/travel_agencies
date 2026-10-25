@@ -1,0 +1,21 @@
+<% revision = trip.published_revision %>
+<section class="agent-panel agent-share" data-controller="flyer-share"
+  data-flyer-share-image-value="<%= cover_agent_trip_path(trip, revision_id: revision.id) if revision.cover.attached? %>"
+  data-flyer-share-url-value="<%= agent_trip_public_url(trip) %>"
+  data-flyer-share-text-value="<%= agent_share_text(trip) %>">
+  <span class="agent-eyebrow">LISTO PARA COMPARTIR</span>
+  <h2>Tu viaje ya tiene su ficha pública</h2>
+  <%= link_to "Ver ficha pública ↗", agent_trip_public_url(trip), class: "agent-link", target: "_blank", rel: "noopener" %>
+  <p class="agent-share-url"><%= agent_trip_public_url(trip) %></p>
+  <div class="agent-actions">
+    <% if revision.cover.attached? %>
+      <button type="button" class="btn btn-primary" data-action="flyer-share#share" data-flyer-share-target="shareButton">Compartir flyer en WhatsApp</button>
+      <%= link_to "Descargar flyer", cover_agent_trip_path(trip, revision_id: revision.id, download: true), class: "btn", data: { turbo: false } %>
+    <% else %><p>Agregá un flyer desde Editar viaje para compartir la imagen.</p><% end %>
+    <button type="button" class="btn" data-action="flyer-share#copyLink">Copiar enlace</button>
+    <button type="button" class="btn" data-action="flyer-share#copyText">Copiar texto para estado</button>
+  </div>
+  <p>Elegí WhatsApp en el menú del celular y después, si corresponde, Mi estado. Si el texto no acompaña la imagen, copialo y pegalo en WhatsApp.</p>
+  <p role="status" aria-live="polite" data-flyer-share-target="status"></p>
+  <textarea readonly hidden aria-label="Texto para copiar manualmente" data-flyer-share-target="manual"></textarea>
+</section>

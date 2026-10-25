@@ -2,7 +2,8 @@ class AuditRecorder
   SENSITIVE_KEYS = %w[document_number full_name notes phone commercial_phone google_sub token token_digest auth p256dh endpoint].freeze
 
   def self.call(action:, auditable:, actor: Current.user, company: Current.company, changeset: {})
-    AuditEvent.create!(company:, actor:, action:, auditable_type: auditable.class.name,
+    workspace = auditable.is_a?(AgentWorkspace) ? auditable : (auditable.agent_workspace if auditable.respond_to?(:agent_workspace))
+    AuditEvent.create!(company:, agent_workspace: workspace, actor:, action:, auditable_type: auditable.class.name,
       auditable_id: auditable.id, changeset: filter_sensitive(changeset),
       request_id: Current.request_id, ip_address: Current.ip_address, occurred_at: Time.current)
   end

@@ -1,0 +1,14 @@
+<% content_for :title, "Viajes · #{current_agent_workspace.business_name}" %>
+<% content_for :head do %><meta name="description" content="Descubrí las propuestas de viajes de <%= current_agent_workspace.business_name %> y consultá por WhatsApp."><% end %>
+<section class="agent-public-hero"><span class="agent-eyebrow">TU PRÓXIMO DESTINO</span>
+  <h1><%= current_agent_workspace.business_name %></h1>
+  <p><%= current_agent_workspace.presentation %></p>
+  <span>Atención personal de <%= current_agent_workspace.public_name %></span>
+  <div class="agent-actions"><%= link_to "Consultar por WhatsApp", "https://wa.me/#{current_agent_workspace.whatsapp}", class: "btn btn-primary", rel: "noopener", target: "_blank" %><% if current_user && current_user.id == current_agent_workspace.owner_id %><%= link_to "Mi panel", agent_root_path, class: "btn" %><% else %><%= button_to "Acceso del agente", auth_start_path, class: "btn", data: {turbo: false} %><% end %></div>
+</section>
+<%= render "agent/trips/filters", filter_url: agent_public_catalog_path %>
+<div class="agent-heading">
+  <h2>Viajes para descubrir</h2>
+  <span><%= @pagination.total_count %> propuestas</span></div>
+<%= render "agent/trips/cards", trips: @trips, public_view: true %><%= render "agent/pagination", pagination: @pagination %>
+<p class="agent-public-note">Confirmá tarifas, condiciones y disponibilidad directamente antes de contratar.</p>

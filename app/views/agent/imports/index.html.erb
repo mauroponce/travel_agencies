@@ -1,0 +1,22 @@
+<div class="agent-heading">
+  <div><span class="agent-eyebrow">TU ASISTENTE INTERNO</span>
+    <h1>Importar con IA</h1>
+    <p>Transformá los flyers que recibís en fichas listas para revisar.</p>
+  </div>
+</div>
+<section class="agent-panel">
+  <div class="agent-import-steps"><span>1 · Subir archivo</span><span>2 · Procesar con IA</span><span>3 · Revisar y publicar</span></div>
+  <%= form_with url: agent_imports_path, multipart: true, class: "agent-upload" do |f| %><span class="agent-empty-icon" aria-hidden="true">↥</span>
+    <h2>Subí un flyer o documento de tu proveedor</h2>
+    <p>JPG, PNG, WebP o PDF · hasta 10 MB · PDF hasta 100 páginas</p>
+    <%= f.file_field :source, required: true, accept: "image/jpeg,image/png,image/webp,application/pdf", aria: {label: "Archivo a importar"} %><%= f.hidden_field :idempotency_key, value: @idempotency_key %><%= f.submit "Procesar con IA", class: "btn btn-primary" %><% end %>
+  <p>Podés extraer varios viajes. Nada se publica automáticamente. Al publicar una ficha se mostrará la imagen del flyer o la primera página del PDF; el documento fuente se conserva.</p>
+</section>
+<section class="agent-panel">
+  <h2>Importaciones recientes</h2>
+  <% @imports.each do |item| %>
+    <div class="agent-row"><%= link_to item.source.filename.to_s, agent_import_path(item) %><span class="agent-badge"><%= agent_ai_status(item) %></span><time><%= item.created_at.strftime('%d/%m/%Y %H:%M') %></time></div>
+  <% end %><% if @imports.empty? %>
+    <p>Tus archivos importados aparecerán acá.</p>
+  <% end %></section>
+<%= render "agent/pagination", pagination: @pagination %>

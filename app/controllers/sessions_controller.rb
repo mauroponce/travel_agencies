@@ -16,7 +16,12 @@ class SessionsController < ApplicationController
         (authentication_request.company.status != "active" || !authentication_request.company_domain.active?)
 
       membership = membership_for(authentication_request, user)
-      authorized = membership || (authentication_request.company.nil? && user.platform_operator?)
+      authorized = case authentication_request.purpose
+      when "company" then membership
+      when "agent" then AgentWorkspace.enabled? && authentication_request.agent_workspace.active? && authentication_request.agent_workspace.accept_invitation!(user)
+      when "agent_onboarding" then AgentWorkspace.enabled? && AgentWorkspace.self_signup_enabled?
+      when "operator" then user.platform_operator?
+      end
       _, token = AuthenticationCode.issue!(authentication_request:, user:, membership:) if authorized
       authentication_request.update!(used_at: Time.current)
     end
@@ -45,10 +50,21 @@ class SessionsController < ApplicationController
     raise ActionController::RoutingError, "Not Found" unless Rails.env.test?
     user = User.find_by!(email: params[:email])
     if Current.host_scope == "platform"
+      if params[:purpose] == "agent_onboarding" && AgentWorkspace.enabled?
+        reset_session
+        session[:user_id] = user.id
+        return redirect_to agent_onboarding_path
+      end
       raise Pundit::NotAuthorizedError unless user.platform_operator?
       reset_session
       session[:user_id] = user.id
       return redirect_to platform_companies_path
+    end
+    if Current.host_scope == "agent"
+      raise Pundit::NotAuthorizedError unless Current.agent_workspace.owner_id == user.id
+      reset_session
+      session[:user_id] = user.id
+      return redirect_to agent_root_path
     end
     membership = user.memberships.active.find_by!(company: Current.company)
     role = params[:role].to_s

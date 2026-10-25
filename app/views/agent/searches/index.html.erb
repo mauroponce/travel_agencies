@@ -1,0 +1,14 @@
+<div class="agent-heading">
+  <div><span class="agent-eyebrow">ASISTENTE DE BÚSQUEDA</span>
+    <h1>Buscador inteligente</h1>
+    <p>Contanos qué busca tu cliente. Buscamos entre los viajes de tus proveedores.</p>
+  </div>
+</div>
+<section class="agent-panel"><%= form_with url: agent_searches_path, class: "agent-form" do |f| %><%= f.label :query, "¿Qué viaje necesita tu cliente?" %><%= f.text_area :query, required: true, maxlength: 3000, placeholder: "Córdoba para dos adultos, con pensión completa, en enero y por menos de $600.000 por persona." %><%= f.hidden_field :idempotency_key, value: @idempotency_key %><%= f.submit "Buscar viajes", class: "btn btn-primary" %><% end %>
+  <p>La IA interpreta tus criterios. Los resultados provienen de tu catálogo; no se confirma disponibilidad.</p>
+</section>
+<section class="agent-panel">
+  <h2>Consultas recientes</h2>
+  <% @searches.each do |search| %>
+    <div class="agent-row"><%= link_to search.query.truncate(150), agent_search_path(search) %><span><%= agent_ai_status(search) %></span></div>
+  <% end %></section>

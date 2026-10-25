@@ -1,5 +1,8 @@
 module Platform
   class CompanyDomainsController < ApplicationController
+    rescue_from ActiveRecord::RecordNotUnique do
+      render plain: "El hostname ya está registrado.", status: :unprocessable_entity
+    end
     before_action :require_operator
     before_action :set_company
     before_action :set_domain, except: :create

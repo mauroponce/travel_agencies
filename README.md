@@ -94,3 +94,23 @@ Los listados administrativos usan orden total (criterio funcional más `id`) par
 - Integridad: `bin/rails tenant_integrity:audit` y `bin/rails company_domains:audit`
 
 La arquitectura funcional se documenta en [docs/arquitectura.md](docs/arquitectura.md) y [docs/reglas-negocio.md](docs/reglas-negocio.md).
+
+## Turistack Revendedor
+
+Piloto controlado para revendedores independientes. Incluye proveedores privados, catálogo versionado, importación de varias fichas por imagen/PDF con Gemini, comparador, sitio público y buscador privado. No incluye cobros de suscripción, reservas autónomas, sincronización con proveedores ni automatización de WhatsApp.
+
+Para desarrollo, conservar el `.env` existente y completar `GEMINI_API_KEY` y `GEMINI_MODEL=gemini-3.5-flash-lite`; la clave real nunca va en `.env.example`. `bin/dev` carga `.env` mediante Foreman. Para comandos Rails aislados, cargar previamente las variables del archivo. Arrancar también Redis/Sidekiq para procesar IA; las pruebas usan respuestas simuladas y no necesitan una clave real.
+
+Para desarrollo/test, después de `bin/rails db:migrate`, abrir `http://platform.lvh.me:3000/agente/alta`, ingresar con Google y elegir un subdominio. Iniciar sesión desde ese subdominio para entrar al panel. El callback local único sigue siendo `http://auth.lvh.me:3000/auth/google_oauth2/callback`. `bin/rails db:seed` agrega agentes de demostración solo en desarrollo/test; no crea datos de agente en staging/producción.
+
+En staging/producción el operador crea la cuenta desde **Revendedores** e invita el correo verificado por Google; el alta autónoma se limita a development/test.
+
+Configuración: `AGENT_ENABLED`, `GEMINI_API_KEY`, `GEMINI_MODEL`, `AGENT_IMPORTS_PER_MINUTE=5`, `AGENT_SEARCHES_PER_MINUTE=20` y `AGENT_AI_CONCURRENCY=2`. El piloto no tiene cuota mensual de IA. Los documentos admitidos son JPG/PNG/WebP/PDF de hasta 10 MB, con hasta 100 páginas por PDF y 50 candidatos por extracción. Un error de Gemini permite carga o búsqueda manual. Los límites de ráfaga y concurrencia son por espacio.
+
+La producción queda preparada para **turistack.com**, con `auth.turistack.com`, redirección de `www` y subdominios de agentes. Ver el [procedimiento DNS y de activación](docs/despliegue-dominios.md#producción-turistackcom), incluida la finalización de hosts antes de habilitar Agente. Falta configurar el servidor Hetzner y los servicios externos; los archivos de ejemplo no contienen credenciales reales.
+
+Verificación adicional: `bin/rails agent:audit`. Los recorridos Playwright usan `AGENT_E2E_FIXTURES=true` exclusivamente en test, con el cliente HTTP y los jobs reales pero respuestas Gemini simuladas. `E2E_PORT=3101 npm run test:e2e` permite usar otro puerto sin reutilizar servidores ajenos.
+
+## Turistack Revendedor MVP
+
+El piloto incorpora alta desde el operador con invitación Google, proveedores privados, fichas manuales o desde Gemini, conservación del flyer/PDF original, catálogo público y compartir archivo con enlace y alternativas manuales. Procedimiento de staging, variables, migraciones, seguridad, rollback y pruebas Android/iOS: [guía de lanzamiento](docs/turistack-revendedor-lanzamiento.md).

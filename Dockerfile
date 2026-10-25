@@ -3,13 +3,14 @@ ARG RUBY_VERSION=3.4.1
 FROM ruby:${RUBY_VERSION}-slim AS base
 WORKDIR /rails
 ENV BUNDLE_DEPLOYMENT=1 BUNDLE_PATH=/usr/local/bundle BUNDLE_WITHOUT=development:test RAILS_LOG_TO_STDOUT=1 CONTAINERIZED=true
-RUN apt-get update -qq && apt-get install --no-install-recommends -y curl libjemalloc2 libpq5 && rm -rf /var/lib/apt/lists/*
+RUN apt-get update -qq && apt-get install --no-install-recommends -y curl libjemalloc2 libpq5 poppler-utils && rm -rf /var/lib/apt/lists/*
 
 FROM base AS build
 RUN apt-get update -qq && apt-get install --no-install-recommends -y build-essential git libpq-dev libyaml-dev pkg-config && rm -rf /var/lib/apt/lists/*
 COPY Gemfile Gemfile.lock ./
 RUN bundle install && rm -rf /root/.bundle /usr/local/bundle/ruby/*/cache
 COPY . .
+RUN ruby bin/check-docker-secrets
 RUN RAILS_ENV=production SECRET_KEY_BASE_DUMMY=1 APP_PROTOCOL=https \
     PLATFORM_BASE_DOMAIN=example.invalid PLATFORM_HOST=example.invalid AUTH_HOST=auth.example.invalid \
     CUSTOM_DOMAIN_CNAME_TARGET=tenants.example.invalid REDIS_URL=redis://redis:6379/0 SMTP_HOST=localhost \

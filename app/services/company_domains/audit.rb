@@ -21,6 +21,7 @@ module CompanyDomains
     def call
       detect_duplicates
       Company.includes(:company_domains).find_each { |company| audit_company(company) }
+      Agent::IntegrityAudit.call.each { |finding| add(:error, :agent_integrity, finding) }
       Result.new(findings: @findings)
     end
 

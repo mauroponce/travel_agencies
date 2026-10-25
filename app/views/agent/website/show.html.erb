@@ -1,0 +1,16 @@
+<div class="agent-heading">
+  <div><span class="agent-eyebrow">TU IDENTIDAD COMERCIAL</span>
+    <h1>Mi página web</h1>
+    <p><%= current_agent_workspace.hostname %></p>
+  </div>
+  <%= link_to "Abrir mi web ↗", current_agent_workspace.url, target: "_blank", rel: "noopener", class: "btn btn-primary" %></div>
+<div class="agent-two-columns">
+  <section class="agent-panel"><%= form_with model: current_agent_workspace, url: agent_website_path, class: "agent-form" do |f| %><%= f.label :business_name, "Nombre comercial" %><%= f.text_field :business_name, required: true %><%= f.label :public_name, "Nombre público" %><%= f.text_field :public_name, required: true %><%= f.label :whatsapp, "WhatsApp con código de país" %><%= f.telephone_field :whatsapp, required: true %><%= f.label :presentation, "Presentación" %><%= f.text_area :presentation %>
+      <p>El subdominio es permanente durante el MVP.</p>
+      <%= f.submit "Guardar identidad", class: "btn btn-primary" %><% end %></section>
+  <section class="agent-panel" data-controller="agent-preview">
+    <h2>Vista previa de tu catálogo</h2>
+    <div class="agent-actions"><button class="btn" data-action="agent-preview#desktop">Escritorio</button><button class="btn" data-action="agent-preview#mobile">Celular</button></div>
+    <div class="agent-preview-wrap"><iframe title="Vista previa del catálogo" src="<%= preview_agent_website_path %>" data-agent-preview-target="frame" class="agent-preview-frame"></iframe></div>
+  </section>
+</div>

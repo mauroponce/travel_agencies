@@ -1,9 +1,17 @@
+{
+	on_demand_tls {
+		ask http://web:3000/internal/tls/authorize?token={$CADDY_ASK_SECRET}
+	}
+}
+
 {$CADDY_SITE_ADDRESSES} {
 	encode zstd gzip
 	log {
 		output stdout
 		format json
 	}
+	@internal path /internal/*
+	respond @internal 404
 	reverse_proxy web:3000 {
 		health_uri /up
 		health_interval 10s
@@ -15,4 +23,27 @@
 		X-Content-Type-Options "nosniff"
 		Referrer-Policy "strict-origin-when-cross-origin"
 	}
+}
+
+# New agent subdomains need no per-agent reload. The private ask endpoint
+# permits only registered, active agent hosts under PLATFORM_BASE_DOMAIN.
+:443 {
+	tls {
+		on_demand
+	}
+	@internal path /internal/*
+	respond @internal 404
+	encode zstd gzip
+	reverse_proxy web:3000
+	header {
+		-Server
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+	}
+}
+
+# The public www alias has one canonical origin; OAuth stays on AUTH_HOST.
+www.{$PLATFORM_BASE_DOMAIN} {
+	redir https://{$PLATFORM_HOST}{uri} permanent
 }

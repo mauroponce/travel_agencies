@@ -52,3 +52,17 @@ Las tarifas son append-only: una reserva copia precio, gastos, mínimo y condici
 Web y worker son procesos separados sobre la misma imagen. `db:prepare` se ejecuta únicamente en web al desplegar. `/up` es el health check. PostgreSQL y los objetos deben tener backups externos y pruebas periódicas de restauración.
 
 La configuración y el procedimiento de alta de hosts están en `docs/despliegue-dominios.md`. Caddy recibe una lista explícita de hosts autorizados; no se habilita TLS on-demand irrestricto.
+
+## Turistack Revendedor
+
+`AgentWorkspace` pertenece a un único `User`, independientemente de sus `Membership`; durante una invitación conserva el correo autorizado y asigna el propietario después de verificarlo con Google. `AgentSupplier` es privado y no crea empresas globales. No hay sincronización ni permisos implícitos hacia proveedores de Turistack Empresa.
+
+`HostnameRegistration` protege la unicidad entre empresas y agentes. `CompanyDomain` conserva verificación DNS/TLS, dominio principal y recuperación; sus escrituras reservan el hostname transaccionalmente. La finalización operativa agrega la FK `(hostname, company_id)` después del reemplazo de todos los procesos anteriores. Los agentes tienen un único subdominio permanente. El hostname, nunca parámetros del navegador, selecciona el espacio.
+
+`AgentTrip` conserva una identidad pública estable y apunta a revisiones actuales/publicadas de `AgentTripRevision`. Cada revisión pertenece al mismo viaje, proveedor y espacio mediante claves foráneas compuestas. La edición crea una revisión nueva: la web sigue usando la anterior hasta publicación explícita. No existe inventario independiente ni acoplamiento artificial con `Departure`.
+
+`AgentImport` conserva el original privado y produce varios `AgentImportItem`. Estos separan extracción de correcciones (`review_data`) y guardan de manera idempotente el viaje/revisión elegidos. La creación de un proveedor durante la revisión conserva los campos editados. `AgentSearch` persiste consulta, interpretación y filtros; `CatalogQuery` aplica esos filtros sobre PostgreSQL, con búsqueda insensible a acentos mediante `unaccent`.
+
+`AgentAiJob` reclama trabajo con token y lease de cinco minutos bajo bloqueo de workspace. La llamada a Gemini sucede fuera de la transacción. Las respuestas de intentos vencidos se descartan. `RecoverAgentAiJobsJob` recupera tareas pendientes o interrumpidas; solo errores transitorios del proveedor se reintentan automáticamente, hasta tres intentos. `AgentAiExecution` conserva consumo informado, modelo, contrato, duración y resultado, sin contenido del documento ni claves.
+
+El catálogo público usa solo la revisión publicada, fechas vigentes y proveedores activos. Publicar una ficha habilita la imagen de su flyer: se reutilizan los bytes originales para JPG/PNG/WebP y se genera la primera página para PDF con Poppler. El documento fuente se conserva mediante `flyer_source` en la revisión. Las rutas de originales y todas las operaciones privadas se reautorizan. La PWA cachea únicamente `/assets/` e iconos estáticos, con versión de caché por contexto y origen.

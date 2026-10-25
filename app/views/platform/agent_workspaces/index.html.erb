@@ -1,0 +1,9 @@
+<main class="mx-auto max-w-6xl p-6">
+  <h1 class="text-3xl font-bold">Cuentas Turistack Revendedor</h1>
+  <%= link_to "Crear revendedor", new_platform_agent_workspace_path, class: "btn btn-primary" %>
+  <%= link_to "Empresas", platform_companies_path, class: "btn" %><% @workspaces.each do |workspace| %>
+    <section class="card mt-4 p-4">
+      <h2><%= workspace.business_name %></h2>
+      <p><%= workspace.owner&.email || workspace.invited_email %> · <%= workspace.hostname %></p>
+      <%= form_with model: workspace, url: platform_agent_workspace_path(workspace) do |f| %><%= f.select :status, [["Activo", "active"], ["Suspendido", "suspended"]] %><%= f.submit "Actualizar estado", class: "btn" %><% end %></section>
+  <% end %><%= render "agent/pagination", pagination: @pagination %></main>

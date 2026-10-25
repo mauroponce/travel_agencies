@@ -1,0 +1,21 @@
+<div class="agent-heading">
+  <div><span class="agent-eyebrow"><%= agent_status(@trip) %></span>
+    <h1><%= @revision.title.presence || "Viaje sin título" %></h1>
+    <p><%= @revision.agent_supplier.name %></p>
+  </div>
+  <%= link_to "Editar viaje", edit_agent_trip_path(@trip), class: "btn btn-primary" %></div>
+<% if @trip.status == "published" && @trip.class.publicly_visible.exists?(@trip.id) %><%= render "share", trip: @trip %><% end %>
+<section class="agent-panel"><% if @trip.published_revision_id && @trip.current_revision_id != @trip.published_revision_id %>
+    <p class="agent-alert">Hay una revisión pendiente. Tu web conserva la versión publicada anterior.</p>
+  <% end %><% @revision.warnings.each do |warning| %>
+    <p class="agent-alert"><%= warning %></p>
+  <% end %><% if @revision.cover.attached? %><%= image_tag cover_agent_trip_path(@trip), alt: "Flyer original del viaje", class: "agent-public-cover" %><% end %>
+  <% if @revision.flyer_source.attached? %><%= link_to "Descargar archivo original", source_agent_trip_path(@trip), class: "btn" %><% end %>
+  <%= render "details", revision: @revision %>
+  <div class="agent-actions"><%= button_to "Publicar revisión", publish_agent_trip_path(@trip), class: "btn btn-primary" %><%= button_to "Despublicar", unpublish_agent_trip_path(@trip), class: "btn" %><%= button_to "Archivar", archive_agent_trip_path(@trip), class: "btn" %></div>
+</section>
+<section class="agent-panel">
+  <h2>Historial de revisiones</h2>
+  <% @trip.revisions.order(created_at: :desc, id: :desc).each do |revision| %>
+    <p><%= revision.created_at.strftime('%d/%m/%Y %H:%M') %> · <%= revision.title %> · <%= agent_money(revision) %><%= " · Publicada" if revision.id == @trip.published_revision_id %></p>
+  <% end %></section>

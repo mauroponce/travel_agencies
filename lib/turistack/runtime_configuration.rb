@@ -32,6 +32,9 @@ module Turistack
     def validate!
       validate_database
       validate_protected_runtime if protected_environment?
+      if protected_environment? && value("AGENT_ENABLED") == "true" && value("CADDY_ASK_SECRET").to_s.length < 32
+        errors << "CADDY_ASK_SECRET debe tener al menos 32 caracteres al habilitar Agente"
+      end
       raise Invalid, "Configuración insegura:\n- #{@errors.join("\n- ")}" if @errors.any?
 
       true

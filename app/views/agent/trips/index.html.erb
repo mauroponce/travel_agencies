@@ -1,0 +1,12 @@
+<div class="agent-heading">
+  <div><span class="agent-eyebrow">CATÁLOGO CENTRALIZADO</span>
+    <h1>Mis viajes</h1>
+    <p>Las propuestas de todos tus proveedores, en un mismo lugar.</p>
+  </div>
+  <div class="agent-actions"><%= link_to "Nuevo viaje", new_agent_trip_path, class: "btn" %><%= link_to "Importar con IA", agent_imports_path, class: "btn btn-primary" %></div>
+</div>
+<%= render "filters", filter_url: agent_trips_path %>
+<div class="agent-heading"><span><%= @pagination.total_count %> viajes</span>
+  <div class="agent-actions"><%= link_to "Tarjetas", agent_trips_path(request.query_parameters.merge(view: "cards")), class: "btn" %><%= link_to "Lista", agent_trips_path(request.query_parameters.merge(view: "list")), class: "btn" %></div>
+</div>
+<%= form_with url: compare_agent_trips_path, method: :get, id: "compare-form" do |f| %><%= f.submit "Comparar seleccionados (2–3)", class: "btn" %><% end %><%= render "cards", trips: @trips, public_view: false, compare: true %><%= render "agent/pagination", pagination: @pagination %>

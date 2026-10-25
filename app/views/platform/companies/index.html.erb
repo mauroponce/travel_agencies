@@ -1,6 +1,6 @@
 <div class="page-heading">
   <div><div class="eyebrow">OPERACIÓN DE PLATAFORMA</div><h1 class="page-title">Empresas y dominios</h1><p class="subtitle">Alta privada, suspensión y dominios autorizados.</p></div>
-  <%= link_to "Nueva empresa", new_platform_company_path, class: "btn btn-primary" %>
+  <div class="flex gap-3"><%= link_to "Revendedores", platform_agent_workspaces_path, class: "btn" %><%= link_to "Nueva empresa", new_platform_company_path, class: "btn btn-primary" %></div>
 </div>
 
 <%= turbo_frame_tag "platform_companies" do %>
