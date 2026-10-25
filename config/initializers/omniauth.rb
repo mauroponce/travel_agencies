@@ -1,7 +1,7 @@
 OmniAuth.config.allowed_request_methods = %i[post]
 OmniAuth.config.silence_get_warning = true
 require Rails.root.join("lib/oauth_host_guard")
-oauth_protocol = ENV.fetch("APP_PROTOCOL", Rails.env.production? ? "https" : "http")
+oauth_protocol = ENV.fetch("APP_PROTOCOL", Rails.env.production? || Rails.env.staging? ? "https" : "http")
 oauth_base_domain = ENV.fetch("PLATFORM_BASE_DOMAIN", Rails.env.test? ? "example.test" : "lvh.me")
 oauth_host = ENV.fetch("AUTH_HOST", "auth.#{oauth_base_domain}")
 oauth_port = ENV["APP_PORT"].presence

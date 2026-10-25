@@ -3,11 +3,12 @@ class TeamMembersController < ApplicationController
 
   def index
     @memberships, @memberships_pagination = paginate(
-      current_company.memberships.includes(:user, :membership_roles, :reseller_authorization).order(created_at: :desc),
+      current_company.memberships.includes(:user, :membership_roles, :reseller_authorization)
+        .order(created_at: :desc, id: :desc),
       param: :memberships_page, per_page: 20
     )
     @invitations, @invitations_pagination = paginate(
-      CompanyInvitation.where(company: current_company).order(created_at: :desc),
+      CompanyInvitation.where(company: current_company).order(created_at: :desc, id: :desc),
       param: :invitations_page, per_page: 20
     )
   end

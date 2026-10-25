@@ -6,7 +6,7 @@ class RemittancesController < ApplicationController
     scope = Remittance.where(company: current_company).includes(:reseller_membership, :remittance_allocations)
     scope = scope.where(reseller_membership: current_membership) if current_role == "reseller"
     @remittances, @remittances_pagination = paginate(
-      scope.includes(reseller_membership: :user).order(created_at: :desc), per_page: 20
+      scope.includes(reseller_membership: :user).order(created_at: :desc, id: :desc), per_page: 20
     )
     @available_payments = CustomerPayment.where(company: current_company, status: %w[declared partially_remitted])
     @available_payments = @available_payments.where(received_by_membership: current_membership) if current_role == "reseller"

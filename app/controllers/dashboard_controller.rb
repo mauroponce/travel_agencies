@@ -19,11 +19,11 @@ class DashboardController < ApplicationController
     end
 
     @offers = offer_scope.includes(:travel_package, :departure, :accommodation, :fare_versions)
-      .order(created_at: :desc).limit(6)
+      .order(created_at: :desc, id: :desc).limit(6)
     @reservations = reservation_scope.includes(:passengers, departure_offer: :travel_package)
-      .order(created_at: :desc).limit(6)
+      .order(created_at: :desc, id: :desc).limit(6)
 
-    metric_departures = departure_scope.includes(:bus, :seat_allocations).order(:departs_at).to_a
+    metric_departures = departure_scope.includes(:bus, :seat_allocations).order(:departs_at, :id).to_a
     @departure_filter = %w[all month low].include?(params[:departure_filter]) ? params[:departure_filter] : "all"
     filtered_departures = filter_departures(metric_departures, @departure_filter)
     @departure_result_count = filtered_departures.size

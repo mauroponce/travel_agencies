@@ -26,5 +26,8 @@ class AuthenticationCode < ApplicationRecord
     errors.add(:membership, "no coincide con la empresa") unless company_id.present? == membership_id.present?
     errors.add(:membership, "pertenece a otra empresa") if membership && membership.company_id != company_id
     errors.add(:authentication_request, "pertenece a otra empresa") if authentication_request.company_id != company_id
+    if authentication_request && target_hostname != authentication_request.return_hostname
+      errors.add(:target_hostname, "no coincide con el retorno autorizado")
+    end
   end
 end

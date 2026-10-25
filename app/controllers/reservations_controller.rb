@@ -4,7 +4,8 @@ class ReservationsController < ApplicationController
 
   def index
     @reservations, @reservations_pagination = paginate(
-      reservation_scope.includes(:passengers, departure_offer: [ :travel_package, :departure ]).order(created_at: :desc),
+      reservation_scope.includes(:passengers, departure_offer: [ :travel_package, :departure ])
+        .order(created_at: :desc, id: :desc),
       per_page: 25
     )
   end

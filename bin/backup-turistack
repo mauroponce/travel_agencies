@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+set -euo pipefail
+umask 077
+
+: "${BACKUP_ROOT:?Definí BACKUP_ROOT fuera del directorio de la aplicación}"
+DEPLOY_ENVIRONMENT="${DEPLOY_ENVIRONMENT:-staging}"
+case "$DEPLOY_ENVIRONMENT" in
+  staging|production) ;;
+  *) echo "DEPLOY_ENVIRONMENT debe ser staging o production" >&2; exit 64 ;;
+esac
+COMPOSE_FILE="${COMPOSE_FILE:-compose.$DEPLOY_ENVIRONMENT.yml}"
+ENV_FILE="${ENV_FILE:-.env.$DEPLOY_ENVIRONMENT}"
+timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+destination="$BACKUP_ROOT/$DEPLOY_ENVIRONMENT/$timestamp"
+mkdir -p "$destination"
+
+compose=(docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE")
+"${compose[@]}" config --quiet
+"${compose[@]}" exec -T db sh -c \
+  'PGPASSWORD="$POSTGRES_PASSWORD" pg_dump --username="$POSTGRES_USER" --dbname="$POSTGRES_DB" --format=custom --no-owner' \
+  > "$destination/postgresql.dump"
+"${compose[@]}" exec -T web tar -C /rails/storage -czf - . > "$destination/storage.tar.gz"
+(cd "$destination" && sha256sum postgresql.dump storage.tar.gz > SHA256SUMS)
+printf 'environment=%s\ncreated_at=%s\n' "$DEPLOY_ENVIRONMENT" "$timestamp" > "$destination/manifest.txt"
+echo "Backup verificado en $destination"

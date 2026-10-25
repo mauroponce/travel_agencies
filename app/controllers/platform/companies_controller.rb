@@ -5,7 +5,7 @@ module Platform
 
     def index
       @companies, @companies_pagination = paginate(
-        Company.includes(:memberships, :company_domains).order(:name), per_page: 20
+        Company.includes(:memberships, :company_domains).order(:name, :id), per_page: 20
       )
     end
 

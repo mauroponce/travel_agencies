@@ -4,7 +4,7 @@ class CustomerPaymentsController < ApplicationController
     scope = CustomerPayment.where(company: current_company).includes(:reservation, :received_by_membership)
     scope = scope.where(received_by_membership: current_membership) if current_role == "reseller"
     @payments, @payments_pagination = paginate(
-      scope.includes(received_by_membership: :user).order(received_on: :desc, created_at: :desc), per_page: 25
+      scope.includes(received_by_membership: :user).order(received_on: :desc, created_at: :desc, id: :desc), per_page: 25
     )
   end
 

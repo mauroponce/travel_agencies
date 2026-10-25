@@ -15,10 +15,12 @@
 default: &default
   adapter: postgresql
   encoding: unicode
-  url: <%= ENV["DATABASE_URL"] %>
+<% unless ENV["DATABASE_URL"].present? %>
   host: <%= ENV["DB_HOST"] %>
+  port: <%= ENV.fetch("DB_PORT", 5432) %>
   username: <%= ENV["DB_USER"] %>
   password: <%= ENV["DB_PASSWORD"] %>
+<% end %>
   # For details on connection pooling, see Rails configuration guide
   # https://guides.rubyonrails.org/configuring.html#database-pooling
   max_connections: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
@@ -88,6 +90,10 @@ test:
 # Read https://guides.rubyonrails.org/configuring.html#configuring-a-database
 # for a full overview on how database connection configuration can be specified.
 #
+staging:
+  <<: *default
+  database: <%= ENV["DB_NAME"] %>
+
 production:
   <<: *default
-  database: <%= ENV.fetch("DB_NAME", "turistack_production") %>
+  database: <%= ENV["DB_NAME"] %>

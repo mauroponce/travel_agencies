@@ -3,7 +3,7 @@ class DeparturesController < ApplicationController
 
   def index
     @departures, @departures_pagination = paginate(
-      departure_scope.includes(:bus, :departure_offers).order(:departs_at), per_page: 18
+      departure_scope.includes(:bus, :departure_offers).order(:departs_at, :id), per_page: 18
     )
   end
 

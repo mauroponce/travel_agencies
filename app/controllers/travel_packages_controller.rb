@@ -4,7 +4,7 @@ class TravelPackagesController < ApplicationController
 
   def index
     @packages, @packages_pagination = paginate(
-      current_company.travel_packages.includes(:destination).order(:name), per_page: 20
+      current_company.travel_packages.includes(:destination).order(:name, :id), per_page: 20
     )
   end
 

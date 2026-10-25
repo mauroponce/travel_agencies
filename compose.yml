@@ -1,3 +1,16 @@
+name: turistack-development
+
+x-app-environment: &app-environment
+  DB_HOST: db
+  DB_PORT: "5432"
+  DB_USER: turistack
+  DB_PASSWORD: turistack
+  DB_NAME: turistack_development
+  REDIS_URL: redis://redis:6379/0
+  SMTP_HOST: mailpit
+  SMTP_PORT: "1025"
+  CONTAINERIZED: "true"
+
 services:
   db:
     image: postgres:17-alpine
@@ -26,41 +39,42 @@ services:
     image: axllent/mailpit:v1.27
     ports:
       - "8025:8025"
-  web:
+  migrate:
     build: .
+    command: bin/rails db:migrate
     env_file: ${ENV_FILE:-.env}
-    environment:
-      DB_HOST: db
-      DB_USER: turistack
-      DB_PASSWORD: turistack
-      DB_NAME: turistack_development
-      REDIS_URL: redis://redis:6379/0
-      SMTP_HOST: mailpit
-      SMTP_PORT: 1025
-      RUN_MIGRATIONS: "true"
-    ports:
-      - "3000:3000"
+    environment: *app-environment
+    restart: "no"
     volumes:
       - storage_data:/rails/storage
     depends_on:
       db: {condition: service_healthy}
+  web:
+    build: .
+    env_file: ${ENV_FILE:-.env}
+    environment: *app-environment
+    ports:
+      - "3000:3000"
+    volumes:
+      - storage_data:/rails/storage
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:3000/up"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    depends_on:
+      migrate: {condition: service_completed_successfully}
       redis: {condition: service_healthy}
   worker:
     build: .
     command: bundle exec sidekiq -C config/sidekiq.yml
     env_file: ${ENV_FILE:-.env}
-    environment:
-      DB_HOST: db
-      DB_USER: turistack
-      DB_PASSWORD: turistack
-      DB_NAME: turistack_development
-      REDIS_URL: redis://redis:6379/0
-      SMTP_HOST: mailpit
-      SMTP_PORT: 1025
+    environment: *app-environment
     volumes:
       - storage_data:/rails/storage
     depends_on:
-      db: {condition: service_healthy}
+      migrate: {condition: service_completed_successfully}
       redis: {condition: service_healthy}
 
 volumes:

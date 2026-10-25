@@ -56,6 +56,9 @@ namespace :tenant_integrity do
         allocation.remittance.reseller_membership_id == allocation.customer_payment.received_by_membership_id
       failures << "remittance_allocations:#{allocation.id} payment=#{allocation.customer_payment_id}" unless valid
     end
+    domain_audit = CompanyDomains::Audit.call
+    failures.concat(domain_audit.errors.map { |finding| "company_domains #{finding.code}: #{finding.message}" })
+    domain_audit.warnings.each { |finding| warn "WARNING company_domains #{finding.code}: #{finding.message}" }
     puts failures.any? ? failures.join("\n") : "Tenant integrity audit: OK"
     abort "Found #{failures.size} tenant integrity violation(s)" if failures.any?
   end

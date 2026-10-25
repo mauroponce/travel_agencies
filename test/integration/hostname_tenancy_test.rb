@@ -80,6 +80,28 @@ class HostnameTenancyTest < ActionDispatch::IntegrationTest
     assert_includes response.body, @company_a.name
   end
 
+  test "session cookie is HTTP only, SameSite lax and host-only under HTTPS" do
+    host! @company_a.platform_domain.hostname
+
+    post auth_start_path, headers: { "HTTPS" => "on" }
+
+    cookie = response.headers["Set-Cookie"]
+    assert_match(/HttpOnly/i, cookie)
+    assert_match(/SameSite=Lax/i, cookie)
+    assert_no_match(/(?:^|;)\s*Domain=/i, cookie)
+  end
+
+  test "a tenant session is not accepted by another subdomain" do
+    host! @company_a.platform_domain.hostname
+    get "/test/sign-in", params: { email: @user.email, role: "admin" }, headers: { "HTTPS" => "on" }
+    assert_redirected_to dashboard_path
+
+    host! @company_b.platform_domain.hostname
+    get dashboard_path, headers: { "HTTPS" => "on" }
+
+    assert_redirected_to root_path
+  end
+
   test "central OAuth returns to origin with one-time code" do
     exchange_url = complete_oauth(company: @company_a, user: @user)
     assert_redirected_to dashboard_path
@@ -96,6 +118,23 @@ class HostnameTenancyTest < ActionDispatch::IntegrationTest
     host! @company_b.platform_domain.hostname
     get URI(exchange_url).request_uri
     assert_response :not_found
+  end
+
+  test "authentication transfer models reject a malicious return host" do
+    request = AuthenticationRequest.new(company: @company_a, company_domain: @company_a.platform_domain,
+      return_hostname: "attacker.example", token_digest: "token", browser_nonce_digest: "nonce",
+      expires_at: 5.minutes.from_now)
+
+    assert_not request.valid?
+    assert_includes request.errors[:return_hostname], "no coincide con el destino autorizado"
+
+    valid_request, = AuthenticationRequest.issue!(company: @company_a, company_domain: @company_a.platform_domain,
+      return_hostname: @company_a.platform_domain.hostname, browser_nonce: "browser")
+    code = AuthenticationCode.new(authentication_request: valid_request, user: @user, company: @company_a,
+      membership: @membership_a, target_hostname: "attacker.example", token_digest: "other-token",
+      browser_nonce_digest: valid_request.browser_nonce_digest, expires_at: 2.minutes.from_now)
+    assert_not code.valid?
+    assert_includes code.errors[:target_hostname], "no coincide con el retorno autorizado"
   end
 
   test "Google identity without membership or invitation is rejected" do

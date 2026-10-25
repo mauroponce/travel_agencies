@@ -24,7 +24,7 @@ module PlatformHosts
   end
 
   def protocol
-    ENV.fetch("APP_PROTOCOL", Rails.env.production? ? "https" : "http")
+    ENV.fetch("APP_PROTOCOL", Rails.env.production? || Rails.env.staging? ? "https" : "http")
   end
 
   def port

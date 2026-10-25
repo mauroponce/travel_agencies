@@ -1,13 +1,35 @@
+name: turistack-production
+
+x-app-environment: &app-environment
+  RAILS_ENV: production
+  DB_HOST: db
+  DB_PORT: "5432"
+  DB_USER: ${POSTGRES_USER:?Definí POSTGRES_USER}
+  DB_PASSWORD: ${POSTGRES_PASSWORD:?Definí POSTGRES_PASSWORD}
+  DB_NAME: ${POSTGRES_DB:?Definí POSTGRES_DB}
+  POSTGRES_USER: ${POSTGRES_USER:?Definí POSTGRES_USER}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Definí POSTGRES_PASSWORD}
+  POSTGRES_DB: ${POSTGRES_DB:?Definí POSTGRES_DB}
+  REDIS_URL: redis://redis:6379/0
+  CONTAINERIZED: "true"
+
+x-app-service: &app-service
+  image: ${TURISTACK_IMAGE:?Definí TURISTACK_IMAGE con un tag inmutable}
+  env_file: ${ENV_FILE:-.env.production}
+  environment: *app-environment
+  volumes:
+    - storage_data:/rails/storage
+
 services:
   db:
     image: postgres:17-alpine
     restart: unless-stopped
-    env_file: ${ENV_FILE:-.env}
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-turistack_production}
-      POSTGRES_USER: ${POSTGRES_USER:-turistack}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    volumes: ["postgres_data:/var/lib/postgresql/data"]
+      POSTGRES_DB: ${POSTGRES_DB:?Definí POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER:?Definí POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Definí POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
@@ -17,55 +39,54 @@ services:
     image: redis:7.4-alpine
     restart: unless-stopped
     command: redis-server --appendonly yes
-    volumes: ["redis_data:/data"]
+    volumes:
+      - redis_data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 3s
       retries: 20
-  web:
-    image: ${TURISTACK_IMAGE}
-    restart: unless-stopped
-    env_file: ${ENV_FILE:-.env}
-    environment:
-      RAILS_ENV: production
-      RUN_MIGRATIONS: "true"
-      DB_HOST: db
-      DB_USER: ${POSTGRES_USER:-turistack}
-      DB_PASSWORD: ${POSTGRES_PASSWORD}
-      DB_NAME: ${POSTGRES_DB:-turistack_production}
-      REDIS_URL: redis://redis:6379/0
-    expose: ["3000"]
-    volumes: ["storage_data:/rails/storage"]
+  migrate:
+    <<: *app-service
+    command: bin/rails db:migrate
+    restart: "no"
     depends_on:
       db: {condition: service_healthy}
+  web:
+    <<: *app-service
+    restart: unless-stopped
+    expose:
+      - "3000"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:3000/up"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    depends_on:
+      migrate: {condition: service_completed_successfully}
       redis: {condition: service_healthy}
   worker:
-    image: ${TURISTACK_IMAGE}
+    <<: *app-service
     restart: unless-stopped
     command: bundle exec sidekiq -C config/sidekiq.yml
-    env_file: ${ENV_FILE:-.env}
-    environment:
-      RAILS_ENV: production
-      DB_HOST: db
-      DB_USER: ${POSTGRES_USER:-turistack}
-      DB_PASSWORD: ${POSTGRES_PASSWORD}
-      DB_NAME: ${POSTGRES_DB:-turistack_production}
-      REDIS_URL: redis://redis:6379/0
-    volumes: ["storage_data:/rails/storage"]
     depends_on:
-      db: {condition: service_healthy}
+      migrate: {condition: service_completed_successfully}
       redis: {condition: service_healthy}
   caddy:
     image: caddy:2.10-alpine
     restart: unless-stopped
-    env_file: ${ENV_FILE:-.env}
-    ports: ["80:80", "443:443"]
+    environment:
+      CADDY_SITE_ADDRESSES: ${CADDY_SITE_ADDRESSES:?Definí CADDY_SITE_ADDRESSES}
+    ports:
+      - "80:80"
+      - "443:443"
     volumes:
       - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
-    depends_on: [web]
+    depends_on:
+      web: {condition: service_healthy}
 
 volumes:
   postgres_data:

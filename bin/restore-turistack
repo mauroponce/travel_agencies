@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+backup_path="${1:-}"
+: "${backup_path:?Uso: bin/restore-turistack /ruta/al/backup}"
+DEPLOY_ENVIRONMENT="${DEPLOY_ENVIRONMENT:-staging}"
+case "$DEPLOY_ENVIRONMENT" in
+  staging|production) ;;
+  *) echo "DEPLOY_ENVIRONMENT debe ser staging o production" >&2; exit 64 ;;
+esac
+: "${RESTORE_CONFIRM:?Definí RESTORE_CONFIRM=restore-$DEPLOY_ENVIRONMENT}"
+[[ "$RESTORE_CONFIRM" == "restore-$DEPLOY_ENVIRONMENT" ]] || { echo "Confirmación inválida" >&2; exit 64; }
+
+COMPOSE_FILE="${COMPOSE_FILE:-compose.$DEPLOY_ENVIRONMENT.yml}"
+ENV_FILE="${ENV_FILE:-.env.$DEPLOY_ENVIRONMENT}"
+test -f "$backup_path/postgresql.dump"
+test -f "$backup_path/storage.tar.gz"
+test -f "$backup_path/manifest.txt"
+grep -Fxq "environment=$DEPLOY_ENVIRONMENT" "$backup_path/manifest.txt" || {
+  echo "El backup no corresponde al entorno $DEPLOY_ENVIRONMENT" >&2
+  exit 64
+}
+(cd "$backup_path" && sha256sum --check SHA256SUMS)
+
+compose=(docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE")
+"${compose[@]}" config --quiet
+"${compose[@]}" stop web worker
+"${compose[@]}" exec -T db sh -c \
+  'PGPASSWORD="$POSTGRES_PASSWORD" pg_restore --username="$POSTGRES_USER" --dbname="$POSTGRES_DB" --clean --if-exists --no-owner --exit-on-error --single-transaction' \
+  < "$backup_path/postgresql.dump"
+"${compose[@]}" run --rm --no-deps -T web tar -C /rails/storage -xzf - < "$backup_path/storage.tar.gz"
+"${compose[@]}" run --rm migrate
+"${compose[@]}" up -d --no-deps web worker
+"${compose[@]}" up -d --no-deps --wait web
+echo "Restauración completada en $DEPLOY_ENVIRONMENT; ejecutá la checklist funcional antes de habilitar tráfico"

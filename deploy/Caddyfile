@@ -1,9 +1,18 @@
 {$CADDY_SITE_ADDRESSES} {
-  encode zstd gzip
-  reverse_proxy web:3000
-  header {
-    Strict-Transport-Security "max-age=31536000; includeSubDomains"
-    X-Content-Type-Options "nosniff"
-    Referrer-Policy "strict-origin-when-cross-origin"
-  }
+	encode zstd gzip
+	log {
+		output stdout
+		format json
+	}
+	reverse_proxy web:3000 {
+		health_uri /up
+		health_interval 10s
+		health_timeout 3s
+	}
+	header {
+		-Server
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+	}
 }

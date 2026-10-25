@@ -2,11 +2,45 @@
 set -euo pipefail
 
 : "${DEPLOY_HOST:?Definí DEPLOY_HOST}"
-: "${TURISTACK_IMAGE:?Definí TURISTACK_IMAGE}"
-DEPLOY_USER="${DEPLOY_USER:-deploy}"
-DEPLOY_PATH="${DEPLOY_PATH:-/opt/turistack}"
+: "${DEPLOY_ENVIRONMENT:?Definí DEPLOY_ENVIRONMENT como staging o production}"
+: "${TURISTACK_IMAGE:?Definí TURISTACK_IMAGE con un tag inmutable}"
 
-docker build -t "$TURISTACK_IMAGE" .
+case "$DEPLOY_ENVIRONMENT" in
+  staging|production) ;;
+  *) echo "DEPLOY_ENVIRONMENT debe ser staging o production" >&2; exit 64 ;;
+esac
+if [[ "$TURISTACK_IMAGE" == *:latest ]]; then
+  echo "No se permite desplegar el tag mutable :latest" >&2
+  exit 64
+fi
+
+DEPLOY_USER="${DEPLOY_USER:-deploy}"
+DEPLOY_PATH="${DEPLOY_PATH:-/opt/turistack-$DEPLOY_ENVIRONMENT}"
+COMPOSE_FILE="compose.$DEPLOY_ENVIRONMENT.yml"
+REMOTE_ENV_FILE="${REMOTE_ENV_FILE:-.env.$DEPLOY_ENVIRONMENT}"
+
+docker build --pull -t "$TURISTACK_IMAGE" .
 docker push "$TURISTACK_IMAGE"
-ssh "$DEPLOY_USER@$DEPLOY_HOST" "cd '$DEPLOY_PATH' && docker compose -f compose.production.yml pull && docker compose -f compose.production.yml up -d --remove-orphans"
-ssh "$DEPLOY_USER@$DEPLOY_HOST" "cd '$DEPLOY_PATH' && docker compose -f compose.production.yml exec -T web bin/rails runner 'puts :ok'"
+
+ssh "$DEPLOY_USER@$DEPLOY_HOST" bash -s -- \
+  "$DEPLOY_PATH" "$COMPOSE_FILE" "$REMOTE_ENV_FILE" "$TURISTACK_IMAGE" <<'REMOTE'
+set -euo pipefail
+deploy_path="$1"
+compose_file="$2"
+env_file="$3"
+image="$4"
+cd "$deploy_path"
+test -f "$compose_file"
+test -f "$env_file"
+export ENV_FILE="$env_file" TURISTACK_IMAGE="$image"
+compose=(docker compose --env-file "$env_file" -f "$compose_file")
+"${compose[@]}" config --quiet
+"${compose[@]}" pull
+"${compose[@]}" up -d db redis
+"${compose[@]}" run --rm migrate
+"${compose[@]}" up -d --no-deps --remove-orphans web worker caddy
+"${compose[@]}" up -d --no-deps --wait web
+"${compose[@]}" exec -T web bin/rails runner 'abort "wrong environment" unless Rails.env.to_s == ENV.fetch("RAILS_ENV"); puts "web: OK"'
+"${compose[@]}" exec -T worker bundle exec ruby -e 'puts "worker: OK"'
+"${compose[@]}" ps
+REMOTE

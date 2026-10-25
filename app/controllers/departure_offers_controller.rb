@@ -4,7 +4,7 @@ class DepartureOffersController < ApplicationController
 
   def index
     @offers, @offers_pagination = paginate(
-      offer_scope.includes(:travel_package, :departure, :accommodation).order(created_at: :desc), per_page: 18
+      offer_scope.includes(:travel_package, :departure, :accommodation).order(created_at: :desc, id: :desc), per_page: 18
     )
   end
 

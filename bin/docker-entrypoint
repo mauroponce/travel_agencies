@@ -2,7 +2,8 @@
 set -euo pipefail
 
 if [[ "${RUN_MIGRATIONS:-false}" == "true" ]]; then
-  bin/rails db:prepare
+  echo "RUN_MIGRATIONS ya no está permitido en web/worker; usá el servicio migrate" >&2
+  exit 64
 fi
 
 exec "$@"
