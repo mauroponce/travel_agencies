@@ -6,7 +6,7 @@ Complementa [el recorrido del MVP](turistack-revendedor-lanzamiento.md) y [el ru
 
 ## Problemas confirmados y correcciones
 
-- **CI:** el primer curl se ejecutaba apenas Compose iniciaba web, antes de readiness de Puma. El run `40253913760` falló con error 56, no cubierto por `--retry-connrefused`; sus logs todavía no mostraban Puma atendiendo. Ahora `up --wait --wait-timeout 180` espera `/up`, PostgreSQL, Redis y el heartbeat del worker. Curl reintenta errores transitorios con plazos acotados. En fallo se muestran estado y logs. Required checks sigue exigiendo los cinco jobs.
+- **CI:** el primer curl se ejecutaba apenas Compose iniciaba web, antes de readiness de Puma. El run `40253913760` falló con error 56, no cubierto por `--retry-connrefused`; sus logs todavía no mostraban Puma atendiendo. Ahora `up --wait --wait-timeout 180` espera `/up`, PostgreSQL, Redis y el heartbeat del worker. Curl reintenta errores transitorios con plazos acotados. En fallo se muestran estado y logs. Required checks sigue exigiendo los cinco jobs. CI también corre con pushes de ramas para verificar cambios antes de abrir un PR.
 - **Worker:** ejecutar otro proceso Ruby no demostraba que Sidekiq funcionara. Su healthcheck exige el heartbeat reciente del hostname de ese contenedor. Despliegue y restauración esperan web y worker. `agent:operations` comprueba BD, migraciones, Redis y Sidekiq.
 - **IA:** reiniciar manualmente los intentos permitía consumo indefinido. `Agent::AiRequests` limita solicitudes nuevas y ejecuciones diarias; el job reserva cada ejecución dentro del bloqueo del workspace. Reintentos automáticos, manuales y recuperaciones consumen el mismo presupuesto. Un replay conserva identidad. Se registran tokens informados también si falla el contrato o la salida se trunca, sin registrar cuerpos comerciales ni claves.
 - **Errores:** importes/archivos inválidos, nombres duplicados y conflictos devolvían texto plano. Los formularios prioritarios conservan campos, precio original, correcciones y flyer validado, y presentan errores Cadence editables. Un conflicto mantiene el token de revisión anterior para impedir sobrescribir otra edición. Publicar una ficha incompleta lleva a su formulario. La identidad comercial también conserva el formulario ante errores.
@@ -29,6 +29,18 @@ RAILS_ENV=test AGENT_GEMINI_SMOKE=true bin/gemini-smoke
 ```
 
 Requiere `pdftoppm`. Guardar el resultado de las cinco comprobaciones y revisar un flyer comercial autorizado real antes de habilitar IA para pilotos.
+
+## Smoke reproducible de staging
+
+`bin/smoke-staging` construye la imagen de despliegue y crea un proyecto Compose con nombre aleatorio, base, volúmenes y credenciales sintéticas. No admite seleccionar un despliegue existente. Se ejecuta también en CI. Usa un modelo inválido deliberadamente para impedir llamadas a Gemini.
+
+Comprueba migraciones desde el historial anterior a Revendedor con una agencia/destino ya cargados, finalización de hosts, convivencia, worker real procesando un PDF, publicación manual con fallback, HTML público y canonical/og:image HTTPS, descarga anónima de JPEG, persistencia tras reiniciar web/worker y backup/restauración de BD/archivos. Al terminar elimina exclusivamente su proyecto y volúmenes descartables. No emite certificados ACME ni prueba OAuth/SMTP externos.
+
+```bash
+bin/smoke-staging
+```
+
+Rails 8.1 carga automáticamente el último schema en una BD nueva al ejecutar db:migrate. Para reconstruir la versión anterior, el smoke usa MigrationContext directamente; no intenta bajar una BD nueva que ya cargó el schema finalizado. Un ensayo descartable confirmó que el rollback pre-MVP tras `agent:finalize_hosts` está bloqueado por el FK `fk_company_domain_registered_host` y puede además encontrar propietarios invitados sin asignar. No usar CASCADE ni borrar datos para sortearlo; conservar la BD y corregir hacia adelante o restaurar una copia aprobada.
 
 ## Variables y operación
 
@@ -108,11 +120,32 @@ Ruleset activo dirigido a `main`: PR obligatorio, una aprobación independiente,
 
 ## Resultados y decisión
 
-Los resultados observados se completan antes de entregar la rama. CI/local verde no acredita DNS, SMTP, OAuth, Gemini real ni WhatsApp móvil.
+| Comprobación | Resultado observado |
+| --- | --- |
+| `bin/rails test` | Local: 169 tests, 1053 aserciones, 0 fallos/errores/omisiones; confirmado también en CI |
+| `bin/rails zeitwerk:check` | Correcto local y CI |
+| `bin/rubocop` | 226 archivos, sin infracciones |
+| `bin/brakeman --no-pager` | 0 errores, 0 advertencias; local y CI |
+| `bin/bundler-audit` | Sin vulnerabilidades |
+| `bin/importmap audit` | Sin paquetes vulnerables |
+| `bin/rails tenant_integrity:audit` | Correcto local y CI |
+| `bin/rails agent:audit` | Correcto local y CI |
+| `git diff --check` | Correcto |
+| Caddy 2.10-alpine | Sintaxis validada local y CI |
+| Docker development boot | Readiness corregido, aprobado en GitHub |
+| `npm run test:e2e` | 26 recorridos aprobados en GitHub (escritorio y móvil Chromium; Gemini/Web Share simulados) |
+| `bin/smoke-staging` | Aprobado en GitHub: upgrade de agencia anterior, PDF/worker, metadata HTTPS, persistencia y backup/restauración real de datos sintéticos |
+| Required checks | Aprobado junto a los cinco jobs en [run 40259243275](https://github.com/mauroponce/travel_agencies/actions/runs/40259243275), SHA `0b006e6` |
+| Gemini real | No ejecutado: falta GEMINI_SMOKE_API_KEY. El guard opt-in devuelve 64 y no usa la clave de la aplicación |
+| Dominio público solicitado | curl devuelve error 6: no resuelve silvinamartinez.turistack.com; ficha/crawler remotos pendientes |
+
+Se usaron DB_* explícitos hacia PostgreSQL descartable, sin ejecutar tests contra la base de desarrollo. La primera corrida local de Rails tuvo tres fallos por haber heredado el puerto/dominio de desarrollo; se corrigió el entorno de pruebas y la suite completa pasó. Playwright local agotó el arranque de su BD por espera de checkpoint/IO; un segundo stack descartable no llegó a crearse y devolvió conexión rechazada. El build local de staging falló con BuildKit `lease does not exist`; esas ejecuciones no se cuentan como aprobadas. La evidencia de contenedores y navegador en GitHub se registra separadamente.
+
+El conector de GitHub rechazó crear el PR con HTTP 403. La rama sí se publicó por SSH; puede abrirse el PR desde la comparación de ramas. Main sigue sin protección, verificado por la API; no se modificó su política. CI/local verde no acredita DNS, SMTP, OAuth, Gemini real ni WhatsApp móvil.
 
 Go/No-Go del piloto: **No-Go hasta completar las comprobaciones externas obligatorias**.
 
-- [ ] CI del SHA final verde: Docker y Required checks incluidos.
+- [x] Workflow completo verde sobre el código verificado; comprobar también el SHA final de la rama antes de integrar.
 - [ ] Staging real, DNS/HTTPS y rechazo de hosts desconocidos.
 - [ ] Invitación SMTP/Google real, regreso y aislamiento de dos cuentas.
 - [ ] Cinco smoke checks de Gemini y flyer comercial autorizado.
@@ -120,3 +153,69 @@ Go/No-Go del piloto: **No-Go hasta completar las comprobaciones externas obligat
 - [ ] Backup fuera del host, claves persistentes y restauración ensayada.
 - [ ] Alertas y responsable operativo.
 - [ ] Protección de main por administrador autorizado.
+
+## Archivos modificados
+
+Sin migraciones nuevas. Inventario de esta rama frente a `dbd0f019`:
+
+```text
+.env.example
+.github/workflows/ci.yml
+app/controllers/agent/base_controller.rb
+app/controllers/agent/import_items_controller.rb
+app/controllers/agent/imports_controller.rb
+app/controllers/agent/searches_controller.rb
+app/controllers/agent/trips_controller.rb
+app/controllers/agent/website_controller.rb
+app/helpers/agent_helper.rb
+app/javascript/controllers/flyer_share_controller.js
+app/jobs/agent_ai_job.rb
+app/services/agent/ai_requests.rb
+app/services/agent/flyer.rb
+app/services/agent/gemini_client.rb
+app/views/agent/error.html.erb
+app/views/agent/import_items/edit.html.erb
+app/views/agent/imports/index.html.erb
+app/views/agent/searches/index.html.erb
+app/views/agent/trips/_form.html.erb
+app/views/agent/website/show.html.erb
+bin/backup-turistack
+bin/deploy-hetzner
+bin/gemini-smoke
+bin/restore-turistack
+bin/smoke-staging
+bin/worker-healthcheck
+compose.production.yml
+compose.staging.yml
+compose.yml
+config/initializers/filter_parameter_logging.rb
+deploy/env.production.example
+deploy/env.staging.example
+docs/despliegue-dominios.md
+docs/turistack-revendedor-hardening.md
+docs/turistack-revendedor-lanzamiento.md
+lib/tasks/agent.rake
+playwright.config.js
+test/e2e/reseller.spec.js
+test/fixtures/files/agent.jpg
+test/fixtures/files/agent.pdf
+test/fixtures/files/agent.webp
+test/integration/reseller_hardening_test.rb
+test/models/agent_ai_budget_concurrency_test.rb
+test/models/agent_ai_budget_test.rb
+test/smoke/gemini_live.rb
+test/smoke/staging_legacy_seed.rb
+test/smoke/staging_seed.rb
+test/smoke/staging_verify.rb
+```
+
+## Riesgos restantes por severidad
+
+- **Alta:** faltan staging externo equivalente, DNS/HTTPS del dominio solicitado, invitación SMTP/Google real y acceso/cuota/contrato de Gemini con la credencial de pruebas. El piloto comercial no está habilitado por esta entrega.
+- **Alta si se usa S3:** los scripts verifican almacenamiento local; S3 exige su propio versionado, recuperación y ensayo antes de habilitarlo.
+- **Media:** matriz de WhatsApp real, incluyendo iOS/Android y su caché de previews; las simulaciones no prueban el destino nativo.
+- **Media:** main sin protección y revisión independiente pendiente. Hay configuración concreta recomendada; el administrador debe autorizar su aplicación.
+- **Media:** backups locales requieren una ventana breve sin web/worker, copia cifrada fuera del host y claves recuperables. Debe comprobarse la recuperación en el servidor real.
+- **Baja:** los uploads conservados que se abandonan pueden quedar sin adjuntar. Para mantenimiento, revisar blobs no adjuntos de más de tres días y purgarlos solo después de vencer los tokens de 48 h; no purgar blobs adjuntos a revisiones/importaciones.
+
+Para revisar e integrar: [comparar main con la rama de hardening](https://github.com/mauroponce/travel_agencies/compare/main...fix/reseller-launch-hardening?expand=1). No se creó PR por el 403 del conector. Verificar los checks del último SHA y realizar revisión independiente antes de integrar.
