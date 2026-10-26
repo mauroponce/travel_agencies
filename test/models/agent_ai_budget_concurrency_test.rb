@@ -6,6 +6,15 @@ class AgentAiBudgetConcurrencyTest < ActiveSupport::TestCase
   include AgentTestData
   self.use_transactional_tests = false
 
+  setup do
+    @previous_key = ENV["GEMINI_API_KEY"]
+    ENV["GEMINI_API_KEY"] = "concurrency-test-only"
+  end
+
+  teardown do
+    @previous_key ? ENV["GEMINI_API_KEY"] = @previous_key : ENV.delete("GEMINI_API_KEY")
+  end
+
   test "simultaneous requests cannot exceed the last daily slot" do
     workspace = agent_workspace
     previous = ENV["AGENT_SEARCHES_PER_DAY"]
