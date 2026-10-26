@@ -123,10 +123,34 @@ jobs:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432
         run: npm run test:e2e
 
+  docker_boot:
+    name: Docker development boot
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Build and boot the development stack
+        run: |
+          cp .env.example .env
+          docker compose up -d --build web worker
+          curl --retry 30 --retry-delay 2 --retry-connrefused --fail http://127.0.0.1:3000/up
+          curl --fail --header 'Host: platform.lvh.me' http://127.0.0.1:3000/ > /dev/null
+          docker compose exec -T web bin/rails runner 'require "debug/prelude"; require "sidekiq/api"; abort "wrong Rails environment" unless Rails.env.development?; abort "worker is not registered" if Sidekiq::ProcessSet.new.size.zero?; puts "Development web, migrations, Redis and worker: OK"'
+
+      - name: Show container logs on failure
+        if: failure()
+        run: docker compose logs --tail=100
+
+      - name: Stop disposable CI services
+        if: always()
+        run: docker compose down
+
   required_checks:
     name: Required checks
     if: always()
-    needs: [scan_ruby, scan_js, lint, test]
+    needs: [scan_ruby, scan_js, lint, test, docker_boot]
     runs-on: ubuntu-latest
     steps:
       - name: Require every quality job to succeed

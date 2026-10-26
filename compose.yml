@@ -1,6 +1,14 @@
 name: turistack-development
 
+x-app-build: &app-build
+  context: .
+  args:
+    BUNDLE_WITHOUT: test
+
 x-app-environment: &app-environment
+  RAILS_ENV: development
+  RAILS_DEVELOPMENT_HOSTS: ".${PLATFORM_BASE_DOMAIN:-lvh.me}"
+  APP_PORT: "3000"
   DB_HOST: db
   DB_PORT: "5432"
   DB_USER: turistack
@@ -40,7 +48,7 @@ services:
     ports:
       - "8025:8025"
   migrate:
-    build: .
+    build: *app-build
     command: bin/rails db:migrate
     env_file: ${ENV_FILE:-.env}
     environment: *app-environment
@@ -50,7 +58,7 @@ services:
     depends_on:
       db: {condition: service_healthy}
   web:
-    build: .
+    build: *app-build
     env_file: ${ENV_FILE:-.env}
     environment: *app-environment
     ports:
@@ -67,7 +75,7 @@ services:
       migrate: {condition: service_completed_successfully}
       redis: {condition: service_healthy}
   worker:
-    build: .
+    build: *app-build
     command: bundle exec sidekiq -C config/sidekiq.yml
     env_file: ${ENV_FILE:-.env}
     environment: *app-environment

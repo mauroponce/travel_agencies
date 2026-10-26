@@ -43,7 +43,9 @@ cp .env.example .env
 docker compose up --build
 ```
 
-Compose espera la salud de PostgreSQL y Redis, ejecuta `db:migrate` una sola vez en el servicio `migrate` y luego inicia web y Sidekiq con la misma configuración de base. Los seeds nunca se cargan durante el arranque. Web queda en `http://localhost:3000` y Mailpit en `http://localhost:8025`. Los volúmenes no se recrean durante una actualización normal.
+Compose construye una imagen con las gemas de desarrollo para web, worker y migrador, y permite que el usuario `rails` actualice `db/schema.rb` al migrar; los builds de staging/producción siguen excluyendo `development:test`. Después de cambios al Dockerfile o las dependencias, usar `docker compose up --build` para reconstruir la imagen.
+
+Compose espera la salud de PostgreSQL y Redis, ejecuta `db:migrate` una sola vez en el servicio `migrate` y luego inicia web y Sidekiq con la misma configuración de base. Los seeds nunca se cargan durante el arranque. Con el dominio local predeterminado, la plataforma se abre en `http://platform.lvh.me:3000` y los tenants en sus subdominios; `http://localhost:3000/up` verifica la salud. Compose habilita el dominio de desarrollo en la protección de hosts de Rails. Mailpit queda en en `http://localhost:8025`. Los volúmenes no se recrean durante una actualización normal.
 
 ## Autenticación
 
