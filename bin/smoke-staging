@@ -49,7 +49,8 @@ EOF
 docker build -t "$TURISTACK_IMAGE" .
 # Upgrade a pre-Revendedor agency database, then start the complete current stack.
 "${compose[@]}" up -d --wait --wait-timeout 120 db redis
-"${compose[@]}" run --rm migrate bin/rails db:migrate VERSION=20261020120000
+# MigrationContext avoids Rails 8.1's automatic latest-schema load on an empty DB.
+"${compose[@]}" run --rm migrate bin/rails runner 'ActiveRecord::Base.connection_pool.migration_context.migrate(20261020120000)'
 "${compose[@]}" run --rm -T migrate bin/rails runner - < test/smoke/staging_legacy_seed.rb
 "${compose[@]}" up -d --wait --wait-timeout 180 web worker
 "${compose[@]}" exec -T web bin/rails agent:finalize_hosts tenant_integrity:audit agent:audit agent:operations
