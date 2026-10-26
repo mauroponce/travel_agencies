@@ -115,6 +115,7 @@ test("sharing waits for the actual image and offers fallbacks when preparation f
   await page.getByLabel("Precio final del proveedor").fill("450000")
   await page.getByLabel("Flyer original", { exact: false }).setInputFiles(path.join(__dirname, "../fixtures/files/agent.png"))
   await page.getByRole("button", { name: "Guardar y publicar" }).click()
+  await expect(page.getByRole("heading", { name: "Preparar imagen", exact: true })).toBeVisible()
   const url = page.url()
   let release
   const blocked = new Promise(resolve => { release = resolve })
