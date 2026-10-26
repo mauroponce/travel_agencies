@@ -87,6 +87,7 @@ test("reseller publishes original flyer, filters public catalog and shares with 
   expect(await visitor.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
   await visitorContext.close()
   await page.getByRole("button", { name: "Despublicar", exact: true }).click()
+  await expect(page.getByText("Viaje despublicado.", { exact: true })).toBeVisible()
   const publicPage = await page.context().newPage()
   const response = await publicPage.goto(payload.url)
   expect(response.status()).toBe(404)
