@@ -1,0 +1,6 @@
+<section class="agent-panel">
+  <h1>No pudimos completar la acción</h1>
+  <p class="agent-alert" role="alert"><%= @error_message %></p>
+  <%= link_to "Volver a mis viajes", agent_trips_path, class: "btn" %>
+  <%= link_to "Cargar viaje manualmente", new_agent_trip_path, class: "btn btn-primary" %>
+</section>

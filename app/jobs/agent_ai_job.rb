@@ -6,10 +6,9 @@ class AgentAiJob < ApplicationJob
   def perform(kind, id)
     task = TASKS.fetch(kind).constantize.find_by(id:)
     return unless task && AgentWorkspace.enabled?
-    token = claim(task)
+    token, execution = claim(task, kind)
     return unless token
     started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-    execution = task.agent_workspace.agent_ai_executions.create!(kind == "import" ? { agent_import: task, model: Agent::GeminiClient.model, contract_version: Agent::AiContract::VERSION, status: "processing" } : { agent_search: task, model: Agent::GeminiClient.model, contract_version: Agent::AiContract::VERSION, status: "processing" })
     Agent::Flyer.prepare_import!(task) if kind == "import"
     data, usage = Agent::GeminiClient.call(kind:, task:)
     task.agent_workspace.with_lock do
@@ -26,7 +25,7 @@ class AgentAiJob < ApplicationJob
       execution.update!(status: "completed", duration_ms: elapsed(started), usage:)
     end
   rescue Agent::GeminiClient::Failure => error
-    finish_error(task, token, execution, started, error.code, error.transient)
+    finish_error(task, token, execution, started, error.code, error.transient, error.usage)
   rescue Agent::UploadValidator::Invalid
     finish_error(task, token, execution, started, "invalid_file", false)
   rescue StandardError => error
@@ -37,7 +36,7 @@ class AgentAiJob < ApplicationJob
 
   private
 
-  def claim(task)
+  def claim(task, kind)
     task.agent_workspace.with_lock do
       task.lock!
       return unless task.agent_workspace.active? && task.status == "pending"
@@ -47,22 +46,31 @@ class AgentAiJob < ApplicationJob
         return
       end
       return task.update!(status: "error", error_code: "attempts_exhausted") && nil if task.attempts >= 3
+      begin
+        Agent::AiRequests.check_daily!(workspace: task.agent_workspace, kind:)
+      rescue Agent::AiRequests::Limited
+        task.update!(status: "error", error_code: "daily_limit", processing_token: nil)
+        return
+      end
       token = SecureRandom.uuid
       task.update!(status: "processing", processing_token: token, started_at: Time.current, attempts: task.attempts + 1)
-      token
+      execution = task.agent_workspace.agent_ai_executions.create!(
+        (kind == "import" ? { agent_import: task } : { agent_search: task }).merge(
+          model: Agent::GeminiClient.model, contract_version: Agent::AiContract::VERSION, status: "processing"))
+      [ token, execution ]
     end
   end
 
   def elapsed(started) = ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - started) * 1000).round
 
-  def finish_error(task, token, execution, started, code, transient)
+  def finish_error(task, token, execution, started, code, transient, usage = {})
     retry_task = false
     task.with_lock do
       if task.processing_token == token
         retry_task = transient && task.attempts < 3 && task.agent_workspace.active?
         task.update!(status: retry_task ? "pending" : "error", error_code: code, processing_token: nil)
       end
-      execution&.update!(status: "error", error_code: code, duration_ms: started && elapsed(started))
+      execution&.update!(status: "error", error_code: code, duration_ms: started && elapsed(started), usage:)
     end
     self.class.set(wait: (task.attempts * 10).seconds).perform_later(task.is_a?(AgentImport) ? "import" : "search", task.id) if retry_task
   end

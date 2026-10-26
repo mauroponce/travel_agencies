@@ -81,6 +81,12 @@ services:
     environment: *app-environment
     volumes:
       - storage_data:/rails/storage
+    healthcheck:
+      test: ["CMD", "bundle", "exec", "ruby", "bin/worker-healthcheck"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
     depends_on:
       migrate: {condition: service_completed_successfully}
       redis: {condition: service_healthy}

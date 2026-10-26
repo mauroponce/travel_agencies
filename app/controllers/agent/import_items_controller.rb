@@ -20,10 +20,10 @@ module Agent
       trip = SaveTrip.call(workspace: current_agent_workspace, attributes: raw, item: @item, trip: target,
         expected_revision_id: target ? params[:expected_revision_id].to_s : nil, publish: params[:commit_action] == "publish")
       redirect_to agent_trip_path(trip), notice: "Ficha guardada."
-    rescue ActiveRecord::RecordInvalid => error
-      @review_error = error.record.errors.full_messages.to_sentence
+    rescue ActiveRecord::RecordInvalid, MoneyParser::InvalidAmount, UploadValidator::Invalid, ActiveRecord::RecordNotUnique, ActiveRecord::StaleObjectError => error
+      @review_error = form_error_message(error)
       prepare_review
-      render :edit, status: :unprocessable_entity
+      render :edit, status: error.is_a?(ActiveRecord::StaleObjectError) ? :conflict : :unprocessable_entity
     end
     private
     def set_item
@@ -33,7 +33,11 @@ module Agent
     def prepare_review
       data = @item.extracted.slice(*AgentTripRevision::FIELDS).merge(@item.review_data.except("price"))
       if @item.review_data.key?("price")
-        data["price_cents"] = @item.review_data["price"].present? ? MoneyParser.call(@item.review_data["price"]) : nil
+        data["price_cents"] = begin
+          @item.review_data["price"].present? ? MoneyParser.call(@item.review_data["price"]) : nil
+        rescue MoneyParser::InvalidAmount
+          nil
+        end
       end
       @revision = AgentTripRevision.new(data)
       @suppliers = current_agent_workspace.agent_suppliers.order(:name, :id)

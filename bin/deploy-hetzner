@@ -36,11 +36,14 @@ export ENV_FILE="$env_file" TURISTACK_IMAGE="$image"
 compose=(docker compose --env-file "$env_file" -f "$compose_file")
 "${compose[@]}" config --quiet
 "${compose[@]}" pull
-"${compose[@]}" up -d db redis
+"${compose[@]}" run --rm --no-deps caddy caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+"${compose[@]}" up -d --wait --wait-timeout 120 db redis
 "${compose[@]}" run --rm migrate
-"${compose[@]}" up -d --no-deps --remove-orphans web worker caddy
-"${compose[@]}" up -d --no-deps --wait web
+"${compose[@]}" up -d --no-deps --remove-orphans --wait --wait-timeout 180 web worker
+# All app processes in this single-host stack now run registry-aware code.
+"${compose[@]}" exec -T web bin/rails agent:finalize_hosts
+"${compose[@]}" up -d --no-deps caddy
 "${compose[@]}" exec -T web bin/rails runner 'abort "wrong environment" unless Rails.env.to_s == ENV.fetch("RAILS_ENV"); puts "web: OK"'
-"${compose[@]}" exec -T worker bundle exec ruby -e 'puts "worker: OK"'
+"${compose[@]}" exec -T web bin/rails tenant_integrity:audit agent:audit agent:operations
 "${compose[@]}" ps
 REMOTE

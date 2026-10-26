@@ -9,17 +9,19 @@ module Agent
       @trip = current_agent_workspace.agent_trips.new
       @revision = AgentTripRevision.new(currency: "ARS", price_unit: "per_person")
       @source_import = selected_import
+      retain_cover
       load_suppliers
     end
     def create
+      retain_cover(params.dig(:agent_trip_revision, :cover))
       @trip = SaveTrip.call(workspace: current_agent_workspace, attributes: trip_params, source_import: selected_import, publish: params[:commit_action] == "publish")
       redirect_to agent_trip_path(@trip), notice: "Viaje guardado."
-    rescue ActiveRecord::RecordInvalid => error
+    rescue ActiveRecord::RecordInvalid, UploadValidator::Invalid, MoneyParser::InvalidAmount, ActiveRecord::RecordNotUnique => error
       @trip ||= current_agent_workspace.agent_trips.new
-      @revision = error.record.is_a?(AgentTripRevision) ? error.record : AgentTripRevision.new(trip_params.slice(*AgentTripRevision::FIELDS))
+      @revision = submitted_revision
       load_suppliers
       @source_import = selected_import
-      @form_error = error.record.errors.full_messages.to_sentence
+      @form_error = form_error_message(error)
       render :new, status: :unprocessable_entity
     end
     def show = @revision = @trip.current_revision
@@ -28,20 +30,23 @@ module Agent
       load_suppliers
     end
     def update
+      retain_cover(params.dig(:agent_trip_revision, :cover))
       SaveTrip.call(workspace: current_agent_workspace, attributes: trip_params, trip: @trip,
         publish: params[:commit_action] == "publish", expected_revision_id: params.require(:expected_revision_id))
       redirect_to agent_trip_path(@trip), notice: "Revisión guardada. La web muestra la última versión que publicaste."
-    rescue ActiveRecord::RecordInvalid => error
+    rescue ActiveRecord::RecordInvalid, UploadValidator::Invalid, MoneyParser::InvalidAmount, ActiveRecord::RecordNotUnique, ActiveRecord::StaleObjectError => error
       @trip.reload
-      @revision = AgentTripRevision.new(trip_params.slice(*AgentTripRevision::FIELDS))
-      @form_error = error.record.errors.full_messages.to_sentence
+      @revision = submitted_revision
+      @form_error = form_error_message(error)
       load_suppliers
-      render :edit, status: :unprocessable_entity
+      render :edit, status: error.is_a?(ActiveRecord::StaleObjectError) ? :conflict : :unprocessable_entity
     end
     def publish
       @trip.publish!
       audit("agent_trip.published", @trip)
       redirect_to agent_trip_path(@trip), notice: "Viaje publicado."
+    rescue ActiveRecord::RecordInvalid => error
+      redirect_to edit_agent_trip_path(@trip), alert: form_error_message(error)
     end
     def unpublish
       @trip.update!(status: "unpublished")
@@ -65,7 +70,7 @@ module Agent
     end
     def compare
       ids = Array(params[:ids]).uniq
-      return render(plain: "Seleccioná dos o tres viajes.", status: :unprocessable_entity) unless ids.size.between?(2, 3)
+      return render_agent_error("Seleccioná dos o tres viajes.") unless ids.size.between?(2, 3)
       @trips = current_agent_workspace.agent_trips.includes(current_revision: :agent_supplier).find(ids)
     end
     private
@@ -76,8 +81,13 @@ module Agent
     def load_suppliers = @suppliers = current_agent_workspace.agent_suppliers.order(:name, :id)
     def trip_params
       attributes = params.expect(agent_trip_revision: AgentTripRevision::FIELDS + [ "price", "cover", "new_supplier_name" ]).to_h
+      attributes["cover"] = @retained_cover if @retained_cover
       attributes["price_cents"] = attributes["price"].present? ? MoneyParser.call(attributes.delete("price")) : nil
       attributes.except("price")
+    end
+
+    def submitted_revision
+      AgentTripRevision.new(params.expect(agent_trip_revision: AgentTripRevision::FIELDS).to_h)
     end
   end
 end

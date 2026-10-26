@@ -70,6 +70,12 @@ services:
     <<: *app-service
     restart: unless-stopped
     command: bundle exec sidekiq -C config/sidekiq.yml
+    healthcheck:
+      test: ["CMD", "bundle", "exec", "ruby", "bin/worker-healthcheck"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
     depends_on:
       migrate: {condition: service_completed_successfully}
       redis: {condition: service_healthy}

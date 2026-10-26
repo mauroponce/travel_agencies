@@ -109,7 +109,7 @@ BACKUP_ROOT=/srv/backups/turistack \
 bin/backup-turistack
 ```
 
-El backup contiene `pg_dump` en formato custom, el volumen de Active Storage, checksums y manifiesto. Si `ACTIVE_STORAGE_SERVICE=s3`, reemplace el tar local por versionado/replicación del bucket y pruebe su restauración. También deben conservarse de forma segura las claves cifrantes; un dump sin `ACTIVE_RECORD_ENCRYPTION_KEY` no basta.
+El backup detiene brevemente web y worker para obtener una copia consistente de PostgreSQL y Active Storage; luego vuelve a iniciar únicamente los servicios que estaban activos y espera sus healthchecks. Usar una ventana de mantenimiento. Contiene `pg_dump` custom, el volumen local, checksums y manifiesto; valida el catálogo del dump y la compresión antes de marcar la copia completa. Los directorios `.incomplete` no son backups utilizables. El script rechaza `ACTIVE_STORAGE_SERVICE=s3`: para ese caso implementar y verificar versionado/replicación del bucket antes de habilitarlo. También deben conservarse de forma segura las claves cifrantes; un dump sin `ACTIVE_RECORD_ENCRYPTION_KEY` no basta.
 
 Probar restauraciones periódicamente en staging. La restauración reemplaza objetos de la base seleccionada, por lo que exige confirmación explícita y los servicios web/worker se detienen:
 
@@ -120,7 +120,7 @@ RESTORE_CONFIRM=restore-staging \
 bin/restore-turistack /srv/backups/turistack/staging/AAAAMMDDTHHMMSSZ
 ```
 
-Antes de una restauración productiva, sacar un backup del estado actual y validar que el path/manifest indiquen `production`. El script no elimina archivos extra del volumen antes de superponer el backup; si se requiere una restauración exacta, usar un volumen nuevo y cambiarlo solamente después de validarlo.
+Antes de una restauración productiva, sacar un backup del estado actual y validar que el path/manifest indiquen `production`. El script reemplaza el contenido del volumen local con la copia verificada: elimina los archivos actuales después de detener web y worker. No ejecutar sobre un bucket S3. Mantener una copia previa independiente y verificar una restauración en un stack aislado antes de operar sobre datos reales.
 
 ## Rollback de aplicación
 
@@ -177,3 +177,5 @@ Para revertir, deshabilitar `AGENT_ENABLED` y conservar las tablas, las reservas
 Los logs de Gemini contienen únicamente el identificador del trabajo y metadatos operativos. El endpoint interno filtra su token de los logs de Rails; el proxy nunca expone ese endpoint. No publicar la salida JSON completa de `caddy adapt` con secretos reales, porque incluye la URL interna de autorización.
 
 El MVP de Revendedor y su procedimiento completo (flyers originales, Poppler, variables, CI, rollback y matriz WhatsApp) están en [turistack-revendedor-lanzamiento.md](turistack-revendedor-lanzamiento.md).
+
+La verificación posterior al hardening de Revendedor, sus comandos de staging y sus controles Go/No-Go están en [turistack-revendedor-hardening.md](turistack-revendedor-hardening.md).

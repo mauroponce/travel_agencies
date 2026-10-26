@@ -12,7 +12,7 @@ module.exports = defineConfig({
     command: `RAILS_ENV=test ${agentEnv} PLATFORM_BASE_DOMAIN=lvh.me APP_PORT=${port} bin/rails db:reset && RAILS_ENV=test ${agentEnv} PLATFORM_BASE_DOMAIN=lvh.me APP_PORT=${port} bin/rails server -p ${port}`,
     url: `http://127.0.0.1:${port}/up`,
     reuseExistingServer: false,
-    timeout: 120000
+    timeout: Number(process.env.E2E_BOOT_TIMEOUT_MS || 120000)
   },
   projects: [
     { name: "desktop-chromium", use: { ...devices["Desktop Chrome"] } },

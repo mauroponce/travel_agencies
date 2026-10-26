@@ -5,6 +5,7 @@ module AgentHelper
 
   def agent_ai_error(code)
     case code
+    when "daily_limit" then "Alcanzaste el límite diario de IA. Se renueva a medianoche de tu cuenta. Podés continuar manualmente sin perder el archivo."
     when "configuration" then "Falta configurar Gemini. Podés cargar el viaje manualmente."
     when "invalid_file" then "El archivo no pudo validarse. Probá con otra versión del documento."
     when "invalid_response", "incomplete_response" then "La IA no devolvió una ficha válida. Revisá el original o reintentá."

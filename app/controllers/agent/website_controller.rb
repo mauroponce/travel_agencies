@@ -8,6 +8,8 @@ module Agent
       current_agent_workspace.update!(params.expect(agent_workspace: [ :business_name, :public_name, :whatsapp, :presentation ]))
       audit("agent_workspace.updated", current_agent_workspace)
       redirect_to agent_website_path, notice: "Tu página fue actualizada."
+    rescue ActiveRecord::RecordInvalid
+      render :show, status: :unprocessable_entity
     end
     def preview
       @suppliers = current_agent_workspace.agent_suppliers.active.order(:name, :id)

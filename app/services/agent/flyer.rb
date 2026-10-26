@@ -19,12 +19,24 @@ module Agent
 
     def self.attach!(revision:, upload: nil, source_import: nil, previous: nil)
       if upload.present?
-        mime = UploadValidator.call(upload)
-        revision.flyer_source.attach(upload)
-        if mime == "application/pdf"
-          render_pdf(upload.tempfile.path) { |image| revision.cover.attach(upload_image(image)) }
+        if upload.is_a?(ActiveStorage::Blob)
+          upload.open do |file|
+            mime = UploadValidator.call(file)
+            revision.flyer_source.attach(upload)
+            if mime == "application/pdf"
+              render_pdf(file.path) { |image| revision.cover.attach(upload_image(image)) }
+            else
+              revision.cover.attach(upload)
+            end
+          end
         else
-          revision.cover.attach(revision.flyer_source.blob)
+          mime = UploadValidator.call(upload)
+          revision.flyer_source.attach(upload)
+          if mime == "application/pdf"
+            render_pdf(upload.tempfile.path) { |image| revision.cover.attach(upload_image(image)) }
+          else
+            revision.cover.attach(revision.flyer_source.blob)
+          end
         end
       elsif source_import&.source&.attached?
         prepare_import!(source_import)

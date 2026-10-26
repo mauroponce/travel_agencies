@@ -11,15 +11,33 @@ esac
 COMPOSE_FILE="${COMPOSE_FILE:-compose.$DEPLOY_ENVIRONMENT.yml}"
 ENV_FILE="${ENV_FILE:-.env.$DEPLOY_ENVIRONMENT}"
 timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
-destination="$BACKUP_ROOT/$DEPLOY_ENVIRONMENT/$timestamp"
+destination="$BACKUP_ROOT/$DEPLOY_ENVIRONMENT/$timestamp.incomplete"
 mkdir -p "$destination"
 
 compose=(docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE")
 "${compose[@]}" config --quiet
+# A DB dump and a live tar can disagree if uploads/purges happen between them.
+# For the small pilot, quiesce writers briefly and restart only services that ran.
+mapfile -t running_services < <("${compose[@]}" ps --status running --services web worker)
+resume_services() {
+  if ((${#running_services[@]})); then
+    "${compose[@]}" up -d --no-deps --wait --wait-timeout 180 "${running_services[@]}"
+  fi
+}
+trap resume_services EXIT
+"${compose[@]}" run --rm --no-deps -T web bin/rails runner 'abort "This backup supports local storage only; use a versioned S3 backup for S3" unless ActiveStorage::Blob.service.is_a?(ActiveStorage::Service::DiskService)'
+"${compose[@]}" stop web worker
 "${compose[@]}" exec -T db sh -c \
   'PGPASSWORD="$POSTGRES_PASSWORD" pg_dump --username="$POSTGRES_USER" --dbname="$POSTGRES_DB" --format=custom --no-owner' \
   > "$destination/postgresql.dump"
-"${compose[@]}" exec -T web tar -C /rails/storage -czf - . > "$destination/storage.tar.gz"
-(cd "$destination" && sha256sum postgresql.dump storage.tar.gz > SHA256SUMS)
+"${compose[@]}" run --rm --no-deps -T web tar -C /rails/storage -czf - . > "$destination/storage.tar.gz"
+"${compose[@]}" exec -T db pg_restore --list < "$destination/postgresql.dump" > /dev/null
+gzip -t "$destination/storage.tar.gz"
 printf 'environment=%s\ncreated_at=%s\n' "$DEPLOY_ENVIRONMENT" "$timestamp" > "$destination/manifest.txt"
+(cd "$destination" && sha256sum postgresql.dump storage.tar.gz manifest.txt > SHA256SUMS)
+resume_services
+trap - EXIT
+completed="${destination%.incomplete}"
+mv "$destination" "$completed"
+destination="$completed"
 echo "Backup verificado en $destination"

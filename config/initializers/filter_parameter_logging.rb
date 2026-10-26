@@ -6,6 +6,6 @@
 Rails.application.config.filter_parameters += [
   :passw, :email, :secret, :token, :_key, :crypt, :salt, :certificate, :otp, :ssn, :cvv, :cvc,
   :document_number, :full_name, :notes, :phone, :commercial_phone, :endpoint, :p256dh, :auth, :code,
-  :query, :source, :commercial_terms, :commission_terms, :agent_trip_revision,
+  :query, :source, :retained_cover, :commercial_terms, :commission_terms, :agent_trip_revision,
   :extracted, :review_data, :evidence, :interpretation, :filters
 ]

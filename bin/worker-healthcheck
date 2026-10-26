@@ -1,0 +1,9 @@
+#!/usr/bin/env ruby
+require "sidekiq/api"
+require "socket"
+
+# Check this container's heartbeat, not another worker sharing the Redis DB.
+healthy = Sidekiq::ProcessSet.new.any? do |process|
+  process["hostname"] == Socket.gethostname && process["beat"].to_f > Time.now.to_f - 30
+end
+abort "No recent Sidekiq heartbeat for this container" unless healthy

@@ -134,14 +134,27 @@ jobs:
       - name: Build and boot the development stack
         run: |
           cp .env.example .env
-          docker compose up -d --build web worker
-          curl --retry 30 --retry-delay 2 --retry-connrefused --fail http://127.0.0.1:3000/up
-          curl --fail --header 'Host: platform.lvh.me' http://127.0.0.1:3000/ > /dev/null
-          docker compose exec -T web bin/rails runner 'require "debug/prelude"; require "sidekiq/api"; abort "wrong Rails environment" unless Rails.env.development?; abort "worker is not registered" if Sidekiq::ProcessSet.new.size.zero?; puts "Development web, migrations, Redis and worker: OK"'
+          docker compose up -d --build --wait --wait-timeout 180 web worker
+          curl --retry 5 --retry-delay 1 --retry-all-errors --retry-max-time 30 --connect-timeout 3 --max-time 5 --fail http://127.0.0.1:3000/up
+          curl --retry 5 --retry-delay 1 --retry-all-errors --retry-max-time 30 --connect-timeout 3 --max-time 5 --fail --header 'Host: platform.lvh.me' http://127.0.0.1:3000/ > /dev/null
+          docker compose exec -T web bin/rails runner 'require "debug/prelude"; abort "wrong Rails environment" unless Rails.env.development?'
+          docker compose exec -T web bin/rails agent:operations
+
+      - name: Validate deployment Caddy configuration with the deployed image
+        run: >-
+          docker run --rm
+          -e CADDY_SITE_ADDRESSES='staging.example.com, auth.staging.example.com'
+          -e CADDY_ASK_SECRET=ci-validation-only
+          -e PLATFORM_BASE_DOMAIN=staging.example.com
+          -e PLATFORM_HOST=staging.example.com
+          -v "$PWD/deploy/Caddyfile:/etc/caddy/Caddyfile:ro"
+          caddy:2.10-alpine caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
 
       - name: Show container logs on failure
         if: failure()
-        run: docker compose logs --tail=100
+        run: |
+          docker compose ps --all
+          docker compose logs --tail=150
 
       - name: Stop disposable CI services
         if: always()

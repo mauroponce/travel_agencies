@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -euo pipefail
+[[ "${AGENT_GEMINI_SMOKE:-}" == "true" ]] || { echo 'Opt-in requerido: AGENT_GEMINI_SMOKE=true' >&2; exit 64; }
+[[ -n "${GEMINI_SMOKE_API_KEY:-}" ]] || { echo 'Falta GEMINI_SMOKE_API_KEY; no se usa la clave de la aplicación.' >&2; exit 64; }
+[[ "${RAILS_ENV:-test}" == "test" ]] || { echo 'Ejecutar solamente en RAILS_ENV=test.' >&2; exit 64; }
+export RAILS_ENV=test GEMINI_API_KEY="$GEMINI_SMOKE_API_KEY"
+exec bin/rails runner test/smoke/gemini_live.rb

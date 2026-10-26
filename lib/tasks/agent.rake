@@ -1,4 +1,23 @@
 namespace :agent do
+  desc "Check DB/Redis/Sidekiq and report AI failures and approximate token usage (read only)"
+  task operations: :environment do
+    require "sidekiq/api"
+    abort "Database unavailable" unless ApplicationRecord.connection.select_value("SELECT 1") == 1
+    abort "Pending migrations" if ApplicationRecord.connection_pool.migration_context.needs_migration?
+    abort "Redis unavailable" unless Sidekiq.redis { |redis| redis.call("PING") } == "PONG"
+    workers = Sidekiq::ProcessSet.new.select { |process| process["beat"].to_f > 30.seconds.ago.to_f }
+    abort "No recent Sidekiq heartbeat" if workers.empty?
+    puts "DB, migrations, Redis, Sidekiq: OK (#{workers.size} workers)"
+    puts "Sidekiq queued=#{Sidekiq::Stats.new.enqueued} retries=#{Sidekiq::RetrySet.new.size} dead=#{Sidekiq::DeadSet.new.size}"
+    recent = AgentAiExecution.where("created_at >= ?", 24.hours.ago)
+    puts "AI last 24h: executions=#{recent.count} errors=#{recent.where(status: 'error').count} discarded=#{recent.where(status: 'discarded').count} reported_tokens=#{recent.sum(Arel.sql("COALESCE((usage->>'totalTokenCount')::bigint, 0)"))}"
+    stale = [ AgentImport, AgentSearch ].sum do |model|
+      model.joins(:agent_workspace).where(agent_workspaces: { status: "active" }, status: %w[pending processing]).where("#{model.table_name}.updated_at < ?", 10.minutes.ago).count
+    end
+    abort "AI tasks stuck for over 10 minutes: #{stale}" if stale.positive?
+    abort "Sidekiq dead jobs require inspection" if Sidekiq::DeadSet.new.size.positive?
+  end
+
   desc "Finalize shared hostname ownership after ALL web/worker processes run the registry-aware release"
   task finalize_hosts: :environment do
     connection = ApplicationRecord.connection

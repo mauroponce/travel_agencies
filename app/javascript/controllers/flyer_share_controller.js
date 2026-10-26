@@ -14,17 +14,20 @@ export default class extends Controller {
   async prepareFile() {
     // Fetch before the click so iOS keeps the user activation for navigator.share.
     this.shareButtonTarget.disabled = true
+    this.preparing = true
+    this.file = null
     this.shareButtonTarget.setAttribute("aria-busy", "true")
     try {
       const response = await fetch(this.imageValue, { credentials: "same-origin", signal: this.abort.signal })
       if (!response.ok) throw new Error("download")
       const blob = await response.blob()
       const extensions = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" }
-      if (!extensions[blob.type] || blob.size > 10 * 1024 * 1024) throw new Error("type")
+      if (!extensions[blob.type] || blob.size === 0 || blob.size > 10 * 1024 * 1024) throw new Error("type")
       this.file = new File([blob], `flyer.${extensions[blob.type]}`, { type: blob.type })
     } catch (error) {
       if (error.name !== "AbortError") this.statusTarget.textContent = "No pudimos preparar la imagen. Podés descargar el flyer y copiar el texto."
     } finally {
+      this.preparing = false
       if (this.element.isConnected) {
         this.shareButtonTarget.disabled = false
         this.shareButtonTarget.removeAttribute("aria-busy")
@@ -33,6 +36,7 @@ export default class extends Controller {
   }
 
   async share() {
+    if (this.sharing) return
     try {
       if (!window.isSecureContext || !this.file || !navigator.canShare || !navigator.share || !navigator.canShare({ files: [this.file] })) {
         this.statusTarget.textContent = "Este navegador no permite compartir archivos. Descargá el flyer y copiá el texto para pegarlo en WhatsApp."
@@ -40,12 +44,21 @@ export default class extends Controller {
       }
       let data = { files: [this.file], text: this.textValue, url: this.urlValue }
       if (!navigator.canShare(data)) data = { files: [this.file], text: this.textValue }
+      if (!navigator.canShare(data)) {
+        this.statusTarget.textContent = "Este navegador no permite compartir la imagen y el texto juntos. Descargá el flyer y copiá el enlace."
+        return
+      }
+      this.sharing = true
+      this.shareButtonTarget.disabled = true
       await navigator.share(data)
       this.statusTarget.textContent = "Menú de compartir cerrado. Revisá en WhatsApp que la imagen y el enlace estén incluidos."
     } catch (error) {
       this.statusTarget.textContent = error.name === "AbortError"
         ? "Se canceló el menú de compartir. Podés intentarlo de nuevo."
         : "No se pudo compartir desde este navegador. Descargá el flyer y copiá el texto."
+    } finally {
+      this.sharing = false
+      if (this.element.isConnected) this.shareButtonTarget.disabled = !!this.preparing
     }
   }
 

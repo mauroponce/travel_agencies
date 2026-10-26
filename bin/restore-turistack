@@ -21,15 +21,19 @@ grep -Fxq "environment=$DEPLOY_ENVIRONMENT" "$backup_path/manifest.txt" || {
   exit 64
 }
 (cd "$backup_path" && sha256sum --check SHA256SUMS)
+gzip -t "$backup_path/storage.tar.gz"
 
 compose=(docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE")
 "${compose[@]}" config --quiet
+"${compose[@]}" run --rm --no-deps -T web bin/rails runner 'abort "This restore supports local storage only; restore the versioned bucket for S3" unless ActiveStorage::Blob.service.is_a?(ActiveStorage::Service::DiskService)'
+"${compose[@]}" up -d --wait --wait-timeout 120 db redis
+"${compose[@]}" exec -T db pg_restore --list < "$backup_path/postgresql.dump" > /dev/null
 "${compose[@]}" stop web worker
 "${compose[@]}" exec -T db sh -c \
   'PGPASSWORD="$POSTGRES_PASSWORD" pg_restore --username="$POSTGRES_USER" --dbname="$POSTGRES_DB" --clean --if-exists --no-owner --exit-on-error --single-transaction' \
   < "$backup_path/postgresql.dump"
-"${compose[@]}" run --rm --no-deps -T web tar -C /rails/storage -xzf - < "$backup_path/storage.tar.gz"
+"${compose[@]}" run --rm --no-deps -T web sh -c 'find /rails/storage -mindepth 1 -maxdepth 1 -exec rm -rf -- {} + && tar -C /rails/storage -xzf -' < "$backup_path/storage.tar.gz"
 "${compose[@]}" run --rm migrate
-"${compose[@]}" up -d --no-deps web worker
-"${compose[@]}" up -d --no-deps --wait web
+"${compose[@]}" up -d --no-deps --wait --wait-timeout 180 web worker
+"${compose[@]}" exec -T web bin/rails tenant_integrity:audit agent:audit agent:operations
 echo "Restauración completada en $DEPLOY_ENVIRONMENT; ejecutá la checklist funcional antes de habilitar tráfico"

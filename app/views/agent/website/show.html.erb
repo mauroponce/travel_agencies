@@ -4,6 +4,7 @@
     <p><%= current_agent_workspace.hostname %></p>
   </div>
   <%= link_to "Abrir mi web ↗", current_agent_workspace.url, target: "_blank", rel: "noopener", class: "btn btn-primary" %></div>
+<%= render "agent/errors", record: current_agent_workspace %>
 <div class="agent-two-columns">
   <section class="agent-panel"><%= form_with model: current_agent_workspace, url: agent_website_path, class: "agent-form" do |f| %><%= f.label :business_name, "Nombre comercial" %><%= f.text_field :business_name, required: true %><%= f.label :public_name, "Nombre público" %><%= f.text_field :public_name, required: true %><%= f.label :whatsapp, "WhatsApp con código de país" %><%= f.telephone_field :whatsapp, required: true %><%= f.label :presentation, "Presentación" %><%= f.text_area :presentation %>
       <p>El subdominio es permanente durante el MVP.</p>

@@ -1,5 +1,7 @@
 # Turistack Revendedor: piloto y lanzamiento
 
+La validación y los cambios posteriores al MVP `dbd0f019` están en [Hardening y evidencia de lanzamiento](turistack-revendedor-hardening.md). Los resultados al final de este documento corresponden a la entrega anterior.
+
 ## Producto y arquitectura
 
 El recorrido es: operador crea una cuenta → invitación por correo → Google verifica el correo invitado → proveedor → carga manual o flyer → revisión humana → publicación → ficha pública → compartir archivo y enlace.
@@ -143,7 +145,7 @@ Monitorear salud web, worker y cola default, disco/bucket, errores `agent_ai.fai
 
 ## CI y protección de main
 
-CI incluye escaneo Ruby/JS, RuboCop, Rails, carga Zeitwerk, auditorías de integridad y Playwright. Instala Poppler para probar PDFs. El job agregado **Required checks** solo aprueba si los cuatro jobs base aprobaron. `crass` queda fijado por lockfile en 1.0.8, sin excepciones para su vulnerabilidad. El test de staging elimina explícitamente `DATABASE_URL` y otras variables de base/contenedor heredadas antes de definir `DB_*`; `RuntimeConfiguration` mantiene sus validaciones.
+CI incluye escaneo Ruby/JS, RuboCop, Rails, carga Zeitwerk, auditorías de integridad y Playwright. Instala Poppler para probar PDFs. El job agregado **Required checks** solo aprueba si los cinco jobs base aprobaron. `crass` queda fijado por lockfile en 1.0.8, sin excepciones para su vulnerabilidad. El test de staging elimina explícitamente `DATABASE_URL` y otras variables de base/contenedor heredadas antes de definir `DB_*`; `RuntimeConfiguration` mantiene sus validaciones.
 
 Para bloquear merges, un administrador debe crear/actualizar el ruleset de `main` en GitHub: requerir PR, revisión independiente, resolución de conversaciones y el status check **Required checks**, con rama actualizada, prohibiendo force push y borrado. El conector disponible no expone administración de protección de ramas y no hay `gh` autenticado en este entorno; la política remota no se cambió. Tras el primer CI de la rama, seleccionar el nombre exacto emitido por GitHub en el ruleset y probar que una ejecución fallida bloquee la integración. Un workflow por sí solo no configura protección remota.
 
@@ -153,7 +155,7 @@ Pendientes de producción: staging real con DNS/TLS/OAuth/SMTP, confirmar modelo
 
 Se postergan reservas, cupos, pagos, rendiciones, comisiones automáticas, CRM, chatbots, automatizaciones y envío masivo de WhatsApp, suscripciones, cobros recurrentes, alta pública y generación creativa de flyers. El buscador/comparador que ya estaba preparado en el árbol se conserva sin ampliar su alcance.
 
-## Verificación local de esta entrega
+## Verificación histórica del MVP (dbd0f019)
 
 - `bin/rails test`: 156 pruebas, 945 aserciones, sin fallos, errores ni omisiones.
 - `bin/rails zeitwerk:check`: correcto.
