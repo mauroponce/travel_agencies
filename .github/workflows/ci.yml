@@ -149,6 +149,9 @@ jobs:
           -v "$PWD/deploy/Caddyfile:/etc/caddy/Caddyfile:ro"
           caddy:2.10-alpine caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
 
+      - name: Verify disposable staging upgrade, storage persistence and backup restoration
+        run: bin/smoke-staging
+
       - name: Show container logs on failure
         if: failure()
         run: |

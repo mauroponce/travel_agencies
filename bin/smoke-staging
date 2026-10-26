@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+# Always creates a new disposable local stack; never targets an existing deployment.
+set -euo pipefail
+umask 077
+cd "$(dirname "$0")/.."
+smoke_root="$(mktemp -d)"
+export COMPOSE_PROJECT_NAME="turistack-smoke-$$-$RANDOM"
+export ENV_FILE="$smoke_root/staging.env"
+export TURISTACK_IMAGE="turistack-smoke:$(git rev-parse --short HEAD)"
+compose=(docker compose --env-file "$ENV_FILE" -f compose.staging.yml)
+cleanup() {
+  result=$?
+  trap - EXIT
+  if ((result)); then
+    "${compose[@]}" ps --all || true
+    "${compose[@]}" logs --tail=100 || true
+  fi
+  "${compose[@]}" down --volumes --remove-orphans || true
+  rm -rf "$smoke_root"
+  exit "$result"
+}
+trap cleanup EXIT
+cat > "$ENV_FILE" <<EOF
+RAILS_ENV=staging
+APP_PROTOCOL=https
+PLATFORM_BASE_DOMAIN=smoke.example.test
+PLATFORM_HOST=smoke.example.test
+AUTH_HOST=auth.smoke.example.test
+CUSTOM_DOMAIN_CNAME_TARGET=tenants.smoke.example.test
+CADDY_SITE_ADDRESSES=smoke.example.test, auth.smoke.example.test
+SECRET_KEY_BASE=$(openssl rand -hex 32)
+ACTIVE_RECORD_ENCRYPTION_KEY=$(openssl rand -hex 32)
+CADDY_ASK_SECRET=$(openssl rand -hex 32)
+POSTGRES_DB=turistack_disposable_staging
+POSTGRES_USER=smoke
+POSTGRES_PASSWORD=$(openssl rand -hex 24)
+GOOGLE_CLIENT_ID=smoke-client
+GOOGLE_CLIENT_SECRET=smoke-secret
+SMTP_HOST=localhost
+ACTIVE_STORAGE_SERVICE=local
+AGENT_ENABLED=true
+# Deliberately invalid model: no provider request can leave this stack.
+GEMINI_MODEL=local-disabled
+GEMINI_API_KEY=synthetic-smoke-key
+WEB_CONCURRENCY=1
+TURISTACK_IMAGE=$TURISTACK_IMAGE
+EOF
+"${compose[@]}" config --quiet
+docker build -t "$TURISTACK_IMAGE" .
+# Upgrade a pre-Revendedor agency database, then start the complete current stack.
+"${compose[@]}" up -d --wait --wait-timeout 120 db redis
+"${compose[@]}" run --rm migrate bin/rails db:migrate VERSION=20261020120000
+"${compose[@]}" run --rm -T migrate bin/rails runner - < test/smoke/staging_legacy_seed.rb
+"${compose[@]}" up -d --wait --wait-timeout 180 web worker
+"${compose[@]}" exec -T web bin/rails agent:finalize_hosts tenant_integrity:audit agent:audit agent:operations
+"${compose[@]}" exec -T web bin/rails runner - < test/smoke/staging_seed.rb
+"${compose[@]}" exec -T web curl --fail --silent --header 'Host: reseller.smoke.example.test' http://localhost:3000/viajes/smoke-public > "$smoke_root/public.html"
+# Check actual anonymous HTTP output, including absolute HTTPS metadata.
+ruby - "$smoke_root/public.html" <<'RUBY'
+html = File.read(ARGV.fetch(0))
+abort "missing public title" unless html.include?("Oferta smoke")
+abort "missing HTTPS canonical" unless html.include?('rel="canonical" href="https://reseller.smoke.example.test/viajes/smoke-public"')
+image = html[/property="og:image" content="([^"]+)"/, 1]
+abort "missing HTTPS image" unless image&.start_with?("https://reseller.smoke.example.test/agente/imagenes/")
+abort "private notes exposed" if html.include?("PRIVATE SMOKE NOTES")
+RUBY
+# The revision ID comes from our isolated DB; no login or signed storage URL is needed.
+image_path="$("${compose[@]}" exec -T web bin/rails runner 'puts Rails.application.routes.url_helpers.agent_public_image_path(slug: "smoke-public", revision_id: AgentTrip.find_by!(slug: "smoke-public").published_revision_id)' | tail -1)"
+"${compose[@]}" exec -T web curl --fail --silent --header 'Host: reseller.smoke.example.test' "http://localhost:3000$image_path" > "$smoke_root/public.jpg"
+test "$(od -An -tx1 -N3 "$smoke_root/public.jpg" | tr -d ' \n')" = ffd8ff
+# Production-shaped restart: persist DB, original PDF and converted JPEG volumes.
+"${compose[@]}" restart web worker
+"${compose[@]}" up -d --no-deps --wait --wait-timeout 180 web worker
+"${compose[@]}" exec -T web bin/rails runner - < test/smoke/staging_verify.rb
+# Recovery scripts run against this unique project only, with synthetic data.
+export DEPLOY_ENVIRONMENT=staging BACKUP_ROOT="$smoke_root/backups"
+bin/backup-turistack
+backup_path="$(find "$BACKUP_ROOT/staging" -mindepth 1 -maxdepth 1 -type d ! -name '*.incomplete' | head -1)"
+test -n "$backup_path"
+"${compose[@]}" exec -T web bin/rails runner 'AgentTrip.find_by!(slug: "smoke-public").update!(status: "unpublished"); File.write(Rails.root.join("storage/stale-smoke-file"), "must disappear")'
+RESTORE_CONFIRM=restore-staging bin/restore-turistack "$backup_path"
+"${compose[@]}" exec -T web bin/rails runner - < test/smoke/staging_verify.rb
+"${compose[@]}" exec -T web bin/rails runner 'abort "stale file survived restore" if File.exist?(Rails.root.join("storage/stale-smoke-file"))'
+echo 'Staging clean migrations, agency/reseller coexistence, worker, public PDF, persistence and backup/restore: OK'
