@@ -1,23 +1,30 @@
 <% content_for :title, "Turistack · Plataforma turística" %>
-<div class="min-h-screen bg-navy-dark text-white">
-  <header class="mx-auto flex max-w-6xl items-center justify-between px-6 py-7">
-    <div class="brand"><span class="brand-mark">↝</span><span>Turistack<small class="block text-[9px] tracking-[.2em] text-teal-300">PLATAFORMA TURÍSTICA</small></span></div>
-    <%= button_to auth_start_path, method: :post, data: {turbo: false}, class: "btn" do %><span class="text-lg">G</span> Ingresar con Google<% end %>
-  </header>
-  <main class="mx-auto grid min-h-[calc(100vh-100px)] max-w-6xl items-center gap-12 px-6 py-16 lg:grid-cols-2">
-    <section>
-      <div class="eyebrow !text-teal-300">TURISMO CONECTADO</div>
-      <h1 class="mt-5 text-5xl font-black leading-tight tracking-[-.04em] lg:text-7xl">Un solo lugar para vender y operar cada viaje.</h1>
-      <p class="mt-6 max-w-xl text-lg leading-8 text-slate-300">Paquetes, micros, revendedores, pasajeros, rendiciones y hojas de ruta con cupos reales y datos aislados por empresa.</p>
-      <% if Current.host_scope == "platform" && AgentWorkspace.enabled? && AgentWorkspace.self_signup_enabled? %><div class="mt-6"><%= link_to "Turistack Revendedor · Crear mi espacio independiente", agent_onboarding_path, class: "btn btn-teal" %><p class="mt-3 text-sm">Piloto de lanzamiento</p></div><% end %>
-      <div class="mt-8 flex flex-wrap gap-3"><%= button_to auth_start_path, method: :post, data: {turbo: false}, class: "btn btn-teal !px-6 !py-4" do %>Ingresar con Google →<% end %><button type="button" class="btn !px-6 !py-4" data-action="pwa#install">Instalar aplicación</button></div>
-    </section>
-    <section class="hero-gradient relative overflow-hidden rounded-[2rem] border border-white/10 p-8 shadow-2xl">
-      <div class="grid grid-cols-2 gap-4">
-        <div class="rounded-2xl bg-white p-5 text-navy"><span class="text-xs text-muted">Cupos disponibles</span><strong class="mt-3 block text-4xl">52</strong></div>
-        <div class="rounded-2xl bg-white p-5 text-navy"><span class="text-xs text-muted">Salidas activas</span><strong class="mt-3 block text-4xl">4</strong></div>
-        <div class="col-span-2 rounded-2xl bg-white/10 p-6"><span class="pill bg-orange text-navy">SUPER SALE</span><h2 class="mt-4 text-2xl font-black">Mendoza · últimos lugares</h2><p class="mt-2 text-slate-200">Una ficha pública siempre actualizada.</p></div>
-      </div>
-    </section>
-  </main>
+<% content_for :body_class, "turistack-landing" %>
+<% content_for :stylesheets do %>
+  <%= stylesheet_link_tag "landing", "data-turbo-track": "reload" %>
+<% end %>
+<% content_for :head do %>
+  <meta name="description" content="Conectá salidas, cupos, reservas, pasajeros, cobros y rendiciones de tu agencia con Turistack.">
+  <meta name="theme-color" content="#fafafa">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<% end %>
+<div data-controller="landing">
+<%= render "icons" %>
+<a class="skip" href="#main">Saltar al contenido</a>
+<header class="nav" id="nav">
+  <div class="nav-inner">
+    <a class="brand" href="#top" aria-label="Turistack, ir al inicio"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17l5-5 3.5 3.5L20 8"/><path d="M15 8h5v5"/></svg></span><span class="brand-name">turistack</span></a>
+    <nav class="nav-links" aria-label="Navegación principal"><a href="#features" class="is-active">Producto</a><a href="#tour">Cómo funciona</a><a href="#proof">Para tu equipo</a><a href="#acompanamiento">Servicio</a></nav>
+    <div class="nav-actions"><a class="btn btn-ghost" href="#tour"><svg class="ic"><use href="#i-play"></use></svg>Ver recorrido</a><%= button_to auth_start_path, method: :post, data: { turbo: false }, class: "btn btn-line login-button" do %>Ingresar con Google<% end %><button type="button" data-action="landing#toggleMenu" class="mobile-menu-button" id="menuButton" aria-label="Abrir menú" aria-expanded="false" aria-controls="mobileMenu"><svg class="ic"><use href="#i-grid"></use></svg></button></div>
+    <nav id="mobileMenu" class="mobile-menu" aria-label="Navegación móvil"><a href="#features">Producto</a><a href="#tour">Cómo funciona</a><a href="#proof">Para tu equipo</a><a href="#acompanamiento">Servicio personalizado</a><a href="#start">Comenzar</a></nav>
+  </div>
+</header>
+<main id="main">
+<%= render "hero" %>
+<%= render "features" %>
+<%= render "tour" %>
+<%= render "roles" %>
+<%= render "service" %>
+<%= render "start" %>
+</main>
 </div>

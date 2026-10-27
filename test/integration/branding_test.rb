@@ -10,6 +10,13 @@ class BrandingTest < ActionDispatch::IntegrationTest
     assert_select "title", text: "Turistack · Plataforma turística"
     assert_includes response.body, "Turistack"
     assert_not_includes response.body, "NexoViajes"
+    assert_select "body.turistack-landing"
+    assert_select "h1", text: /Cada viaje, cada venta,.*en un solo lugar\./
+    assert_select "form[action=?][method=post]", auth_start_path, count: 3
+    assert_select "select[aria-label='Cambiar perfil de demostración'] option", count: 3
+    %w[features tour proof acompanamiento start].each do |section|
+      assert_select "section[id=?]", section
+    end
   end
 
   test "new reservation codes use the Turistack prefix" do

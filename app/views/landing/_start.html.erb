@@ -1,0 +1,16 @@
+<section class="start" id="start"><div class="mesh mesh-start" aria-hidden="true"></div><div class="wrap">
+  <div class="start-head"><p class="eyebrow" data-reveal>TU AGENCIA, CONECTADA</p><h2 data-reveal style="--d:60ms">Tu próximo viaje empieza<br><em>con una operación más simple.</em></h2><p class="sub" data-reveal style="--d:120ms">Ingresá con tu cuenta de Google para acceder al espacio de tu agencia y seguir trabajando con tu equipo.</p>
+    <div class="cta-row" data-reveal>
+      <%= button_to auth_start_path, method: :post, data: { turbo: false }, class: "btn btn-lg btn-dark" do %>Ingresar con Google<svg class="ic" aria-hidden="true"><use href="#i-arrow"></use></svg><% end %>
+      <% if Current.host_scope == "tenant" %><button type="button" class="btn btn-lg btn-white" data-action="pwa#install">Instalar aplicación</button><% end %>
+    </div>
+    <% if Current.host_scope == "platform" && AgentWorkspace.enabled? && AgentWorkspace.self_signup_enabled? %>
+      <div class="landing-signup">
+        <p>¿Sos revendedor independiente?</p>
+        <%= link_to "Crear mi espacio independiente", agent_onboarding_path, class: "btn btn-white" %>
+      </div>
+    <% end %>
+    <ul class="ticks" data-reveal style="--d:240ms"><li><svg class="ic"><use href="#i-check"></use></svg>Atención personalizada</li><li><svg class="ic"><use href="#i-check"></use></svg>Implementación acompañada</li><li><svg class="ic"><use href="#i-check"></use></svg>Demostración para agencias</li></ul>
+  </div>
+  <footer class="foot"><div class="foot-brand"><a class="brand" href="#top"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17l5-5 3.5 3.5L20 8"/><path d="M15 8h5v5"/></svg></span><span class="brand-name">turistack</span></a><p>La plataforma que conecta las ventas, las personas y la operación de tu agencia de turismo.</p></div><nav class="foot-cols" aria-label="Enlaces del pie"><div><h4>Plataforma</h4><a href="#features">Funcionalidades</a><a href="#tour">Cómo funciona</a><a href="#proof">Perfiles</a></div><div><h4>Tu agencia</h4><a href="#acompanamiento">Implementación</a><a href="#acompanamiento">Acompañamiento</a><a href="#start">Acceder a Turistack</a></div><div><h4>Más información</h4><a href="#start">Comenzar</a><a href="#acompanamiento">Cómo trabajamos</a><a href="#top">Volver arriba ↑</a></div></nav><p class="foot-legal"><span>© <%= Date.current.year %> Turistack · Plataforma para agencias</span><span>Hecho para el turismo · Argentina</span></p></footer>
+</div></section>

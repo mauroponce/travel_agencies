@@ -3,7 +3,7 @@ const { test, expect } = require("@playwright/test")
 test("landing and public trip expose the real responsive experience", async ({ page }) => {
   await page.goto("/")
   await expect(page).toHaveTitle(/Turistack/)
-  await expect(page.getByRole("heading", { name: /Un solo lugar/ })).toBeVisible()
+  await expect(page.getByRole("heading", { name: /en un solo lugar/i })).toBeVisible()
   await expect(page.getByRole("button", { name: /Ingresar con Google/ }).first()).toBeVisible()
 
   await page.goto("/viajes/mendoza-super-sale")
