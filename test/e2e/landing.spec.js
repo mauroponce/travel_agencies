@@ -48,3 +48,13 @@ test("landing navigation supports the keyboard on desktop and mobile", async ({ 
     await expect(page.locator('[data-vis="2"]')).toHaveAttribute("aria-hidden", "false")
   }
 })
+
+test("Google registration starts independent agent onboarding from the landing", async ({ page }) => {
+  const registration = page.locator(".hero").getByRole("button", { name: "Registrarme con Google", exact: true })
+  await expect(registration).toBeVisible()
+  await expect(registration.locator("..")).toHaveAttribute("action", "/auth/start?purpose=agent_onboarding")
+  await registration.click()
+  await expect(page).toHaveURL(/\/auth\/continue\?request_token=/)
+  await expect(page.getByRole("heading", { name: "Continuar con Google" })).toBeVisible()
+  await expect(page.getByRole("button", { name: "Ingresar con Google", exact: true }).locator("..")).toHaveAttribute("action", "/auth/google_oauth2")
+})

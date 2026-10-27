@@ -4,8 +4,8 @@
     <a class="pill" href="#acompanamiento" data-reveal><span class="pill-badge"><svg class="ic"><use href="#i-spark"></use></svg>Nuevo</span><span>Tu agencia, <b>conectada</b></span><svg class="ic pill-arrow"><use href="#i-arrow"></use></svg></a>
     <h1 data-reveal style="--d:60ms">Cada viaje, cada venta,<br><em>en un solo lugar.</em></h1>
     <p class="lede" data-reveal style="--d:120ms">Salidas, cupos, reservas, pasajeros, cobros y rendiciones en una sola plataforma. Conectá a tu agencia con revendedores y coordinadores, sin depender de planillas interminables.</p>
-    <div class="cta-row" data-reveal style="--d:180ms"><a class="btn btn-lg btn-white" href="#tour">Ver cómo funciona</a><%= button_to auth_start_path, method: :post, data: { turbo: false }, class: "btn btn-lg btn-dark" do %>Ingresar con Google<svg class="ic" aria-hidden="true"><use href="#i-arrow"></use></svg><% end %></div>
-    <% if Current.host_scope == "platform" && AgentWorkspace.self_signup_enabled? %>
+    <div class="cta-row" data-reveal style="--d:180ms"><a class="btn btn-lg btn-white" href="#tour">Ver cómo funciona</a><%= button_to(agent_signup_available? ? auth_start_path(purpose: "agent_onboarding") : auth_start_path, method: :post, data: { turbo: false }, class: "btn btn-lg btn-dark") do %><%= agent_signup_available? ? "Registrarme con Google" : "Ingresar con Google" %><svg class="ic" aria-hidden="true"><use href="#i-arrow"></use></svg><% end %></div>
+    <% if agent_signup_available? %>
       <div class="cta-row" data-reveal style="--d:210ms"><%= link_to "Crear mi web de agente", agent_onboarding_path, class: "btn btn-lg btn-white" %></div>
     <% end %>
     <div class="trust" data-reveal style="--d:240ms"><span class="faces" aria-hidden="true"><i class="face f1"><svg class="av-alt"><use href="#av-1"></use></svg></i><i class="face f2"><svg class="av-alt"><use href="#av-2"></use></svg></i><i class="face f3"><svg class="av-alt"><use href="#av-3"></use></svg></i></span><span><b>Administrador, revendedor y coordinador</b> trabajando conectados.</span></div>

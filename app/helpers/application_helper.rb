@@ -1,4 +1,8 @@
 module ApplicationHelper
+  def agent_signup_available?
+    Current.host_scope == "platform" && AgentWorkspace.self_signup_enabled?
+  end
+
   def money(cents)
     MoneyFormatter.call(cents)
   end

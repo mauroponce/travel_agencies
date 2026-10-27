@@ -26,6 +26,12 @@ class AgentSelfSignupTest < ActionDispatch::IntegrationTest
     host! PlatformHosts.platform_host
     get root_path
     assert_select "a[href=?]", agent_onboarding_path, text: "Crear mi web de agente"
+    assert_select "form[action=?][method=post]", auth_start_path(purpose: "agent_onboarding"), count: 2 do
+      assert_select "button[data-turbo=false]", text: "Registrarme con Google"
+    end
+    assert_select ".nav-actions form[action=?]", auth_start_path do
+      assert_select "button", text: "Ingresar con Google"
+    end
     assert_difference "User.count", 1 do
       google_login(hostname: PlatformHosts.platform_host, purpose: "agent_onboarding")
     end
@@ -125,6 +131,8 @@ class AgentSelfSignupTest < ActionDispatch::IntegrationTest
     get root_path
     assert_response :success
     assert_select "a[href=?]", agent_onboarding_path, count: 0
+    assert_select "form[action=?]", auth_start_path(purpose: "agent_onboarding"), count: 0
+    assert_select "form[action=?]", auth_start_path, count: 3
     get agent_onboarding_path
     assert_response :not_found
     assert_no_difference "AgentWorkspace.count" do

@@ -15,7 +15,7 @@
 
     <%= tag.link rel: "manifest", href: pwa_manifest_path(format: :json) if Current.host_scope == "tenant" %>
 
-    <link rel="icon" href="/icon.png" type="image/png">
+    <link rel="icon" href="/favicon.png" type="image/png" sizes="512x512">
     <link rel="apple-touch-icon" href="/icon.png">
 
     <%= stylesheet_link_tag "tailwind", "agent", "data-turbo-track": "reload" %>
