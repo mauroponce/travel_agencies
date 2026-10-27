@@ -8,7 +8,7 @@ x-app-build: &app-build
 x-app-environment: &app-environment
   RAILS_ENV: development
   RAILS_DEVELOPMENT_HOSTS: ".${PLATFORM_BASE_DOMAIN:-lvh.me}"
-  APP_PORT: "3000"
+  APP_PORT: "${APP_PORT-3000}"
   DB_HOST: db
   DB_PORT: "5432"
   DB_USER: turistack

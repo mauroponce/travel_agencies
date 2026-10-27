@@ -8,8 +8,14 @@ async function signIn(page) {
   await expect(page.getByRole("heading", { name: "Todo listo para tu próximo viaje" })).toBeVisible()
 }
 
-test("agent has independent onboarding without company invitation", async ({ page }, testInfo) => {
+test("agent signs up with a subdomain and publishes a manual trip on their own website", async ({ page, browser }, testInfo) => {
   const slug = `alta-${testInfo.project.name}-${Date.now()}`
+  const platform = `http://platform.lvh.me:${port}`
+  const email = `agente-nuevo-${testInfo.project.name}@turistack.local`
+  await page.goto(platform)
+  await page.getByRole("link", { name: "Crear mi web de agente", exact: true }).click()
+  await expect(page.getByRole("heading", { name: "Tu web para vender viajes" })).toBeVisible()
+  await expect(page.getByRole("button", { name: "Ingresar con Google" }).locator("..")).toHaveAttribute("action", "/auth/start?purpose=agent_onboarding")
   await page.goto(`http://platform.lvh.me:${port}/test/sign-in?email=agente-nuevo-${testInfo.project.name}%40turistack.local&purpose=agent_onboarding`)
   if (await page.getByRole("button", { name: "Crear mi espacio" }).isVisible()) {
     await page.getByLabel("Nombre comercial").fill("Viajes independientes")
@@ -18,7 +24,41 @@ test("agent has independent onboarding without company invitation", async ({ pag
     await page.getByLabel("Subdominio", { exact: false }).fill(slug)
     await page.getByRole("button", { name: "Crear mi espacio" }).click()
   }
-  await expect(page.getByRole("link", { name: "Ingresar a mi espacio" })).toBeVisible()
+  const workspaceLink = page.getByRole("link", { name: "Ingresar a mi espacio" })
+  await expect(workspaceLink).toBeVisible()
+  const website = new URL(await workspaceLink.getAttribute("href")).origin
+  await expect(page.getByRole("link", { name: "Ver mi web", exact: true })).toHaveAttribute("href", `${website}/`)
+  await page.goto(`${website}/test/sign-in?email=${encodeURIComponent(email)}`)
+  await page.getByRole("link", { name: "Agregar viaje", exact: true }).click()
+  const title = `Bariloche de ${testInfo.project.name}`
+  await page.getByLabel("O crear una empresa nueva").fill("Operador propio")
+  await page.getByLabel("Título del viaje").fill(title)
+  await page.getByLabel("Destino", { exact: true }).fill("Bariloche")
+  await page.getByLabel("Fecha de salida").fill("2027-08-10")
+  await page.getByLabel("Precio final del proveedor").fill("850000")
+  await page.getByLabel("Flyer original", { exact: false }).setInputFiles(path.join(__dirname, "../fixtures/files/agent.png"))
+  await page.getByRole("button", { name: "Guardar borrador / revisión" }).click()
+  await expect(page.getByRole("heading", { name: title, exact: true })).toBeVisible()
+
+  const visitorContext = await browser.newContext()
+  try {
+    const visitor = await visitorContext.newPage()
+    await visitor.goto(website)
+    await expect(visitor.getByRole("heading", { name: "Viajes independientes", exact: true })).toBeVisible()
+    await expect(visitor.getByRole("link", { name: title, exact: true })).toHaveCount(0)
+    await page.getByRole("button", { name: "Publicar revisión", exact: true }).click()
+    await expect(page.getByRole("button", { name: "Copiar enlace", exact: true })).toBeVisible()
+    await visitor.reload()
+    await visitor.getByRole("link", { name: title, exact: true }).click()
+    await expect(visitor.getByRole("heading", { name: title, exact: true })).toBeVisible()
+    await expect(visitor.getByRole("link", { name: "Consultar por WhatsApp" })).toHaveAttribute("href", /^https:\/\/wa\.me\/5491155551234\?text=/)
+    await page.getByRole("button", { name: "Despublicar", exact: true }).click()
+    await expect(page.getByRole("button", { name: "Copiar enlace", exact: true })).toHaveCount(0)
+    await visitor.goto(website)
+    await expect(visitor.getByRole("link", { name: title, exact: true })).toHaveCount(0)
+  } finally {
+    await visitorContext.close()
+  }
 })
 
 test("agent provider management and manual catalog comparison work on every device", async ({ page }, testInfo) => {

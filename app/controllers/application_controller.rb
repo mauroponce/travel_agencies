@@ -31,7 +31,7 @@ class ApplicationController < ActionController::Base
   def resolve_request_host
     Current.request_id = request.request_id
     Current.ip_address = request.remote_ip
-    resolution = TenantResolver.call(request.host)
+    resolution = TenantResolver.call(request.host, path: request.path)
     Current.host_scope = resolution.scope.to_s
     Current.company = resolution.company
     Current.company_domain = resolution.company_domain

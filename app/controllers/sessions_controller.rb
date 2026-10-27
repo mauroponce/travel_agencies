@@ -4,8 +4,6 @@ class SessionsController < ApplicationController
 
   def create
     raise ActionController::RoutingError, "Not Found" unless Current.host_scope == "auth"
-    user = Auth::GoogleIdentity.call(request.env.fetch("omniauth.auth"))
-    user.update!(last_login_at: Time.current)
     authentication_request = nil
     membership = nil
     token = nil
@@ -15,6 +13,8 @@ class SessionsController < ApplicationController
       raise ActiveRecord::RecordNotFound if authentication_request.company &&
         (authentication_request.company.status != "active" || !authentication_request.company_domain.active?)
 
+      user = Auth::GoogleIdentity.call(request.env.fetch("omniauth.auth"))
+      user.update!(last_login_at: Time.current)
       membership = membership_for(authentication_request, user)
       authorized = case authentication_request.purpose
       when "company" then membership

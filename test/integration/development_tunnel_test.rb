@@ -1,0 +1,85 @@
+require "test_helper"
+
+class DevelopmentTunnelTest < ActionDispatch::IntegrationTest
+  TUNNEL_HOST = "development-tunnel.ngrok-free.app"
+
+  setup do
+    @previous_environment = Rails.env
+    @previous_variables = ENV.to_h.slice("PLATFORM_HOST", "AUTH_HOST", "APP_PROTOCOL", "APP_PORT", "AGENT_ENABLED")
+    @previous_test_mode = OmniAuth.config.test_mode
+    @previous_google_mock = OmniAuth.config.mock_auth[:google_oauth2]
+    Rails.env = "development"
+    ENV.update("PLATFORM_HOST" => TUNNEL_HOST, "AUTH_HOST" => TUNNEL_HOST,
+      "APP_PROTOCOL" => "https", "APP_PORT" => "", "AGENT_ENABLED" => "true")
+    host! TUNNEL_HOST
+    https!
+  end
+
+  teardown do
+    Rails.env = @previous_environment
+    %w[PLATFORM_HOST AUTH_HOST APP_PROTOCOL APP_PORT AGENT_ENABLED].each do |name|
+      @previous_variables.key?(name) ? ENV[name] = @previous_variables[name] : ENV.delete(name)
+    end
+    OmniAuth.config.test_mode = @previous_test_mode
+    OmniAuth.config.mock_auth[:google_oauth2] = @previous_google_mock
+  end
+
+  test "one HTTPS tunnel serves the platform and completes Google signup without a public port" do
+    get root_path
+    assert_response :success
+    assert_select "a[href=?]", agent_onboarding_path, text: "Crear mi web de agente"
+
+    post auth_start_path, params: { purpose: "agent_onboarding" }
+    assert_response :redirect
+    continue_url = URI(response.location)
+    assert_equal "https", continue_url.scheme
+    assert_equal TUNNEL_HOST, continue_url.host
+    assert_equal 443, continue_url.port
+    assert_equal auth_continue_path, continue_url.path
+    get continue_url.request_uri
+    assert_response :success
+    assert_select "form[action='/auth/google_oauth2'][method=post]"
+
+    uid = "tunnel-#{SecureRandom.hex(8)}"
+    OmniAuth.config.test_mode = true
+    OmniAuth.config.mock_auth[:google_oauth2] = OmniAuth::AuthHash.new(provider: "google_oauth2", uid:,
+      info: { email: "#{uid}@example.test", name: "Agente del túnel" }, extra: { id_info: { email_verified: true } })
+    post "/auth/google_oauth2/callback"
+    assert_response :redirect
+    exchange_url = URI(response.location)
+    assert_equal "https", exchange_url.scheme
+    assert_equal TUNNEL_HOST, exchange_url.host
+    assert_equal 443, exchange_url.port
+    assert_equal auth_exchange_path, exchange_url.path
+    get exchange_url.request_uri
+    assert_redirected_to agent_onboarding_path
+    follow_redirect!
+    assert_response :success
+    assert_select "input[name='agent_workspace[public_name]'][value='Agente del túnel']"
+
+    get exchange_url.request_uri
+    assert_response :not_found
+  end
+
+  test "shared host only grants auth scope to central auth routes in development" do
+    %w[/ /agente/alta /auth/start /auth/exchange /platform/companies].each do |path|
+      assert_equal :platform, TenantResolver.call(TUNNEL_HOST, path:).scope
+    end
+    %w[/auth/continue /auth/google_oauth2 /auth/google_oauth2/callback /auth/failure].each do |path|
+      assert_equal :auth, TenantResolver.call(TUNNEL_HOST, path:).scope
+    end
+
+    %w[test staging production].each do |environment|
+      Rails.env = environment
+      assert_equal :auth, TenantResolver.call(TUNNEL_HOST, path: "/").scope
+    end
+  end
+
+  test "an unconfigured tunnel cannot access the platform" do
+    host! "another-tunnel.ngrok-free.app"
+    get root_path
+    assert_response :not_found
+    post auth_start_path, params: { purpose: "agent_onboarding" }
+    assert_response :not_found
+  end
+end

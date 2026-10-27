@@ -1,17 +1,43 @@
-<section class="agent-onboarding agent-panel"><span class="agent-eyebrow">TURISTACK REVENDEDOR</span>
-  <h1>Tu espacio para vender viajes</h1>
-  <p>Centralizá tus proveedores, prepará fichas con IA y compartí tu catálogo. Piloto de lanzamiento.</p>
-  <% unless current_user %><%= button_to "Ingresar con Google", auth_start_path(purpose: "agent_onboarding"), data: { turbo: false }, class: "btn btn-primary" %>
+<% content_for :title, "Creá tu web de agente · Turistack" %>
+<section class="agent-onboarding agent-panel"><span class="agent-eyebrow">TURISTACK AGENTE</span>
+  <h1>Tu web para vender viajes</h1>
+  <p>Registrate con Google, elegí tu subdominio y cargá tus viajes manualmente. Cuando los publiques, tus clientes podrán verlos en tu web y consultarte por WhatsApp.</p>
+  <% unless current_user %>
+    <%= button_to "Ingresar con Google", auth_start_path(purpose: "agent_onboarding"), data: { turbo: false }, class: "btn btn-primary" %>
   <% else %>
     <% if @workspace.persisted? %>
       <h2><%= @workspace.business_name %></h2>
       <p><%= @workspace.hostname %></p>
-      <% if @workspace.active? %><%= link_to "Ingresar a mi espacio", agent_root_url(host: @workspace.hostname_registration.hostname, protocol: PlatformHosts.protocol, port: PlatformHosts.port), class: "btn btn-primary" %>
-        <p>Por seguridad, iniciá sesión con Google también en este subdominio.</p>
+      <% if @workspace.active? %>
+        <div class="agent-actions">
+          <%= link_to "Ingresar a mi espacio", agent_root_url(host: @workspace.hostname_registration.hostname, protocol: PlatformHosts.protocol, port: PlatformHosts.port), class: "btn btn-primary" %>
+          <%= link_to "Ver mi web", agent_public_catalog_url(host: @workspace.hostname_registration.hostname, protocol: PlatformHosts.protocol, port: PlatformHosts.port), class: "btn", target: "_blank", rel: "noopener" %>
+        </div>
+        <p>Iniciá sesión con Google en tu subdominio y usá «Agregar viaje» para cargar tu primera propuesta. Solo los viajes publicados aparecen en tu web.</p>
       <% else %>
         <p>Tu espacio está suspendido. Contactá a la plataforma.</p>
       <% end %>
-    <% else %><%= render "agent/errors", record: @workspace %><%= form_with model: @workspace, url: agent_onboarding_path, class: "agent-form" do |f| %><%= f.label :business_name, "Nombre comercial" %><%= f.text_field :business_name, required: true %><%= f.label :public_name, "Nombre público" %><%= f.text_field :public_name, required: true, value: @workspace.public_name.presence || current_user.name %><%= f.label :whatsapp, "WhatsApp con código de país" %><%= f.telephone_field :whatsapp, required: true, placeholder: "5491155551234" %><%= f.label :subdomain, "Subdominio (permanente durante el MVP)" %>
-        <div class="agent-inline"><%= f.text_field :subdomain, required: true, pattern: "[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?" %><span>.<%= PlatformHosts.base_domain %></span></div>
-        <%= f.submit "Crear mi espacio", class: "btn btn-primary" %><% end %><% end %>
-  <% end %></section>
+    <% else %>
+      <%= render "agent/errors", record: @workspace %>
+      <%= form_with model: @workspace, url: agent_onboarding_path, class: "agent-form" do |f| %>
+        <%= f.label :business_name, "Nombre comercial" %>
+        <%= f.text_field :business_name, required: true, autocomplete: "organization" %>
+        <%= f.label :public_name, "Nombre público" %>
+        <%= f.text_field :public_name, required: true, value: @workspace.public_name.presence || current_user.name, autocomplete: "name" %>
+        <%= f.label :whatsapp, "WhatsApp con código de país" %>
+        <%= f.telephone_field :whatsapp, required: true, placeholder: "5491155551234" %>
+        <%= f.label :subdomain, "Subdominio de tu web" %>
+        <div class="agent-inline">
+          <%= f.text_field :subdomain, required: true, pattern: "[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?", maxlength: 63, placeholder: "silvinamartinez", autocapitalize: "none", spellcheck: false, aria: { describedby: "subdomain-help" } %>
+          <span>.<%= PlatformHosts.base_domain %></span>
+        </div>
+        <small id="subdomain-help">Esta será la dirección permanente de tu web. Usá letras minúsculas, números o guiones.</small>
+        <%= f.label :presentation, "Presentación (opcional)" %>
+        <%= f.text_area :presentation, placeholder: "Contales a tus clientes qué viajes ofrecés." %>
+        <%= f.submit "Crear mi espacio", class: "btn btn-primary" %>
+      <% end %>
+    <% end %>
+    <p>Cuenta: <%= current_user.email %></p>
+    <%= button_to "Usar otra cuenta de Google", session_path, method: :delete, class: "btn" %>
+  <% end %>
+</section>

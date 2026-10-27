@@ -29,8 +29,9 @@ class AgentWorkspace < ApplicationRecord
   end
   after_create { create_hostname_registration!(hostname:) }
 
-  # The launch pilot is provisioned by operators in protected environments.
-  def self.self_signup_enabled? = Rails.env.local?
+  # Self-service registration follows the same rollout and hostname integrity
+  # checks as agent workspaces, including in staging and production.
+  def self.self_signup_enabled? = enabled?
 
   def self.enabled?
     configured = ENV.fetch("AGENT_ENABLED", Rails.env.local? ? "true" : "false") == "true"

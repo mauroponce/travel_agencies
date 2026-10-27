@@ -5,6 +5,7 @@ module Agent
     layout "agent"
 
     def show
+      response.headers["Cache-Control"] = "private, no-store"
       @workspace = current_user&.agent_workspace || AgentWorkspace.new
     end
 
@@ -15,7 +16,7 @@ module Agent
       @workspace = AgentWorkspace.new(params.expect(agent_workspace: [ :business_name, :public_name, :whatsapp, :subdomain, :presentation ]))
       @workspace.owner = current_user
       if @workspace.save
-        redirect_to agent_onboarding_path, notice: "Tu espacio está listo. Ingresá desde tu subdominio."
+        redirect_to agent_onboarding_path, notice: "Tu web está lista. Ingresá a tu panel para cargar y publicar tu primer viaje."
       else
         render :show, status: :unprocessable_entity
       end

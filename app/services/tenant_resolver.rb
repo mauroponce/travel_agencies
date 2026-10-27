@@ -4,8 +4,14 @@ class TenantResolver
 
   Result = Struct.new(:scope, :company, :company_domain, :agent_workspace, keyword_init: true)
 
-  def self.call(hostname)
+  def self.call(hostname, path: nil)
     host = PlatformHosts.normalize(hostname)
+    # A single development tunnel can serve both the platform and Google OAuth.
+    # Protected environments continue to require separate hosts.
+    if Rails.env.development? && host == PlatformHosts.platform_host && host == PlatformHosts.auth_host
+      auth_path = path.to_s.match?(%r{\A/auth/(?:continue|google_oauth2(?:/callback)?|failure)\z})
+      return Result.new(scope: auth_path ? :auth : :platform)
+    end
     return Result.new(scope: :auth, company: nil, company_domain: nil) if host == PlatformHosts.auth_host
     return Result.new(scope: :platform, company: nil, company_domain: nil) if host == PlatformHosts.platform_host
 
