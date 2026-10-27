@@ -1,9 +1,17 @@
-<main class="mx-auto max-w-6xl p-6">
-  <h1 class="text-3xl font-bold">Cuentas Turistack Revendedor</h1>
+<div class="page-heading">
+  <div><div class="eyebrow">OPERACIÓN DE PLATAFORMA</div><h1 class="page-title">Cuentas Turistack Revendedor</h1><p class="subtitle">Administrá los espacios y las webs de los agentes.</p></div>
   <%= link_to "Crear revendedor", new_platform_agent_workspace_path, class: "btn btn-primary" %>
-  <%= link_to "Empresas", platform_companies_path, class: "btn" %><% @workspaces.each do |workspace| %>
-    <section class="card mt-4 p-4">
-      <h2><%= workspace.business_name %></h2>
-      <p><%= workspace.owner&.email || workspace.invited_email %> · <%= workspace.hostname %></p>
-      <%= form_with model: workspace, url: platform_agent_workspace_path(workspace) do |f| %><%= f.select :status, [["Activo", "active"], ["Suspendido", "suspended"]] %><%= f.submit "Actualizar estado", class: "btn" %><% end %></section>
-  <% end %><%= render "agent/pagination", pagination: @pagination %></main>
+</div>
+<div class="space-y-5">
+  <% @workspaces.each do |workspace| %>
+    <section class="card card-body">
+      <h2 class="text-lg font-bold"><%= workspace.business_name %></h2>
+      <p class="subtitle"><%= workspace.owner&.email || workspace.invited_email %> · <%= workspace.hostname %></p>
+      <%= form_with model: workspace, url: platform_agent_workspace_path(workspace), class: "mt-4 flex flex-wrap items-end gap-3" do |f| %>
+        <div><%= f.label :status, "Estado de #{workspace.business_name}" %><%= f.select :status, [["Activo", "active"], ["Suspendido", "suspended"]] %></div>
+        <%= f.submit "Actualizar estado", class: "btn" %>
+      <% end %>
+    </section>
+  <% end %>
+</div>
+<%= render "agent/pagination", pagination: @pagination %>

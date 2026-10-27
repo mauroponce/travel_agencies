@@ -47,6 +47,9 @@ module ApplicationHelper
 
   def navigation_sections
     case current_role
+    when "operator"
+      { "Plataforma" => [ [ "Empresas y dominios", platform_companies_path, "layers" ],
+        [ "Revendedores", platform_agent_workspaces_path, "users" ] ] }
     when "admin"
       {
         "General" => [ [ "Resumen", dashboard_path, "grid" ], [ "Viajes", departure_offers_path, "bus" ],

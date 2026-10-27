@@ -30,6 +30,21 @@ class ScreenSmokeTest < ActionDispatch::IntegrationTest
     assert_redirected_to departure_offer_path(@trip[:offer])
   end
 
+  test "platform operator can navigate companies and agents through the shared shell" do
+    operator = create_platform_operator
+    login_as(operator)
+
+    [ platform_companies_path, new_platform_company_path, platform_agent_workspaces_path, new_platform_agent_workspace_path ].each do |path|
+      get path
+      assert_response :success, "expected #{path} to render for an operator without a company"
+      assert_select "main", count: 1
+      assert_select "aside[aria-label='Menú principal'] a[href=?]", platform_companies_path
+      assert_select "aside[aria-label='Menú principal'] a[href=?]", platform_agent_workspaces_path
+      assert_select "a.sidebar-brand[href=?]", platform_companies_path
+      assert_select "form[action=?]", context_path, count: 0
+    end
+  end
+
   test "pagination links target their Turbo frame and page the collection" do
     31.times do |index|
       @user.notifications.create!(company: @company, event_type: "test", title: "Aviso #{index}", body: "Detalle",

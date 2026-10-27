@@ -22,7 +22,7 @@ class AuthenticationController < ApplicationController
   def continue
     require_auth_host!
     authentication_request = AuthenticationRequest.find_available(params[:request_token])
-    return render plain: "La solicitud de acceso venció. Volvé a la agencia e intentá nuevamente.", status: :unprocessable_entity unless authentication_request
+    return render :expired, status: :unprocessable_entity unless authentication_request
 
     session[:authentication_request_id] = authentication_request.id
     render :continue

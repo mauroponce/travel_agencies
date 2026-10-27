@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="es-AR">
   <head>
     <title><%= content_for(:title) || current_company&.name || ENV.fetch("PLATFORM_NAME", "Turistack") %></title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -8,6 +8,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
+    <%= render "shared/design_head" %>
     <%= tag.meta name: "vapid-public-key", content: ENV["VAPID_PUBLIC_KEY"] if ENV["VAPID_PUBLIC_KEY"].present? %>
 
     <%= yield :head %>
@@ -15,27 +16,23 @@
     <%= tag.link rel: "manifest", href: pwa_manifest_path(format: :json) if Current.host_scope == "tenant" %>
 
     <link rel="icon" href="/icon.png" type="image/png">
-    <link rel="icon" href="/icon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="/icon.png">
 
-    <%# Includes all stylesheet files in app/assets/stylesheets %>
-    <% if content_for?(:stylesheets) %>
-      <%= yield :stylesheets %>
-    <% else %>
-      <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
-    <% end %>
+    <%= stylesheet_link_tag "tailwind", "agent", "data-turbo-track": "reload" %>
+    <%= yield :stylesheets %>
     <%= javascript_importmap_tags %>
   </head>
 
-  <body class="<%= content_for(:body_class) %>" data-controller="pwa">
-    <% if current_user && current_company && current_membership %>
+  <body class="cadence-ui <%= content_for(:body_class) %>" data-controller="pwa">
+    <%= render "shared/icon_symbols" %>
+    <% if current_user && ((current_company && current_membership) || current_role == "operator") %>
       <%= render "shared/app_shell" %>
     <% else %>
       <%= yield %>
     <% end %>
     <% flash.each do |type, message| %>
       <% next if type.to_s == "passenger_form_token" %>
-      <div class="flash <%= content_for?(:body_class) ? 'landing-flash' : (type.to_s == 'alert' ? 'bg-red-700 text-white' : 'bg-navy text-white') %>" data-controller="dismiss"><%= message %></div>
+      <div class="flash <%= 'flash-alert' if type.to_s == 'alert' %>" role="status" data-controller="dismiss"><%= message %></div>
     <% end %>
   </body>
 </html>

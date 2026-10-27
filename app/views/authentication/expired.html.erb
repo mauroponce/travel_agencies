@@ -1,0 +1,10 @@
+<% content_for :title, "Volvé a iniciar sesión · Turistack" %>
+<main class="access-page">
+  <section class="access-card" aria-labelledby="access-title">
+    <%= render "shared/brand" %>
+    <span class="access-eyebrow">ACCESO SEGURO</span>
+    <h1 id="access-title">Volvé a iniciar sesión</h1>
+    <p class="access-description">La solicitud de acceso venció. Volvé a tu espacio de Turistack e intentá nuevamente.</p>
+    <%= link_to "Volver a Turistack", PlatformHosts.url(host: PlatformHosts.platform_host), class: "btn btn-primary access-button" %>
+  </section>
+</main>

@@ -360,7 +360,13 @@ h1{font-size:clamp(25px,2.7vw,32px);line-height:1.12;letter-spacing:-.045em;font
 }
 @media(max-width:390px){.content{padding-inline:11px}.heading h1{font-size:24px}.kpi-number{font-size:24px}.kpi{padding:12px}.fin-card strong{font-size:20px}.section-head .legend{display:none}.chart-footer{flex-direction:column}.field-grid{grid-template-columns:1fr}.field.full{grid-column:auto}.modal-foot{align-items:flex-start;flex-direction:column}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important}}
+
+/* Turistack brand assets */
+.turistack-logo{display:block;width:180px;max-width:100%;height:auto;aspect-ratio:3/1;object-fit:contain;flex-shrink:0}
+.turistack-symbol{display:block;width:32px;height:32px;object-fit:contain;flex-shrink:0}
+.mark{background:transparent;color:inherit;width:166px;height:55px;min-width:32px;border-radius:0}.mark .turistack-symbol{display:none}.brand-word .turistack-logo{width:166px}.shell.collapsed .mark{width:32px;height:32px}.shell.collapsed .mark .turistack-symbol{display:block}@media(max-width:760px){.shell.collapsed .mark{width:166px;height:55px}.shell.collapsed .mark .turistack-symbol{display:none}}.top-logo .turistack-logo{width:132px;margin:-5px auto -4px}
 </style>
+<link rel="icon" href="../../public/icon.png" type="image/png">
 </head>
 <body>
 <svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
@@ -396,8 +402,7 @@ h1{font-size:clamp(25px,2.7vw,32px);line-height:1.12;letter-spacing:-.045em;font
 <div id="shell" class="shell">
   <aside id="sidebar" class="sidebar" aria-label="Menú principal">
     <div class="sidebar-logo">
-      <button class="mark" id="expandBtn" type="button" aria-label="Expandir menú" title="Expandir menú"><svg class="ic" aria-hidden="true"><use href="#i-activity"/></svg></button>
-      <strong class="brand-word">turistack</strong>
+      <button class="mark" id="expandBtn" type="button" aria-label="Expandir menú" title="Expandir menú"><img src="../../public/icon.png" alt="" width="512" height="512" class="turistack-symbol"><span class="brand-word"><img src="../../public/brand/logo_turistack.png" alt="Turistack" width="2172" height="724" class="turistack-logo"></span></button>
       <button id="collapseBtn" type="button" class="side-collapse" title="Contraer barra lateral" aria-label="Contraer barra lateral"><svg class="ic sm"><use href="#i-chevron-left"/></svg></button>
     </div>
     <button id="sideSearchBtn" class="sidebar-search" type="button" aria-label="Buscar en Turistack"><svg class="ic sm"><use href="#i-search"/></svg><span class="srch-label">Buscar...</span><kbd>⌘K</kbd></button>
@@ -434,7 +439,7 @@ h1{font-size:clamp(25px,2.7vw,32px);line-height:1.12;letter-spacing:-.045em;font
   <div class="main-shell">
     <header class="topbar">
       <div style="display:flex;align-items:center;gap:8px;min-width:0"><button id="mobileMenuBtn" type="button" class="mobile-menu" aria-label="Abrir menú" aria-expanded="false"><svg class="ic lg"><use href="#i-menu"/></svg></button><button id="topSearchBtn" type="button" class="search-trigger"><svg class="ic sm"><use href="#i-search"/></svg><span class="search-placeholder">Buscar viajes, reservas, personas...</span><kbd>⌘K</kbd></button></div>
-      <div class="top-logo"><b>Turistack</b><span>Panel de empresa · datos ilustrativos</span></div>
+      <div class="top-logo"><img src="../../public/brand/logo_turistack.png" alt="Turistack" width="2172" height="724" class="turistack-logo"><span>Panel de empresa · datos ilustrativos</span></div>
       <div class="top-right">
         <button class="icon-btn" type="button" id="noticeButton" aria-label="Abrir notificaciones"><svg class="ic"><use href="#i-bell"/></svg><span class="notify-dot" id="notifyDot"></span></button>
         <div class="profile-wrap"><button type="button" id="profileBtn" class="profile-btn" aria-expanded="false"><span class="avatar">CA</span><span class="profile-copy"><b>Agencia Demo</b><small>Administrador <svg class="ic"><use href="#i-chevron-down"/></svg></small></span></button>

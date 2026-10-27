@@ -2,17 +2,17 @@
    Scoped to the public landing so application screens retain their styles. */
 body.turistack-landing{
   
-  --bg:#fafafa;
-  --bg-2:#f5f5f5;
-  --surface:#fff;
-  --line:#e8e8ec;
-  --line-soft:#f0f0f3;
+  --bg:var(--cadence-bg);
+  --bg-2:var(--cadence-bg-soft);
+  --surface:var(--cadence-surface);
+  --line:var(--cadence-line);
+  --line-soft:var(--cadence-line-soft);
 
   
-  --ink:#0a0a0c;
-  --ink-2:#3d3d44;
-  --muted:#6c6c76;
-  --faint:#9b9ba5;
+  --ink:var(--cadence-ink);
+  --ink-2:var(--cadence-ink-secondary);
+  --muted:var(--cadence-muted);
+  --faint:var(--cadence-faint);
 
   
   --a-yellow:#ffd166;
@@ -225,13 +225,6 @@ body.turistack-landing .nav-inner{
   display:flex;align-items:center;gap:28px;
 }
 body.turistack-landing .brand{display:inline-flex;align-items:center;gap:9px;font-weight:700;letter-spacing:-.03em;font-size:17px}
-body.turistack-landing .brand-mark{
-  display:grid;place-items:center;width:26px;height:26px;border-radius:8px;
-  background:linear-gradient(140deg,#22222a,#0a0a0c);color:#fff;
-}
-body.turistack-landing .brand-mark svg{width:17px;height:17px;fill:currentColor;stroke:none}
-body.turistack-landing .brand-mark.sm{width:19px;height:19px;border-radius:6px}
-body.turistack-landing .brand-mark.sm svg{width:13px;height:13px}
 body.turistack-landing .nav-links{display:flex;align-items:center;gap:4px;margin-left:6px}
 body.turistack-landing .nav-links a{
   padding:8px 12px;border-radius:999px;
@@ -808,9 +801,6 @@ body.turistack-landing .mini-spark.p2 path{stroke:var(--a-violet)}
 body.turistack-landing .mini-spark.p3 path{stroke:var(--a-blue)}
 body.turistack-landing{color-scheme:light}
 body.turistack-landing{overflow-x:hidden}
-body.turistack-landing .brand-mark svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
-body.turistack-landing .brand-mark.sm svg{width:14px;height:14px}
-body.turistack-landing .brand-name{letter-spacing:-.045em}
 body.turistack-landing .nav-actions .btn-ghost{gap:7px}
 body.turistack-landing .hero-head h1{max-width:26ch}
 body.turistack-landing .hero-shot{animation:none}
@@ -990,10 +980,6 @@ body.turistack-landing .nav::before { content: ""; position: absolute; inset: 0p
 body.turistack-landing .nav.is-stuck { padding: 9px 0px; }
 body.turistack-landing .nav-inner { position: relative; z-index: 1; width: 100%; max-width: var(--wrap); margin-inline: auto; padding-inline: var(--pad); display: flex; align-items: center; gap: 28px; }
 body.turistack-landing .brand { display: inline-flex; align-items: center; gap: 9px; font-weight: 700; letter-spacing: -0.03em; font-size: 17px; }
-body.turistack-landing .brand-mark { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 8px; background: linear-gradient(140deg, rgb(34, 34, 42), rgb(10, 10, 12)); color: rgb(255, 255, 255); }
-body.turistack-landing .brand-mark svg { width: 17px; height: 17px; fill: currentcolor; stroke: none; }
-body.turistack-landing .brand-mark.sm { width: 19px; height: 19px; border-radius: 6px; }
-body.turistack-landing .brand-mark.sm svg { width: 13px; height: 13px; }
 body.turistack-landing .nav-links { display: flex; align-items: center; gap: 4px; margin-left: 6px; }
 body.turistack-landing .nav-links a { padding: 8px 12px; border-radius: 999px; font-size: 14px; color: var(--muted); transition: color 0.25s, background-color 0.25s; }
 body.turistack-landing .nav-links a:hover { color: var(--ink); background: rgba(10, 10, 12, 0.043); }
@@ -1356,9 +1342,6 @@ body.turistack-landing .mini-spark.p2 path { stroke: var(--a-violet); }
 body.turistack-landing .mini-spark.p3 path { stroke: var(--a-blue); }
 body.turistack-landing { color-scheme: light; }
 body.turistack-landing { overflow-x: hidden; }
-body.turistack-landing .brand-mark svg { width: 18px; height: 18px; fill: none; stroke: currentcolor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
-body.turistack-landing .brand-mark.sm svg { width: 14px; height: 14px; }
-body.turistack-landing .brand-name { letter-spacing: -0.045em; }
 body.turistack-landing .nav-actions .btn-ghost { gap: 7px; }
 body.turistack-landing .hero-head h1 { max-width: 26ch; }
 body.turistack-landing .hero-shot { animation: auto ease 0s 1 normal none running none; }
@@ -1501,3 +1484,6 @@ body.turistack-landing .app-role-select:focus-visible { outline: 2px solid var(-
 @media (max-width: 900px) and (prefers-reduced-motion: reduce) { body.turistack-landing .vis:not(.is-active) { opacity: 1; } }
 body.turistack-landing .landing-enhanced [data-reveal]:not(.is-in) { opacity: 0; transform: translate3d(0, 14px, 0); }
 body.turistack-landing .occupancy-label { font-size: 9px; color: var(--faint); }
+
+body.turistack-landing .brand .turistack-logo { width: 180px; }
+body.turistack-landing .app-brand .turistack-logo { width: 108px; }

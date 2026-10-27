@@ -1,5 +1,7 @@
 <% content_for :title, "Creá tu web de agente · Turistack" %>
-<section class="agent-onboarding agent-panel"><span class="agent-eyebrow">TURISTACK AGENTE</span>
+<section class="agent-onboarding agent-panel">
+  <%= render "shared/brand" %>
+  <span class="agent-eyebrow">TURISTACK AGENTE</span>
   <h1>Tu web para vender viajes</h1>
   <p>Registrate con Google, elegí tu subdominio y cargá tus viajes manualmente. Cuando los publiques, tus clientes podrán verlos en tu web y consultarte por WhatsApp.</p>
   <% unless current_user %>

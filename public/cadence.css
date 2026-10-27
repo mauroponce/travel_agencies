@@ -1,0 +1,58 @@
+:root {
+  color-scheme: light;
+  --cadence-bg: #fafafa;
+  --cadence-bg-soft: #f5f5f5;
+  --cadence-surface: #fff;
+  --cadence-line: #e8e8ec;
+  --cadence-line-soft: #f0f0f3;
+  --cadence-ink: #0a0a0c;
+  --cadence-ink-secondary: #3d3d44;
+  --cadence-muted: #6c6c76;
+  --cadence-faint: #9b9ba5;
+  --cadence-peach: #ffb37a;
+  --cadence-coral: #ff8a6b;
+  --cadence-pink: #ff7ea8;
+  --cadence-violet: #a78cf7;
+  --cadence-blue: #7cc0ff;
+  --cadence-mint: #8fe0b0;
+  --cadence-accent: #7359ac;
+  --cadence-font: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --cadence-shadow: 0 1px 2px rgb(14 14 20 / 4%), 0 6px 18px rgb(14 14 20 / 5%);
+  --cadence-gradient: linear-gradient(110deg, #fff6eb, #fff0f5 50%, #f3edff);
+}
+.cadence-ui { margin: 0; min-height: 100svh; background: var(--cadence-bg); color: var(--cadence-ink); font-family: var(--cadence-font); font-size: 13px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+.cadence-ui *, .cadence-ui *::before, .cadence-ui *::after { box-sizing: border-box; }
+.cadence-ui :focus-visible { outline: 2px solid var(--cadence-violet); outline-offset: 3px; }
+.cadence-ui .font-black { font-weight: 700; }
+.cadence-brand { display: flex; align-items: center; gap: 9px; color: var(--cadence-ink); font-size: 19px; font-weight: 800; letter-spacing: -.055em; }
+/* Shared brand assets retain their original transparent canvas and proportions. */
+.turistack-logo { display: block; width: 180px; max-width: 100%; height: auto; aspect-ratio: 3 / 1; object-fit: contain; flex-shrink: 0; }
+.turistack-symbol { display: block; width: 34px; height: 34px; object-fit: contain; flex-shrink: 0; }
+.cadence-brand .turistack-logo { width: 210px; }
+.cadence-shell .sidebar-brand > .turistack-symbol { display: none; }
+.cadence-shell .sidebar-brand .turistack-logo { width: 170px; }
+.cadence-shell .sidebar-logo .sidebar-brand small { margin-top: -5px; padding-left: 16px; }
+.cadence-shell .topbar-brand .turistack-logo { width: 132px; margin: -5px auto -4px; }
+.agent-sidebar-collapsed .sidebar-brand > .turistack-symbol { display: block; }
+@media (max-width: 760px) { .agent-sidebar-collapsed .sidebar-brand > .turistack-symbol { display: none; } }
+.access-page { display: grid; min-height: 100svh; align-content: center; justify-items: center; padding: 48px 20px; background: radial-gradient(ellipse at 15% 15%, #fff5ed, transparent 45%), radial-gradient(ellipse at 85% 85%, #f3edff, transparent 45%), var(--cadence-bg); }
+.access-card { position: relative; width: min(100%, 480px); overflow: hidden; padding: 38px; border: 1px solid var(--cadence-line); border-radius: 28px; background: var(--cadence-surface); box-shadow: var(--cadence-shadow); }
+.access-card::before { content: ""; position: absolute; inset: 0 0 auto; height: 4px; background: linear-gradient(90deg, var(--cadence-peach), var(--cadence-pink), var(--cadence-violet)); }
+.access-card .cadence-brand { margin-bottom: 36px; }
+.access-eyebrow { display: block; margin-bottom: 9px; color: var(--cadence-accent); font-size: 10px; font-weight: 650; letter-spacing: .13em; text-transform: uppercase; }
+.access-card h1 { margin: 0; color: var(--cadence-ink); font-size: clamp(25px, 4vw, 30px); font-weight: 700; line-height: 1.18; letter-spacing: -.045em; overflow-wrap: anywhere; }
+.access-description { margin: 14px 0 28px; color: var(--cadence-muted); font-size: 14px; line-height: 1.75; }
+.access-card .access-button { width: 100%; min-height: 44px; }
+.access-note { margin: 20px 0 0; color: var(--cadence-muted); font-size: 11px; line-height: 1.7; }
+.cadence-action { display: inline-flex; min-height: 42px; align-items: center; justify-content: center; padding: 10px 20px; border: 1px solid var(--cadence-ink); border-radius: 999px; background: var(--cadence-ink); color: white; font: 600 12px/1.5 var(--cadence-font); text-decoration: none; }
+.cadence-action:hover { background: #303037; }
+.status-code { display: block; margin-bottom: 12px; color: var(--cadence-accent); font-size: 48px; font-weight: 700; line-height: 1; letter-spacing: -.05em; }
+.cadence-error .access-card { text-align: center; }
+.cadence-error .cadence-brand { justify-content: center; }
+@media (max-width: 600px) {
+  .access-page { padding: 24px 16px; }
+  .access-card { padding: 28px 24px; border-radius: 22px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cadence-ui *, .cadence-ui *::before, .cadence-ui *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+}

@@ -400,7 +400,13 @@ body.modal-active{overflow:hidden}
 .compare-bar .btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
 .compare-table{min-width:520px}.compare-table th:not(:first-child){min-width:135px}
 @media(max-width:760px){.compare-chip{right:8px;top:8px;font-size:9px}}
-</style></head>
+
+/* Turistack brand assets */
+.turistack-logo{display:block;width:180px;max-width:100%;height:auto;aspect-ratio:3/1;object-fit:contain;flex-shrink:0}
+.turistack-symbol{display:block;width:32px;height:32px;object-fit:contain;flex-shrink:0}
+.mark{background:transparent;color:inherit;width:166px;height:55px;min-width:32px;border-radius:0}.mark .turistack-symbol{display:none}.brand-word .turistack-logo{width:166px}.shell.collapsed .mark{width:32px;height:32px}.shell.collapsed .mark .turistack-symbol{display:block}@media(max-width:760px){.shell.collapsed .mark{width:166px;height:55px}.shell.collapsed .mark .turistack-symbol{display:none}}.top-logo .turistack-logo{width:132px;margin:-5px auto -4px}
+</style><link rel="icon" href="../../public/icon.png" type="image/png">
+</head>
 <body>
 <svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
  <symbol id="i-activity" viewBox="0 0 24 24"><path d="M3 17l5-5 4 4 8-9M15 7h5v5"/></symbol>
@@ -458,7 +464,7 @@ body.modal-active{overflow:hidden}
 <symbol id="i-git-compare" viewBox="0 0 24 24"><path d="M6 4v16M18 4v16M3 8l3-4 3 4M15 16l3 4 3-4M9 12h6"/></symbol></svg>
 <div id="shell" class="shell">
 <aside id="sidebar" class="sidebar" aria-label="Navegación principal">
- <div class="sidebar-logo"><button class="mark" id="expandBtn" title="Expandir menú" aria-label="Expandir menú"><svg class="ic"><use href="#i-activity"/></svg></button><strong class="brand-word">turistack</strong><button id="collapseBtn" class="side-collapse" aria-label="Contraer menú"><svg class="ic sm"><use href="#i-chevron-left"/></svg></button></div>
+ <div class="sidebar-logo"><button class="mark" id="expandBtn" title="Expandir menú" aria-label="Expandir menú"><img src="../../public/icon.png" alt="" width="512" height="512" class="turistack-symbol"><span class="brand-word"><img src="../../public/brand/logo_turistack.png" alt="Turistack" width="2172" height="724" class="turistack-logo"></span></button><button id="collapseBtn" class="side-collapse" aria-label="Contraer menú"><svg class="ic sm"><use href="#i-chevron-left"/></svg></button></div>
  <button class="sidebar-search" data-action="global-search"><svg class="ic sm"><use href="#i-search"/></svg><span class="srch-label">Buscar en Turistack...</span><kbd>⌘K</kbd></button>
  <div class="side-group"><div class="side-label">MI ESPACIO</div><nav class="side-nav">
  <button class="nav-link active" data-view="home"><svg class="ic"><use href="#i-grid"/></svg><span class="nav-text">Resumen</span></button>
@@ -477,7 +483,7 @@ body.modal-active{overflow:hidden}
 </aside>
 <div class="main-shell"><header class="topbar">
  <div style="display:flex;align-items:center;gap:8px;min-width:0"><button class="mobile-menu" id="mobileMenuBtn" aria-label="Abrir menú"><svg class="ic lg"><use href="#i-menu"/></svg></button><button class="search-trigger" data-action="global-search"><svg class="ic sm"><use href="#i-search"/></svg><span class="search-placeholder">Buscar viajes, empresas...</span><kbd>⌘K</kbd></button></div>
- <div class="top-logo"><b>Turistack</b><span>Espacio Revendedor · demostración</span></div>
+ <div class="top-logo"><img src="../../public/brand/logo_turistack.png" alt="Turistack" width="2172" height="724" class="turistack-logo"><span>Espacio Revendedor · demostración</span></div>
  <div class="top-right"><button class="icon-btn" id="noticeBtn" aria-label="Avisos"><svg class="ic"><use href="#i-bell"/></svg><span class="notify-dot"></span></button>
  <div class="profile-wrap"><button id="profileBtn" class="profile-btn" aria-expanded="false"><span class="avatar">SM</span><span class="profile-copy"><b id="profileName">Silvina Martínez</b><small>Revendedora <svg class="ic"><use href="#i-chevron-down"/></svg></small></span></button><div class="profile-menu" id="profileMenu" role="menu"><strong id="profileMenuName">Silvina Martínez</strong><span>Espacio independiente · demo</span><hr><button class="action-row" data-action="edit-profile"><svg class="ic sm"><use href="#i-edit"/></svg><span class="small">Editar perfil y WhatsApp</span></button><button class="action-row" data-action="reset"><svg class="ic sm"><use href="#i-refresh"/></svg><span class="small">Restablecer datos de demostración</span></button></div></div>
  </div>

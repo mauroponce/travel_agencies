@@ -1,7 +1,9 @@
-<main class="mx-auto max-w-3xl p-6">
-  <h1 class="text-3xl font-bold">Crear revendedor</h1>
+<div class="page-heading">
+  <div><div class="eyebrow">NUEVO ESPACIO</div><h1 class="page-title">Crear revendedor</h1><p class="subtitle">Invitá a un agente y configurá su web.</p></div>
+</div>
+<section class="card card-body max-w-3xl">
   <%= render "agent/errors", record: @workspace %>
-  <%= form_with model: @workspace, url: platform_agent_workspaces_path, class: "agent-form card p-6" do |f| %>
+  <%= form_with model: @workspace, url: platform_agent_workspaces_path, class: "agent-form" do |f| %>
     <%= f.label :business_name, "Nombre comercial" %><%= f.text_field :business_name, required: true %>
     <%= f.label :public_name, "Nombre público" %><%= f.text_field :public_name, required: true %>
     <%= f.label :invited_email, "Correo de Google del revendedor" %><%= f.email_field :invited_email, required: true %>
@@ -9,5 +11,6 @@
     <%= f.label :whatsapp, "WhatsApp comercial con código de país" %><%= f.telephone_field :whatsapp, required: true %>
     <p>Se enviará una invitación. El acceso requiere ingresar con esa cuenta de Google.</p>
     <%= f.submit "Crear y enviar invitación", class: "btn btn-primary" %>
+    <%= link_to "Cancelar", platform_agent_workspaces_path, class: "btn" %>
   <% end %>
-</main>
+</section>

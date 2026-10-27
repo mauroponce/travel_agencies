@@ -1,7 +1,7 @@
 module Platform
   class CompanyDomainsController < ApplicationController
     rescue_from ActiveRecord::RecordNotUnique do
-      render plain: "El hostname ya está registrado.", status: :unprocessable_entity
+      render "shared/action_error", locals: { message: "El hostname ya está registrado." }, status: :unprocessable_entity
     end
     before_action :require_operator
     before_action :set_company

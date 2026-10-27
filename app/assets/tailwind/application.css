@@ -1,17 +1,18 @@
 @import "tailwindcss";
+@import "../../../public/cadence.css";
 
 @theme {
-  --color-navy: #172745;
-  --color-navy-dark: #101d34;
-  --color-teal: #138f82;
-  --color-surface: #f5f7fb;
-  --color-line: #e7ebf1;
-  --color-muted: #7d899d;
-  --color-orange: #e99c51;
+  --color-navy: var(--cadence-ink);
+  --color-navy-dark: var(--cadence-ink);
+  --color-teal: var(--cadence-accent);
+  --color-surface: var(--cadence-bg);
+  --color-line: var(--cadence-line);
+  --color-muted: var(--cadence-muted);
+  --color-orange: #bd7848;
   --font-sans: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
-/* Cadence private application shell. Scoped so public pages and forms keep their existing contract. */
+/* Cadence application shell; all layouts share the foundation in public/cadence.css. */
 .cadence-icon-symbols { position: absolute; width: 0; height: 0; overflow: hidden; }
 .cadence-icon { width: 17px; height: 17px; display: block; flex: none; fill: none; stroke: currentColor; stroke-width: 1.65; stroke-linecap: round; stroke-linejoin: round; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
@@ -20,16 +21,6 @@ html:has(.cadence-shell), body:has(.cadence-shell) { max-width: 100%; overflow-x
 .cadence-shell :focus-visible { outline: 2px solid #a78cf7; outline-offset: 3px; }
 
 .cadence-shell {
-  --cadence-line: #e8e8ec;
-  --cadence-line-soft: #f0f0f3;
-  --cadence-ink: #0a0a0c;
-  --cadence-muted: #6c6c76;
-  --cadence-faint: #9b9ba5;
-  --cadence-peach: #ffb37a;
-  --cadence-coral: #ff8a6b;
-  --cadence-pink: #ff7ea8;
-  --cadence-violet: #a78cf7;
-  --cadence-blue: #7cc0ff;
   display: grid;
   grid-template-columns: 234px minmax(0, 1fr);
   min-height: 100svh;
@@ -44,8 +35,6 @@ html:has(.cadence-shell), body:has(.cadence-shell) { max-width: 100%; overflow-x
 .cadence-shell .sidebar-brand > span:last-child { min-width: 0; }
 .cadence-shell .sidebar-brand strong { display: block; font-size: 17px; font-weight: 800; line-height: 1.05; letter-spacing: -.055em; }
 .cadence-shell .sidebar-brand small { display: block; max-width: 150px; margin-top: 4px; overflow: hidden; color: var(--cadence-faint); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
-.cadence-shell .brand-mark { display: grid; width: 28px; height: 28px; flex: 0 0 28px; place-items: center; border-radius: 9px; background: linear-gradient(140deg, #22222a, #0a0a0c); color: #fff; box-shadow: none; }
-.cadence-shell .brand-mark .cadence-icon { width: 16px; height: 16px; stroke-width: 2; }
 .cadence-shell .sidebar-close { display: none; margin-left: auto; padding: 7px; border-radius: 8px; color: var(--cadence-faint); }
 .cadence-shell .sidebar-group { margin-top: 20px; }
 .cadence-shell .sidebar-label { margin: 0 6px 8px; color: var(--cadence-faint); font-size: 9px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; }
@@ -80,6 +69,7 @@ html:has(.cadence-shell), body:has(.cadence-shell) { max-width: 100%; overflow-x
 .cadence-shell .profile-copy span { color: var(--cadence-muted); font-size: 10px; }
 .cadence-shell .profile-switcher select { width: 22px; height: 30px; padding: 0; border: 0; border-radius: 6px; background: transparent; color: transparent; cursor: pointer; box-shadow: none; }
 .cadence-shell .profile-switcher::after { content: ""; position: absolute; right: 7px; width: 5px; height: 5px; border-right: 1.5px solid #777782; border-bottom: 1.5px solid #777782; transform: rotate(45deg); pointer-events: none; }
+.cadence-shell .profile-static::after { content: none; }
 .cadence-shell .content { width: 100%; max-width: 1680px; margin: auto; padding: 20px 26px 56px; }
 
 /* Dashboard components mirror the supplied Cadence reference without leaking into other screens. */
@@ -258,9 +248,10 @@ html:has(.cadence-shell), body:has(.cadence-shell) { max-width: 100%; overflow-x
 }
 
 @layer base {
-  html { @apply bg-surface text-navy antialiased; }
+  html { @apply bg-surface font-sans text-navy antialiased; }
   body { @apply min-h-screen bg-surface; }
   input, select, textarea { @apply w-full rounded-xl border border-line bg-white px-3 py-2.5 text-sm outline-none focus:border-teal focus:ring-4 focus:ring-teal/10; }
+  input[type="checkbox"], input[type="radio"] { width: auto; accent-color: var(--cadence-accent); }
   label { @apply mb-1.5 block text-xs font-bold text-slate-600; }
   table { @apply w-full text-left text-sm; }
   th { @apply bg-slate-50 px-4 py-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-400; }
@@ -269,28 +260,27 @@ html:has(.cadence-shell), body:has(.cadence-shell) { max-width: 100%; overflow-x
 
 @layer components {
   .app-shell { @apply flex min-h-screen; }
-  .sidebar { @apply fixed inset-y-0 left-0 z-30 hidden w-64 flex-col bg-navy-dark px-4 py-7 text-slate-300 lg:flex; }
-  .brand { @apply flex items-center gap-3 px-3 text-xl font-black tracking-tight text-white; }
-  .brand-mark { @apply grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-teal-400 to-cyan-600 text-white shadow-lg; }
-  .workspace { @apply mt-8 rounded-xl border border-slate-600/60 bg-slate-700/50 p-3; }
-  .nav-link { @apply flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-slate-300 transition hover:bg-white/5 hover:text-white; }
-  .nav-link-active { @apply bg-slate-600/70 text-white; }
+  .sidebar { @apply fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-line bg-white px-4 py-7 text-muted lg:flex; }
+  .brand { @apply flex items-center gap-3 px-3 text-xl font-extrabold tracking-tight text-navy; }
+  .workspace { @apply mt-8 rounded-xl border border-line bg-surface p-3; }
+  .nav-link { @apply flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-muted transition hover:bg-surface hover:text-navy; }
+  .nav-link-active { @apply bg-surface font-bold text-navy; }
   .main-column { @apply min-w-0 flex-1 lg:pl-64; }
   .topbar { @apply sticky top-0 z-20 flex min-h-20 items-center justify-between border-b border-line bg-white px-4 lg:px-10; }
   .content { @apply mx-auto w-full max-w-[1560px] px-4 py-7 pb-28 lg:px-10 lg:py-9; }
   .page-heading { @apply mb-6 flex flex-wrap items-end justify-between gap-4; }
-  .eyebrow { @apply text-[10px] font-black uppercase tracking-[.16em] text-teal; }
-  .page-title { @apply mt-2 text-3xl font-black tracking-tight text-navy; }
+  .eyebrow { @apply text-[10px] font-semibold uppercase tracking-[.13em] text-teal; }
+  .page-title { @apply mt-2 text-3xl font-bold tracking-[-.045em] text-navy; }
   .subtitle { @apply mt-1 text-sm leading-6 text-muted; }
-  .card { @apply rounded-2xl border border-line bg-white shadow-[0_12px_32px_rgba(33,48,73,.035)]; }
+  .card { @apply rounded-2xl border border-line bg-white; box-shadow: var(--cadence-shadow); }
   .card-body { @apply p-5 lg:p-6; }
   .card-header { @apply flex items-center justify-between gap-3 border-b border-line px-5 py-4 lg:px-6; }
-  .btn { @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-line bg-white px-4 py-2 text-xs font-extrabold text-slate-700 transition hover:-translate-y-px hover:shadow-md; }
+  .btn { @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-full border border-line bg-white px-4 py-2 text-xs font-semibold text-navy transition hover:-translate-y-px hover:shadow-md; cursor: pointer; }
   .btn-primary { @apply border-navy bg-navy text-white; }
-  .btn-teal { @apply border-teal bg-teal text-white; }
+  .btn-teal { @apply border-navy bg-navy text-white; }
   .btn-soft { @apply border-transparent bg-teal/10 text-teal; }
   .btn-danger { @apply border-transparent bg-red-50 text-red-700; }
-  .pill { @apply inline-flex items-center rounded-lg px-2.5 py-1.5 text-[10px] font-extrabold; }
+  .pill { @apply inline-flex items-center rounded-full px-2.5 py-1.5 text-[10px] font-semibold; }
   .pill-green { @apply bg-emerald-50 text-emerald-700; }
   .pill-amber { @apply bg-orange-50 text-orange-700; }
   .pill-blue { @apply bg-blue-50 text-blue-700; }
@@ -300,12 +290,12 @@ html:has(.cadence-shell), body:has(.cadence-shell) { max-width: 100%; overflow-x
   .metric-number { @apply mt-4 text-3xl font-black tracking-tight; }
   .form-grid { @apply grid gap-4 md:grid-cols-2; }
   .field-wide { @apply md:col-span-2; }
-  .notice { @apply rounded-xl border border-cyan-100 bg-cyan-50 px-4 py-3 text-sm leading-6 text-cyan-900; }
+  .notice { @apply rounded-xl border border-violet-100 bg-violet-50 px-4 py-3 text-sm leading-6 text-violet-900; }
   .notice-amber { @apply border-orange-100 bg-orange-50 text-orange-900; }
-  .flash { @apply fixed right-4 top-24 z-50 max-w-md rounded-xl px-4 py-3 text-sm font-semibold shadow-xl; }
+  .flash { @apply fixed inset-x-4 bottom-5 z-50 mx-auto max-w-md rounded-2xl border border-line bg-white px-4 py-3 text-sm text-navy shadow-lg; }
+  .flash-alert { @apply border-orange-100 bg-orange-50 text-orange-900; }
   .table-wrap { @apply overflow-x-auto; }
   .mobile-nav { @apply fixed inset-x-0 bottom-0 z-30 flex h-20 items-center justify-around border-t border-line bg-white px-2 lg:hidden; }
   .mobile-nav a { @apply flex flex-1 flex-col items-center gap-1 text-[10px] font-bold text-slate-500; }
-  .hero-gradient { background: linear-gradient(115deg,#172f4b 0%,#214762 62%,#246376 100%); }
-  .public-hero { background: linear-gradient(135deg,#6fb4bd,#f4d0a2 48%,#304f6d 49%,#1d3f5d 70%,#b48f7b 71%); }
+  .hero-gradient, .public-hero { background: var(--cadence-gradient); color: var(--cadence-ink); }
 }

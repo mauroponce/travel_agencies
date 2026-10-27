@@ -265,13 +265,6 @@ h3{font-size:19px;line-height:1.3;letter-spacing:-.018em;font-weight:600}
   display:flex;align-items:center;gap:28px;
 }
 .brand{display:inline-flex;align-items:center;gap:9px;font-weight:700;letter-spacing:-.03em;font-size:17px}
-.brand-mark{
-  display:grid;place-items:center;width:26px;height:26px;border-radius:8px;
-  background:linear-gradient(140deg,#22222a,#0a0a0c);color:#fff;
-}
-.brand-mark svg{width:17px;height:17px;fill:currentColor;stroke:none}
-.brand-mark.sm{width:19px;height:19px;border-radius:6px}
-.brand-mark.sm svg{width:13px;height:13px}
 
 .nav-links{display:flex;align-items:center;gap:4px;margin-left:6px}
 .nav-links a{
@@ -1596,9 +1589,6 @@ input[type=range]::-moz-range-thumb{
    composicion originales de Cadence suministrados por el usuario. */
 :root{color-scheme:light}
 body{overflow-x:hidden}
-.brand-mark svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
-.brand-mark.sm svg{width:14px;height:14px}
-.brand-name{letter-spacing:-.045em}
 .nav-actions .btn-ghost{gap:7px}
 .hero-head h1{max-width:26ch}
 /* Mantiene la escala responsive del dashboard: la animación original
@@ -1713,7 +1703,13 @@ body{overflow-x:hidden}
 .copy-toast.show{opacity:1;transform:translate(-50%,0)}
 @media(max-width:900px){.mobile-menu-button{display:flex}.nav-actions .btn-line{display:none}.app{min-width:1080px}.tour .step{cursor:default}.foot{grid-template-columns:1fr}}
 @media(max-width:600px){.app-role-select{max-width:126px}.proof{padding-bottom:86px}.stats{grid-template-columns:repeat(2,1fr)}.start{border-radius:28px}.start-head{padding-bottom:68px}.foot-cols{grid-template-columns:repeat(2,1fr)}.nav-inner{gap:12px}}
+
+/* Turistack brand assets */
+.turistack-logo{display:block;width:180px;max-width:100%;height:auto;aspect-ratio:3/1;object-fit:contain;flex-shrink:0}
+.turistack-symbol{display:block;width:32px;height:32px;object-fit:contain;flex-shrink:0}
+.app-brand .turistack-logo{width:108px}
 </style>
+<link rel="icon" href="../../public/icon.png" type="image/png">
 </head>
 <body>
 <svg aria-hidden="true" class="sprite" focusable="false" xmlns="http://www.w3.org/2000/svg">
@@ -1815,7 +1811,7 @@ body{overflow-x:hidden}
 <a class="skip" href="#main">Saltar al contenido</a>
 <header class="nav" id="nav">
   <div class="nav-inner">
-    <a class="brand" href="#top" aria-label="Turistack, ir al inicio"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17l5-5 3.5 3.5L20 8"/><path d="M15 8h5v5"/></svg></span><span class="brand-name">turistack</span></a>
+    <a class="brand" href="#top" aria-label="Turistack, ir al inicio"><img src="../../public/brand/logo_turistack.png" alt="Turistack" width="2172" height="724" class="turistack-logo"></a>
     <nav class="nav-links" aria-label="Navegación principal"><a href="#features" class="is-active">Producto</a><a href="#tour">Cómo funciona</a><a href="#proof">Para tu equipo</a><a href="#acompanamiento">Servicio</a></nav>
     <div class="nav-actions"><a class="btn btn-ghost" href="#tour"><svg class="ic"><use href="#i-play"></use></svg>Ver recorrido</a><a class="btn btn-line" href="#start"><svg class="ic"><use href="#i-arrow"></use></svg>Solicitar demo</a><button class="mobile-menu-button" id="menuButton" aria-label="Abrir menú" aria-expanded="false" aria-controls="mobileMenu"><svg class="ic"><use href="#i-grid"></use></svg></button></div>
     <nav id="mobileMenu" class="mobile-menu" aria-label="Navegación móvil"><a href="#features">Producto</a><a href="#tour">Cómo funciona</a><a href="#proof">Para tu equipo</a><a href="#acompanamiento">Servicio personalizado</a><a href="#start">Solicitar presentación</a></nav>
@@ -1834,7 +1830,7 @@ body{overflow-x:hidden}
   <div class="hero-stage" id="heroStage"><div class="wrap"><div class="shot-fit"><div class="shot hero-shot" data-shot="1080x682" role="group" aria-label="Panel demostrativo de Turistack con selector de perfiles">
 <div class="app" id="demoApp">
   <aside class="app-side">
-    <div class="app-brand"><span class="brand-mark sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17l5-5 3.5 3.5L20 8"/><path d="M15 8h5v5"/></svg></span><span>turistack</span><svg class="ic app-collapse"><use href="#i-chev"></use></svg></div>
+    <div class="app-brand"><img src="../../public/brand/logo_turistack.png" alt="Turistack" width="2172" height="724" class="turistack-logo"><svg class="ic app-collapse"><use href="#i-chev"></use></svg></div>
     <div class="app-search"><svg class="ic"><use href="#i-search"></use></svg><span>Buscar...</span><kbd>⌘K</kbd></div>
     <p class="app-label">GENERAL</p>
     <ul class="app-nav" id="appNavigation">
@@ -1957,7 +1953,7 @@ body{overflow-x:hidden}
     <p class="demo-note">Prototipo visual: el formulario prepara una consulta, pero no la envía a ningún servidor. Se conectará al canal comercial al publicarlo.</p>
     <ul class="ticks" data-reveal style="--d:240ms"><li><svg class="ic"><use href="#i-check"></use></svg>Atención personalizada</li><li><svg class="ic"><use href="#i-check"></use></svg>Implementación acompañada</li><li><svg class="ic"><use href="#i-check"></use></svg>Demostración para agencias</li></ul>
   </div>
-  <footer class="foot"><div class="foot-brand"><a class="brand" href="#top"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17l5-5 3.5 3.5L20 8"/><path d="M15 8h5v5"/></svg></span><span class="brand-name">turistack</span></a><p>La plataforma que conecta las ventas, las personas y la operación de tu agencia de turismo.</p></div><nav class="foot-cols" aria-label="Enlaces del pie"><div><h4>Plataforma</h4><a href="#features">Funcionalidades</a><a href="#tour">Cómo funciona</a><a href="#proof">Perfiles</a></div><div><h4>Tu agencia</h4><a href="#acompanamiento">Implementación</a><a href="#acompanamiento">Acompañamiento</a><a href="#start">Solicitar demo</a></div><div><h4>Más información</h4><a href="#start">Contacto</a><a href="#acompanamiento">Cómo trabajamos</a><a href="#top">Volver arriba ↑</a></div></nav><p class="foot-legal"><span>© 2026 Turistack · Plataforma para agencias</span><span>Diseño de demostración · Argentina</span></p></footer>
+  <footer class="foot"><div class="foot-brand"><a class="brand" href="#top"><img src="../../public/brand/logo_turistack.png" alt="Turistack" width="2172" height="724" class="turistack-logo"></a><p>La plataforma que conecta las ventas, las personas y la operación de tu agencia de turismo.</p></div><nav class="foot-cols" aria-label="Enlaces del pie"><div><h4>Plataforma</h4><a href="#features">Funcionalidades</a><a href="#tour">Cómo funciona</a><a href="#proof">Perfiles</a></div><div><h4>Tu agencia</h4><a href="#acompanamiento">Implementación</a><a href="#acompanamiento">Acompañamiento</a><a href="#start">Solicitar demo</a></div><div><h4>Más información</h4><a href="#start">Contacto</a><a href="#acompanamiento">Cómo trabajamos</a><a href="#top">Volver arriba ↑</a></div></nav><p class="foot-legal"><span>© 2026 Turistack · Plataforma para agencias</span><span>Diseño de demostración · Argentina</span></p></footer>
 </div></section>
 </main>
 <div class="copy-toast" id="toast" role="status" aria-live="polite">Consulta copiada</div>

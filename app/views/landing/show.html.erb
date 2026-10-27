@@ -5,15 +5,13 @@
 <% end %>
 <% content_for :head do %>
   <meta name="description" content="Conectá salidas, cupos, reservas, pasajeros, cobros y rendiciones de tu agencia con Turistack.">
-  <meta name="theme-color" content="#fafafa">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
 <% end %>
 <div data-controller="landing">
 <%= render "icons" %>
 <a class="skip" href="#main">Saltar al contenido</a>
 <header class="nav" id="nav">
   <div class="nav-inner">
-    <a class="brand" href="#top" aria-label="Turistack, ir al inicio"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17l5-5 3.5 3.5L20 8"/><path d="M15 8h5v5"/></svg></span><span class="brand-name">turistack</span></a>
+    <a class="brand" href="#top" aria-label="Turistack, ir al inicio"><%= image_tag "/brand/logo_turistack.png", alt: "Turistack", width: 2172, height: 724, class: "turistack-logo" %></a>
     <nav class="nav-links" aria-label="Navegación principal"><a href="#features" class="is-active">Producto</a><a href="#tour">Cómo funciona</a><a href="#proof">Para tu equipo</a><a href="#acompanamiento">Servicio</a></nav>
     <div class="nav-actions"><a class="btn btn-ghost" href="#tour"><svg class="ic"><use href="#i-play"></use></svg>Ver recorrido</a><%= button_to auth_start_path, method: :post, data: { turbo: false }, class: "btn btn-line login-button" do %>Ingresar con Google<% end %><button type="button" data-action="landing#toggleMenu" class="mobile-menu-button" id="menuButton" aria-label="Abrir menú" aria-expanded="false" aria-controls="mobileMenu"><svg class="ic"><use href="#i-grid"></use></svg></button></div>
     <nav id="mobileMenu" class="mobile-menu" aria-label="Navegación móvil"><a href="#features">Producto</a><a href="#tour">Cómo funciona</a><a href="#proof">Para tu equipo</a><a href="#acompanamiento">Servicio personalizado</a><a href="#start">Comenzar</a></nav>

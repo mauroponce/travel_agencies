@@ -1,10 +1,11 @@
-<%= render "shared/icon_symbols" %>
+<% operator = current_role == "operator" %>
+<% workspace_name = operator ? "Administración de plataforma" : current_company.name %>
 <div class="app-shell cadence-shell" data-controller="app-shell" data-action="keydown@window->app-shell#handleKeydown">
   <aside id="main-sidebar" class="sidebar" data-app-shell-target="sidebar" aria-label="Menú principal">
     <div class="sidebar-logo">
-      <%= link_to dashboard_path, class: "sidebar-brand" do %>
-        <span class="brand-mark"><%= app_icon("activity") %></span>
-        <span><strong><%= ENV.fetch("PLATFORM_NAME", "Turistack").downcase %></strong><small><%= current_company.name %></small></span>
+      <%= link_to(operator ? platform_companies_path : dashboard_path, class: "sidebar-brand") do %>
+        <%= image_tag "/icon.png", alt: "Turistack", width: 512, height: 512, class: "turistack-symbol" %>
+        <span><%= image_tag "/brand/logo_turistack.png", alt: "Turistack", width: 2172, height: 724, class: "turistack-logo" %><small><%= workspace_name %></small></span>
       <% end %>
       <button class="sidebar-close" type="button" data-action="app-shell#close" aria-label="Cerrar menú"><%= app_icon("close") %></button>
     </div>
@@ -28,7 +29,7 @@
     <% end %>
 
     <div class="sidebar-bottom">
-      <div class="tenant-note"><strong><%= current_company.name %></strong><span>Datos aislados por agencia y perfil.</span></div>
+      <div class="tenant-note"><strong><%= workspace_name %></strong><span><%= operator ? "Gestión de empresas y revendedores." : "Tu espacio de trabajo." %></span></div>
       <%= button_to session_path, method: :delete, class: "logout-button" do %><%= app_icon("log-out") %><span>Cerrar sesión</span><% end %>
     </div>
   </aside>
@@ -39,14 +40,21 @@
     <header class="topbar">
       <button class="mobile-menu-button" type="button" data-action="app-shell#open" data-app-shell-target="toggle" aria-controls="main-sidebar" aria-expanded="false" aria-label="Abrir menú"><%= app_icon("menu") %></button>
       <div class="topbar-spacer" aria-hidden="true"></div>
-      <div class="topbar-brand"><strong>Turistack</strong><span>Panel de empresa · datos reales</span></div>
+      <div class="topbar-brand"><%= image_tag "/brand/logo_turistack.png", alt: "Turistack", width: 2172, height: 724, class: "turistack-logo" %><span><%= operator ? "Administración de plataforma" : "Panel de empresa" %></span></div>
       <div class="topbar-actions">
+        <% if operator %>
+          <div class="profile-switcher profile-static">
+            <span class="profile-avatar"><%= current_user.name.split.map(&:first).first(2).join %></span>
+            <span class="profile-copy"><strong><%= current_user.name %></strong><span>Operador</span></span>
+          </div>
+        <% else %>
         <%= link_to notifications_path, class: "topbar-icon-button", aria: {label: "Notificaciones"} do %><%= app_icon("bell") %><% end %>
         <%= form_with url: context_path, method: :post, class: "profile-switcher" do |form| %>
           <span class="profile-avatar"><%= current_user.name.split.map(&:first).first(2).join %></span>
           <span class="profile-copy"><strong><%= current_company.name %></strong><span><%= role_label(current_role) %></span></span>
           <% roles = current_membership.roles.map { |role| [role_label(role), role] } %>
           <%= form.select :role, roles, { selected: current_role }, { data: {action: "change->app-shell#submitForm"}, aria: {label: "Cambiar perfil dentro de #{current_company.name}"} } %>
+        <% end %>
         <% end %>
       </div>
     </header>
