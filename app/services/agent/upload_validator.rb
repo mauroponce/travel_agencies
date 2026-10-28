@@ -13,7 +13,9 @@ module Agent
       mime = Marcel::MimeType.for(io)
       io.rewind
       allowed = images_only ? TYPES - [ "application/pdf" ] : TYPES
-      raise Invalid, "Usá un archivo JPG, PNG, WebP o PDF válido." unless allowed.include?(mime)
+      unless allowed.include?(mime)
+        raise Invalid, images_only ? "Usá una imagen JPG, PNG o WebP válida." : "Usá un archivo JPG, PNG, WebP o PDF válido."
+      end
       if upload.respond_to?(:content_type) && upload.content_type != mime
         raise Invalid, "El contenido del archivo no coincide con el tipo declarado."
       end

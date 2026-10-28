@@ -5,23 +5,25 @@ class ResellerInvitationTest < ActionDispatch::IntegrationTest
   include AgentTestData
   include ActiveJob::TestHelper
 
-  test "operator provisions reseller and verified Google owner accepts invitation on hostname" do
+  test "operator provisions reseller and verified Google owner accepts invitation on the platform" do
     operator = create_platform_operator
     login_as(operator)
     get new_platform_agent_workspace_path
     assert_response :success
     assert_enqueued_with(job: ActionMailer::MailDeliveryJob) do
-      post platform_agent_workspaces_path, params: { agent_workspace: { business_name: "Silvina Martínez", public_name: "Silvina", subdomain: "silvinamartinez", invited_email: "silvina@example.test", whatsapp: "+541160347665" } }
+      post platform_agent_workspaces_path, params: { agent_workspace: { name: "Silvina Martínez", slug: "silvina-martinez", invited_email: "silvina@example.test", whatsapp: "+541160347665" } }
     end
-    workspace = AgentWorkspace.find_by!(subdomain: "silvinamartinez")
+    workspace = AgentWorkspace.find_by!(slug: "silvina-martinez")
     assert_nil workspace.owner_id
     assert_equal "541160347665", workspace.whatsapp
     mail = AgentWorkspaceMailer.invite(workspace)
     assert_equal [ "silvina@example.test" ], mail.to
-    assert_includes mail.body.to_s, workspace.hostname
+    assert_includes mail.body.to_s, workspace.url
+    assert_nil workspace.subdomain
+    assert_nil workspace.hostname_registration
     reset!
-    host! workspace.hostname
-    get root_path
+    host! PlatformHosts.platform_host
+    get agent_site_path(agent_slug: workspace.slug)
     assert_response :success
     assert_not_includes response.body, "Cerrar sesión"
     user = create_user(email: "silvina@example.test", name: "Silvina")
@@ -35,7 +37,7 @@ class ResellerInvitationTest < ActionDispatch::IntegrationTest
     post "/auth/google_oauth2/callback"
     assert_equal user.id, workspace.reload.owner_id
     exchange_url = response.location
-    host! workspace.hostname
+    host! PlatformHosts.platform_host
     get URI(exchange_url).request_uri
     assert_redirected_to agent_root_path
     get agent_root_path

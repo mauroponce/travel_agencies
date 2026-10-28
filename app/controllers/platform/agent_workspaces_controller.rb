@@ -8,7 +8,9 @@ module Platform
       @workspace = AgentWorkspace.new(whatsapp: "541160347665")
     end
     def create
-      @workspace = AgentWorkspace.new(params.expect(agent_workspace: [ :business_name, :public_name, :subdomain, :whatsapp, :invited_email ]))
+      attributes = params.expect(agent_workspace: [ :name, :slug, :whatsapp, :invited_email ])
+      attributes[:slug] = nil if attributes[:slug].blank?
+      @workspace = AgentWorkspace.new(attributes)
       if @workspace.save
         AgentWorkspaceMailer.invite(@workspace).deliver_later
         AuditRecorder.call(action: "agent_workspace.invited", auditable: @workspace)
@@ -17,7 +19,7 @@ module Platform
         render :new, status: :unprocessable_entity
       end
     rescue ActiveRecord::RecordNotUnique
-      @workspace.errors.add(:base, "El correo o subdominio ya está en uso.")
+      @workspace.errors.add(:base, "El correo o link público ya está en uso.")
       render :new, status: :unprocessable_entity
     end
     def update

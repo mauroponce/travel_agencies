@@ -1,14 +1,39 @@
 <% content_for :title, "Viajes · #{current_agent_workspace.business_name}" %>
 <% content_for :head do %><meta name="description" content="Descubrí las propuestas de viajes de <%= current_agent_workspace.business_name %> y consultá por WhatsApp."><% end %>
-<section class="agent-public-hero"><span class="agent-eyebrow">TU PRÓXIMO DESTINO</span>
+<% if current_agent_workspace.show_presentation? %>
+<section class="agent-public-hero" id="presentacion"><span class="agent-eyebrow">TU PRÓXIMO DESTINO</span>
   <h1><%= current_agent_workspace.business_name %></h1>
   <p><%= current_agent_workspace.presentation %></p>
   <span>Atención personal de <%= current_agent_workspace.public_name %></span>
   <div class="agent-actions"><%= link_to "Consultar por WhatsApp", "https://wa.me/#{current_agent_workspace.whatsapp}", class: "btn btn-primary", rel: "noopener", target: "_blank" %><% if current_user && current_user.id == current_agent_workspace.owner_id %><%= link_to "Mi panel", agent_root_path, class: "btn" %><% else %><%= button_to "Acceso del agente", auth_start_path, class: "btn", data: {turbo: false} %><% end %></div>
 </section>
-<%= render "agent/trips/filters", filter_url: agent_public_catalog_path %>
+<% end %>
+<% if current_agent_workspace.show_about? %>
+  <section id="sobre-mi" class="agent-public-about" aria-labelledby="agent-about-title">
+    <div class="agent-about-portrait">
+      <% if current_agent_workspace.about_photo.attached? %>
+        <%= image_tag agent_about_photo_public_url, alt: "Foto de #{current_agent_workspace.public_name}", loading: "lazy", class: "agent-about-photo" %>
+      <% else %>
+        <span class="agent-about-initial" aria-hidden="true"><%= current_agent_workspace.public_name.first.upcase %></span>
+      <% end %>
+      <span class="agent-about-caption">Tu próximo viaje empieza con una charla.</span>
+    </div>
+    <div class="agent-about-story">
+      <span class="agent-eyebrow">DETRÁS DE CADA VIAJE, UNA PERSONA</span>
+      <h2 id="agent-about-title">Sobre mí</h2>
+      <h3><%= current_agent_workspace.public_name %></h3>
+      <p class="agent-about-text"><%= current_agent_workspace.about_text %></p>
+      <%= link_to "Conversemos sobre tu próximo viaje ↗", "https://wa.me/#{current_agent_workspace.whatsapp}", class: "btn btn-primary", rel: "noopener", target: "_blank" %>
+    </div>
+  </section>
+<% end %>
+<% if current_agent_workspace.show_catalog? %>
+<section id="viajes" aria-labelledby="agent-catalog-title">
+<%= render "agent/trips/filters", filter_url: agent_catalog_public_url %>
 <div class="agent-heading">
-  <h2>Viajes para descubrir</h2>
+  <h2 id="agent-catalog-title">Viajes para descubrir</h2>
   <span><%= @pagination.total_count %> propuestas</span></div>
 <%= render "agent/trips/cards", trips: @trips, public_view: true %><%= render "agent/pagination", pagination: @pagination %>
 <p class="agent-public-note">Confirmá tarifas, condiciones y disponibilidad directamente antes de contratar.</p>
+</section>
+<% end %>

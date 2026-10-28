@@ -1,34 +1,47 @@
 const { test, expect } = require("@playwright/test")
 const path = require("path")
 const port = process.env.E2E_PORT || "3100"
-const base = `http://agente.lvh.me:${port}`
+const base = `http://localhost:${port}`
 
 async function signIn(page) {
   await page.goto(`${base}/test/sign-in?email=agente%40turistack.local`)
   await expect(page.getByRole("heading", { name: "Todo listo para tu próximo viaje" })).toBeVisible()
 }
 
-test("agent signs up with a subdomain and publishes a manual trip on their own website", async ({ page, browser }, testInfo) => {
+test("agent signs up with an editable name and public slug and publishes a manual trip on their own website", async ({ page, browser }, testInfo) => {
   const slug = `alta-${testInfo.project.name}-${Date.now()}`
-  const platform = `http://platform.lvh.me:${port}`
+  const platform = `http://localhost:${port}`
   const email = `agente-nuevo-${testInfo.project.name}@turistack.local`
   await page.goto(platform)
   await page.getByRole("link", { name: "Crear mi web de agente", exact: true }).click()
   await expect(page.getByRole("heading", { name: "Tu web para vender viajes" })).toBeVisible()
   await expect(page.getByRole("button", { name: "Ingresar con Google" }).locator("..")).toHaveAttribute("action", "/auth/start?purpose=agent_onboarding")
-  await page.goto(`http://platform.lvh.me:${port}/test/sign-in?email=agente-nuevo-${testInfo.project.name}%40turistack.local&purpose=agent_onboarding`)
+  await page.goto(`http://localhost:${port}/test/sign-in?email=agente-nuevo-${testInfo.project.name}%40turistack.local&purpose=agent_onboarding`)
   if (await page.getByRole("button", { name: "Crear mi espacio" }).isVisible()) {
-    await page.getByLabel("Nombre comercial").fill("Viajes independientes")
-    await page.getByLabel("Nombre público").fill("Lucía")
+    await expect(page.getByLabel("Nombre", { exact: true })).not.toBeEmpty()
+    await expect(page.getByLabel("Link público", { exact: true })).not.toBeEmpty()
+    await expect(page.getByLabel("Nombre comercial")).toHaveCount(0)
+    await expect(page.getByLabel("Nombre público")).toHaveCount(0)
+    await page.getByLabel("Nombre", { exact: true }).fill("José Pérez Viajes")
+    await expect(page.getByLabel("Link público", { exact: true })).toHaveValue("jose-perez-viajes")
+    await page.getByLabel("Link público", { exact: true }).fill("agente-otro")
+    await expect(page.getByRole("button", { name: "Usar agente-otro-2", exact: true })).toBeVisible()
+    await page.getByRole("button", { name: "Usar agente-otro-2", exact: true }).click()
+    await expect(page.getByLabel("Link público", { exact: true })).toHaveValue("agente-otro-2")
+    await page.getByLabel("Link público", { exact: true }).fill(slug)
+    await page.getByLabel("Nombre", { exact: true }).fill("Viajes independientes")
+    await expect(page.getByLabel("Link público", { exact: true })).toHaveValue(slug)
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
     await page.getByLabel("WhatsApp con código de país").fill("5491155551234")
-    await page.getByLabel("Subdominio", { exact: false }).fill(slug)
     await page.getByRole("button", { name: "Crear mi espacio" }).click()
   }
   const workspaceLink = page.getByRole("link", { name: "Ingresar a mi espacio" })
   await expect(workspaceLink).toBeVisible()
-  const website = new URL(await workspaceLink.getAttribute("href")).origin
-  await expect(page.getByRole("link", { name: "Ver mi web", exact: true })).toHaveAttribute("href", `${website}/`)
-  await page.goto(`${website}/test/sign-in?email=${encodeURIComponent(email)}`)
+  const website = await page.getByRole("link", { name: "Ver mi web", exact: true }).getAttribute("href")
+  expect(website).toBe(`${platform}/${slug}`)
+  await expect(workspaceLink).toHaveAttribute("href", `${platform}/agente`)
+  await workspaceLink.click()
+  await expect(page.getByRole("heading", { name: "Todo listo para tu próximo viaje" })).toBeVisible()
   await page.getByRole("link", { name: "Agregar viaje", exact: true }).click()
   const title = `Bariloche de ${testInfo.project.name}`
   await page.getByLabel("O crear una empresa nueva").fill("Operador propio")
@@ -125,7 +138,7 @@ test("Gemini import review creates a supplier without losing corrections and pub
   await expect(page.getByRole("heading", { name: title, exact: true })).toBeVisible()
   const publicContext = await browser.newContext()
   const visitor = await publicContext.newPage()
-  await visitor.goto(base)
+  await visitor.goto(`${base}/agente-2`)
   await visitor.getByRole("link", { name: title, exact: true }).click()
   await expect(visitor.getByRole("heading", { name: title, exact: true })).toBeVisible()
   await expect(visitor.getByRole("link", { name: "Consultar por WhatsApp" })).toHaveAttribute("href", /^https:\/\/wa\.me\/5491155550303\?text=/)

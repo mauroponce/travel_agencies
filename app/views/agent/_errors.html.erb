@@ -1,6 +1,6 @@
 <% if record.errors.any? %>
   <div class="agent-alert" role="alert">
-    <ul><% record.errors.full_messages.each do |message| %>
+    <ul><% record.errors.full_messages.uniq.each do |message| %>
         <li><%= message %></li>
       <% end %></ul>
   </div>

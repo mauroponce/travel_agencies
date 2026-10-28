@@ -55,7 +55,22 @@ class DevelopmentTunnelTest < ActionDispatch::IntegrationTest
     assert_redirected_to agent_onboarding_path
     follow_redirect!
     assert_response :success
-    assert_select "input[name='agent_workspace[public_name]'][value='Agente del túnel']"
+    assert_select "input[name='agent_workspace[name]'][value='Agente del túnel']"
+    assert_select "input[name='agent_workspace[slug]'][value='agente-del-tunel']"
+    assert_select ".agent-public-link span", text: "#{TUNNEL_HOST}/"
+
+    assert_no_difference "HostnameRegistration.count" do
+      post agent_onboarding_path, params: { agent_workspace: { name: "Agente del túnel", slug: "agente-del-tunel", whatsapp: "5491155551234" } }
+      assert_redirected_to agent_onboarding_path
+    end
+    follow_redirect!
+    assert_select "a[href=?]", "https://#{TUNNEL_HOST}/agente-del-tunel", text: "Ver mi web"
+    assert_select "a[href=?]", "https://#{TUNNEL_HOST}/agente", text: "Ingresar a mi espacio"
+    get agent_site_path(agent_slug: "agente-del-tunel")
+    assert_response :success
+    assert_select "h1", text: "Agente del túnel"
+    get agent_root_path
+    assert_response :success
 
     get exchange_url.request_uri
     assert_response :not_found

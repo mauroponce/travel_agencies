@@ -1,6 +1,6 @@
 <!DOCTYPE html>
-<html lang="es-AR"><head><title><%= content_for?(:title) ? yield(:title) : "Turistack Revendedor#{" · #{current_agent_workspace.business_name}" if current_agent_workspace}" %></title><%= yield :head %><meta name="viewport" content="width=device-width,initial-scale=1"><%= csrf_meta_tags %><%= csp_meta_tag %><%= stylesheet_link_tag "tailwind", "agent", "data-turbo-track": "reload" %><%= javascript_importmap_tags %><link rel="icon" href="/favicon.png" type="image/png" sizes="512x512"><link rel="apple-touch-icon" href="/icon.png"><%= render "shared/design_head" %><% if current_agent_workspace %><link rel="manifest" href="/manifest.json"><% end %></head>
-  <body class="cadence-ui agent-body" <%= 'data-controller=pwa' if current_agent_workspace %>>
+<html lang="es-AR"><head><title><%= content_for?(:title) ? yield(:title) : "Turistack Revendedor#{" · #{current_agent_workspace.business_name}" if current_agent_workspace}" %></title><%= yield :head %><meta name="viewport" content="width=device-width,initial-scale=1"><%= csrf_meta_tags %><%= csp_meta_tag %><%= stylesheet_link_tag "tailwind", "agent", "data-turbo-track": "reload" %><%= javascript_importmap_tags %><link rel="icon" href="/favicon.png" type="image/png" sizes="512x512"><link rel="apple-touch-icon" href="/icon.png"><%= render "shared/design_head" %><% if current_agent_workspace && !@public_view %><link rel="manifest" href="/manifest.json"><% end %></head>
+  <body class="cadence-ui agent-body" <%= 'data-controller=pwa' if current_agent_workspace && !@public_view %>>
 <%= render "shared/icon_symbols" %>
 <% if current_agent_workspace && current_user && current_user.id == current_agent_workspace.owner_id && !@public_view %>
 <div class="app-shell cadence-shell agent-shell" data-controller="app-shell agent-navigation" data-action="keydown@window->app-shell#handleKeydown">
@@ -17,7 +17,7 @@
     <div class="main-column">
       <header class="topbar"><button class="mobile-menu-button" type="button" data-action="app-shell#open" data-app-shell-target="toggle" aria-controls="main-sidebar" aria-expanded="false" aria-label="Abrir menú"><%= app_icon("menu") %></button>
         <div class="topbar-brand"><%= image_tag "/brand/logo_turistack.png", alt: "Turistack", width: 2172, height: 724, class: "turistack-logo" %><span>Tu catálogo, tus proveedores, tu identidad</span></div>
-        <div class="topbar-actions"><%= link_to "Ver mi web ↗", agent_public_catalog_path, class: "agent-link", target: "_blank", rel: "noopener" %><span class="profile-avatar"><%= current_user.name.first.upcase %></span><strong><%= current_agent_workspace.business_name %></strong></div>
+        <div class="topbar-actions"><%= link_to "Ver mi web ↗", agent_catalog_public_url, class: "agent-link", target: "_blank", rel: "noopener" %><span class="profile-avatar"><%= current_user.name.first.upcase %></span><strong><%= current_agent_workspace.business_name %></strong></div>
       </header>
       <main class="content"><%= yield %></main></div>
   </div>

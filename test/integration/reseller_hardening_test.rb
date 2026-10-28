@@ -123,9 +123,11 @@ class ResellerHardeningTest < ActionDispatch::IntegrationTest
     assert_not_includes response.body, "PRIVATE REVISION"
     assert_select "meta[property='og:title'][content='#{original.title}']"
     canonical = css_select("link[rel=canonical]").first["href"]
-    assert_equal @workspace.url(path: agent_public_trip_path(slug: trip.slug)), canonical
+    assert_equal @workspace.url(path: agent_site_trip_path(agent_slug: @workspace.slug, slug: trip.slug)), canonical
     image = css_select("meta[property='og:image']").first["content"]
+    host! URI(image).host
     get URI(image).request_uri
+    host! @workspace.hostname
     assert_response :success
     assert_equal File.binread(png_upload.path), response.body
     get agent_public_image_path(slug: trip.slug, revision_id: private_revision.id)

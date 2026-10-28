@@ -3,37 +3,37 @@
   <%= render "shared/brand" %>
   <span class="agent-eyebrow">TURISTACK AGENTE</span>
   <h1>Tu web para vender viajes</h1>
-  <p>Registrate con Google, elegí tu subdominio y cargá tus viajes manualmente. Cuando los publiques, tus clientes podrán verlos en tu web y consultarte por WhatsApp.</p>
+  <p>Registrate con Google, elegí el link de tu web y cargá tus viajes manualmente. Cuando los publiques, tus clientes podrán verlos en tu web y consultarte por WhatsApp.</p>
   <% unless current_user %>
     <%= button_to "Ingresar con Google", auth_start_path(purpose: "agent_onboarding"), data: { turbo: false }, class: "btn btn-primary" %>
   <% else %>
     <% if @workspace.persisted? %>
       <h2><%= @workspace.business_name %></h2>
-      <p><%= @workspace.hostname %></p>
+      <p><%= @workspace.url %></p>
       <% if @workspace.active? %>
         <div class="agent-actions">
-          <%= link_to "Ingresar a mi espacio", agent_root_url(host: @workspace.hostname_registration.hostname, protocol: PlatformHosts.protocol, port: PlatformHosts.port), class: "btn btn-primary" %>
-          <%= link_to "Ver mi web", agent_public_catalog_url(host: @workspace.hostname_registration.hostname, protocol: PlatformHosts.protocol, port: PlatformHosts.port), class: "btn", target: "_blank", rel: "noopener" %>
+          <%= link_to "Ingresar a mi espacio", agent_root_url(host: PlatformHosts.platform_host, protocol: PlatformHosts.protocol, port: PlatformHosts.port), class: "btn btn-primary" %>
+          <%= link_to "Ver mi web", agent_site_url(agent_slug: @workspace.slug, host: PlatformHosts.platform_host, protocol: PlatformHosts.protocol, port: PlatformHosts.port), class: "btn", target: "_blank", rel: "noopener" %>
         </div>
-        <p>Iniciá sesión con Google en tu subdominio y usá «Agregar viaje» para cargar tu primera propuesta. Solo los viajes publicados aparecen en tu web.</p>
+        <p>Ingresá a tu espacio y usá «Agregar viaje» para cargar tu primera propuesta. Solo los viajes publicados aparecen en tu web.</p>
       <% else %>
         <p>Tu espacio está suspendido. Contactá a la plataforma.</p>
       <% end %>
     <% else %>
       <%= render "agent/errors", record: @workspace %>
-      <%= form_with model: @workspace, url: agent_onboarding_path, class: "agent-form" do |f| %>
-        <%= f.label :business_name, "Nombre comercial" %>
-        <%= f.text_field :business_name, required: true, autocomplete: "organization" %>
-        <%= f.label :public_name, "Nombre público" %>
-        <%= f.text_field :public_name, required: true, value: @workspace.public_name.presence || current_user.name, autocomplete: "name" %>
+      <%= form_with model: @workspace, url: agent_onboarding_path, class: "agent-form", data: { controller: "agent-signup", agent_signup_url_value: suggestion_agent_onboarding_path, agent_signup_custom_slug_value: @workspace.errors.any? } do |f| %>
+        <%= f.label :name, "Nombre" %>
+        <%= f.text_field :name, required: true, autocomplete: "name", data: { agent_signup_target: "name", action: "input->agent-signup#nameChanged" } %>
         <%= f.label :whatsapp, "WhatsApp con código de país" %>
         <%= f.telephone_field :whatsapp, required: true, placeholder: "5491155551234" %>
-        <%= f.label :subdomain, "Subdominio de tu web" %>
-        <div class="agent-inline">
-          <%= f.text_field :subdomain, required: true, pattern: "[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?", maxlength: 63, placeholder: "silvinamartinez", autocapitalize: "none", spellcheck: false, aria: { describedby: "subdomain-help" } %>
-          <span>.<%= PlatformHosts.base_domain %></span>
+        <%= f.label :slug, "Link público" %>
+        <div class="agent-public-link">
+          <span><%= PlatformHosts.platform_host %>/</span>
+          <%= f.text_field :slug, required: true, pattern: "[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?", maxlength: 63, placeholder: "silvina-martinez", autocapitalize: "none", autocomplete: "off", spellcheck: false, aria: { describedby: "slug-help slug-status" }, data: { agent_signup_target: "slug", action: "input->agent-signup#slugChanged" } %>
         </div>
-        <small id="subdomain-help">Esta será la dirección permanente de tu web. Usá letras minúsculas, números o guiones.</small>
+        <small id="slug-help">Podés cambiar el link antes de crear tu espacio. Usá letras minúsculas, números o guiones. Al guardar validaremos que esté disponible.</small>
+        <small id="slug-status" role="status" aria-live="polite" data-agent-signup-target="status"></small>
+        <button type="button" class="agent-link agent-slug-suggestion" data-agent-signup-target="suggestion" data-action="agent-signup#useSuggestion" <%= "hidden" unless @suggested_slug %> data-slug="<%= @suggested_slug %>">Usar <%= @suggested_slug %></button>
         <%= f.label :presentation, "Presentación (opcional)" %>
         <%= f.text_area :presentation, placeholder: "Contales a tus clientes qué viajes ofrecés." %>
         <%= f.submit "Crear mi espacio", class: "btn btn-primary" %>

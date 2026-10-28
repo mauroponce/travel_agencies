@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_25_130000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_27_200000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -221,7 +221,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_25_130000) do
     t.string "business_name", null: false
     t.string "public_name", null: false
     t.string "whatsapp", null: false
-    t.string "subdomain", null: false
+    t.string "subdomain"
     t.string "timezone", default: "America/Argentina/Buenos_Aires", null: false
     t.string "status", default: "active", null: false
     t.string "plan", default: "agent_pilot", null: false
@@ -229,8 +229,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_25_130000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "invited_email"
+    t.string "slug", null: false
+    t.boolean "show_presentation", default: true, null: false
+    t.boolean "show_catalog", default: true, null: false
+    t.boolean "show_about", default: false, null: false
+    t.text "about_text"
     t.index "lower((invited_email)::text)", name: "uidx_agent_invited_email", unique: true, where: "(invited_email IS NOT NULL)"
     t.index ["owner_id"], name: "index_agent_workspaces_on_owner_id", unique: true
+    t.index ["slug"], name: "index_agent_workspaces_on_slug", unique: true
     t.index ["subdomain"], name: "index_agent_workspaces_on_subdomain", unique: true
     t.check_constraint "owner_id IS NOT NULL OR invited_email IS NOT NULL AND invited_email::text <> ''::text", name: "agent_workspace_identity"
     t.check_constraint "status::text = ANY (ARRAY['active'::character varying, 'suspended'::character varying]::text[])", name: "agent_workspace_status"

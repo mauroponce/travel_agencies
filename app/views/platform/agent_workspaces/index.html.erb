@@ -6,7 +6,7 @@
   <% @workspaces.each do |workspace| %>
     <section class="card card-body">
       <h2 class="text-lg font-bold"><%= workspace.business_name %></h2>
-      <p class="subtitle"><%= workspace.owner&.email || workspace.invited_email %> · <%= workspace.hostname %></p>
+      <p class="subtitle"><%= workspace.owner&.email || workspace.invited_email %> · <%= workspace.url %></p>
       <%= form_with model: workspace, url: platform_agent_workspace_path(workspace), class: "mt-4 flex flex-wrap items-end gap-3" do |f| %>
         <div><%= f.label :status, "Estado de #{workspace.business_name}" %><%= f.select :status, [["Activo", "active"], ["Suspendido", "suspended"]] %></div>
         <%= f.submit "Actualizar estado", class: "btn" %>

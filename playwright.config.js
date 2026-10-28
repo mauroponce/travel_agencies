@@ -1,7 +1,7 @@
 const { defineConfig, devices } = require("@playwright/test")
 
 const port = process.env.E2E_PORT || "3100"
-const agentEnv = "AGENT_ENABLED=true AGENT_E2E_FIXTURES=true GEMINI_API_KEY=test-key"
+const agentEnv = "AGENT_ENABLED=true AGENT_E2E_FIXTURES=true GEMINI_API_KEY=test-key PLATFORM_HOST=localhost AUTH_HOST=auth.localhost APP_PROTOCOL=http"
 
 module.exports = defineConfig({
   testDir: "test/e2e",

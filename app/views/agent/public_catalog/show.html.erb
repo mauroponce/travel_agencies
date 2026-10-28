@@ -6,16 +6,16 @@
   <meta property="og:description" content="<%= description %>">
   <meta property="og:type" content="website">
   <meta property="og:url" content="<%= agent_trip_public_url(@trip) %>">
-  <% if @revision.cover.attached? %><meta property="og:image" content="<%= current_agent_workspace.url(path: agent_public_image_path(slug: @trip.slug, revision_id: @revision.id)) %>"><meta property="og:image:alt" content="<%= @revision.title %>"><% end %>
+  <% if @revision.cover.attached? %><meta property="og:image" content="<%= agent_image_public_url(@trip, @revision) %>"><meta property="og:image:alt" content="<%= @revision.title %>"><% end %>
   <link rel="canonical" href="<%= agent_trip_public_url(@trip) %>">
 <% end %>
-<%= link_to "← Todos los viajes", agent_public_catalog_path, class: "agent-link" %>
+<%= link_to "← Todos los viajes", agent_catalog_public_url, class: "agent-link" %>
 <div class="agent-heading">
   <div><span class="agent-eyebrow"><%= current_agent_workspace.business_name %></span>
     <h1><%= @revision.title %></h1>
     <p><%= @revision.agent_supplier.name %></p>
   </div>
   <%= link_to "Consultar por WhatsApp", agent_whatsapp(@revision), class: "btn btn-primary", target: "_blank", rel: "noopener" %></div>
-<section class="agent-panel"><% if @revision.cover.attached? %><%= image_tag agent_public_image_path(slug: @trip.slug, revision_id: @revision.id), alt: @revision.title, class: "agent-public-cover" %><% end %><%= render "agent/trips/details", revision: @revision %>
+<section class="agent-panel"><% if @revision.cover.attached? %><%= image_tag agent_image_public_url(@trip, @revision), alt: @revision.title, class: "agent-public-cover" %><% end %><%= render "agent/trips/details", revision: @revision %>
   <p>Tarifas y disponibilidad sujetas a confirmación con el organizador.</p>
 </section>

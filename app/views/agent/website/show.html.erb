@@ -1,17 +1,75 @@
 <div class="agent-heading">
   <div><span class="agent-eyebrow">TU IDENTIDAD COMERCIAL</span>
     <h1>Mi página web</h1>
-    <p><%= current_agent_workspace.hostname %></p>
+    <p>Un espacio con tu estilo, listo para compartir con tus clientes.</p>
   </div>
   <%= link_to "Abrir mi web ↗", current_agent_workspace.url, target: "_blank", rel: "noopener", class: "btn btn-primary" %></div>
 <%= render "agent/errors", record: current_agent_workspace %>
-<div class="agent-two-columns">
-  <section class="agent-panel"><%= form_with model: current_agent_workspace, url: agent_website_path, class: "agent-form" do |f| %><%= f.label :business_name, "Nombre comercial" %><%= f.text_field :business_name, required: true %><%= f.label :public_name, "Nombre público" %><%= f.text_field :public_name, required: true %><%= f.label :whatsapp, "WhatsApp con código de país" %><%= f.telephone_field :whatsapp, required: true %><%= f.label :presentation, "Presentación" %><%= f.text_area :presentation %>
-      <p>El subdominio es permanente durante el MVP.</p>
-      <%= f.submit "Guardar identidad", class: "btn btn-primary" %><% end %></section>
-  <section class="agent-panel" data-controller="agent-preview">
-    <h2>Vista previa de tu catálogo</h2>
-    <div class="agent-actions"><button class="btn" data-action="agent-preview#desktop">Escritorio</button><button class="btn" data-action="agent-preview#mobile">Celular</button></div>
+<div class="agent-two-columns agent-website-layout">
+  <section class="agent-panel agent-website-settings" aria-labelledby="website-settings-title">
+    <%= form_with model: current_agent_workspace, url: agent_website_path, class: "agent-form", data: { controller: "agent-website" } do |f| %>
+      <div class="agent-website-intro">
+        <span class="agent-eyebrow">HACELA TUYA</span>
+        <h2 id="website-settings-title">Configuración</h2>
+        <p>Elegí qué querés contar y qué secciones mostrar en tu web.</p>
+      </div>
+      <%= f.label :name, "Nombre" %>
+      <%= f.text_field :name, required: true %>
+      <%= f.label :whatsapp, "WhatsApp con código de país" %>
+      <%= f.telephone_field :whatsapp, required: true %>
+      <%= f.label :presentation, "Presentación" %>
+      <%= f.text_area :presentation, placeholder: "Unas palabras para darles la bienvenida a tus próximos viajeros." %>
+
+      <fieldset class="agent-section-options">
+        <legend>Secciones de tu web</legend>
+        <label class="agent-section-option">
+          <%= f.check_box :show_presentation %>
+          <span><strong>Presentación</strong><small>Tu nombre, bienvenida y contacto.</small></span>
+        </label>
+        <label class="agent-section-option">
+          <%= f.check_box :show_catalog %>
+          <span><strong>Viajes</strong><small>Tu catálogo de propuestas y sus filtros.</small></span>
+        </label>
+        <label class="agent-section-option">
+          <%= f.check_box :show_about, aria: { controls: "agent-about-editor", expanded: current_agent_workspace.show_about? }, data: { agent_website_target: "toggle", action: "agent-website#toggle" } %>
+          <span><strong>Sobre mí <span class="agent-badge">PERSONALIZABLE</span></strong><small>Acercate a tus clientes con tu historia y una foto.</small></span>
+        </label>
+      </fieldset>
+
+      <fieldset id="agent-about-editor" class="agent-about-editor" data-agent-website-target="editor" <%= "hidden disabled" unless current_agent_workspace.show_about? %>>
+        <legend>Tu historia, en primera persona</legend>
+        <p>Contá quién sos y cómo acompañás a tus viajeros.</p>
+        <div class="agent-photo-upload">
+          <% if current_agent_workspace.about_photo.persisted? %>
+            <%= image_tag about_photo_agent_website_path, alt: "Tu foto actual", class: "agent-photo-preview", data: { agent_website_target: "photo" } %>
+          <% else %>
+            <img alt="Vista previa de tu foto" class="agent-photo-preview" hidden data-agent-website-target="photo">
+          <% end %>
+          <div class="agent-photo-placeholder" data-agent-website-target="placeholder" <%= "hidden" if current_agent_workspace.about_photo.persisted? %> aria-hidden="true"><%= current_agent_workspace.public_name.first.upcase %></div>
+          <div class="agent-field">
+            <%= f.label :about_photo, "Tu foto" %>
+            <%= f.file_field :about_photo, accept: "image/jpeg,image/png,image/webp", include_hidden: false, aria: { describedby: "agent-photo-help" }, data: { action: "agent-website#previewPhoto" } %>
+            <small id="agent-photo-help">JPG, PNG o WebP, hasta 10 MB. Una foto tuya hace la diferencia.</small>
+          </div>
+        </div>
+        <div class="agent-field">
+          <%= f.label :about_text, "Texto sobre mí" %>
+          <%= f.text_area :about_text, rows: 6, maxlength: 1200, placeholder: "¡Hola! Soy Lucía. Me encanta descubrir lugares y ayudarte a encontrar ese viaje que estás imaginando…", aria: { describedby: "agent-about-help" } %>
+          <small id="agent-about-help">Hasta 1200 caracteres. Escribí con tu voz, como si estuvieras charlando con un cliente.</small>
+        </div>
+      </fieldset>
+      <div class="agent-website-save">
+        <p>Los cambios se publican al guardar. Si ocultás una sección, su contenido se conserva.</p>
+        <%= f.submit "Guardar cambios", class: "btn btn-primary" %>
+      </div>
+      <p class="agent-website-address"><%= current_agent_workspace.url %><br>Tu link público es permanente una vez creada tu web.</p>
+    <% end %>
+  </section>
+  <section class="agent-panel agent-website-preview" data-controller="agent-preview" aria-labelledby="website-preview-title">
+    <span class="agent-eyebrow">ASÍ TE VEN TUS CLIENTES</span>
+    <h2 id="website-preview-title">Vista previa de tu catálogo</h2>
+    <p>Guardá tus cambios para ver cómo queda tu página.</p>
+    <div class="agent-actions"><button type="button" class="btn" data-action="agent-preview#desktop">Escritorio</button><button type="button" class="btn" data-action="agent-preview#mobile">Celular</button></div>
     <div class="agent-preview-wrap"><iframe title="Vista previa del catálogo" src="<%= preview_agent_website_path %>" data-agent-preview-target="frame" class="agent-preview-frame"></iframe></div>
   </section>
 </div>

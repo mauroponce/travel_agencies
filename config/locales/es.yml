@@ -12,6 +12,15 @@ es:
       short: "%d/%m %H:%M"
       long: "%A %d de %B de %Y, %H:%M"
   activerecord:
+    attributes:
+      agent_workspace:
+        about_text: "Texto sobre mí"
+        about_photo: "Foto"
+        name: "Nombre"
+        business_name: "Nombre"
+        public_name: "Nombre"
+        slug: "Link público"
+        whatsapp: "WhatsApp"
     errors:
       messages:
         record_invalid: "La validación falló: %{errors}"

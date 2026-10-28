@@ -12,7 +12,7 @@ class BrandingTest < ActionDispatch::IntegrationTest
     assert_not_includes response.body, "NexoViajes"
     assert_select "body.turistack-landing"
     assert_select "h1", text: /Cada viaje, cada venta,.*en un solo lugar\./
-    assert_select "form[action=?][method=post]", auth_start_path, count: 3
+    assert_select "form[action=?][method=post], form[action=?][method=post]", auth_start_path, auth_start_path(purpose: "agent_onboarding"), count: 3
     assert_select "select[aria-label='Cambiar perfil de demostración'] option", count: 3
     %w[features tour proof acompanamiento start].each do |section|
       assert_select "section[id=?]", section

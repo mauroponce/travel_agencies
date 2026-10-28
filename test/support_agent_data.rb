@@ -9,7 +9,7 @@ module AgentTestData
   end
 
   def login_agent(workspace)
-    host! workspace.hostname
+    host! workspace.hostname || PlatformHosts.platform_host
     get "/test/sign-in", params: { email: workspace.owner.email }
   end
 

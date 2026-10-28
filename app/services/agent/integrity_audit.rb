@@ -6,7 +6,7 @@ module Agent
         findings << "Unregistered company domain #{domain.id}" unless HostnameRegistration.exists?(hostname: domain.hostname, company_id: domain.company_id)
       end
       AgentWorkspace.includes(:hostname_registration).find_each do |workspace|
-        findings << "Invalid agent hostname #{workspace.id}" unless workspace.hostname_registration&.hostname == workspace.hostname
+        findings << "Invalid agent hostname #{workspace.id}" if workspace.subdomain.present? && workspace.hostname_registration&.hostname != workspace.hostname
       end
       relations = { AgentTripRevision => [ :agent_trip, :agent_supplier ], AgentImportItem => [ :agent_import, :agent_trip, :agent_trip_revision ], AgentAiExecution => [ :agent_import, :agent_search ] }
       relations.each do |model, associations|

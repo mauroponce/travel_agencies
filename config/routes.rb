@@ -1,6 +1,8 @@
 Rails.application.routes.draw do
   get "/internal/tls/authorize", to: "internal_tls#show"
-  resource :agent_onboarding, path: "agente/alta", controller: "agent/onboarding", only: %i[show create]
+  resource :agent_onboarding, path: "agente/alta", controller: "agent/onboarding", only: %i[show create] do
+    get :suggestion
+  end
   agent_host = ->(request) { AgentWorkspace.enabled? && HostnameRegistration.where(company_id: nil).exists?(hostname: PlatformHosts.normalize(request.host)) }
   get "/", to: "agent/public_catalog#index", as: :agent_public_catalog, constraints: agent_host
   get "/viajes/:slug", to: "agent/public_catalog#show", as: :agent_public_trip, constraints: agent_host
@@ -29,6 +31,7 @@ Rails.application.routes.draw do
     resources :searches, path: "buscador", only: %i[index create show]
     resource :website, path: "mi-web", controller: "website", only: %i[show update] do
       get :preview
+      get :about_photo
     end
   end
   get "up" => "rails/health#show", as: :rails_health_check
@@ -117,4 +120,11 @@ Rails.application.routes.draw do
   get "/viajes/:company_slug/:offer_slug", to: "public_trips#legacy", as: :legacy_public_trip
   get "/formularios/:token", to: "public_passenger_forms#show", as: :public_passenger_form
   post "/formularios/:token", to: "public_passenger_forms#create"
+
+  constraints ->(request) { AgentWorkspace.enabled? && request.host == PlatformHosts.platform_host } do
+    get "/:agent_slug/sobre-mi/foto/:blob_id", to: "agent/public_catalog#about_photo", as: :agent_site_about_photo
+    get "/:agent_slug/viajes/:slug", to: "agent/public_catalog#show", as: :agent_site_trip
+    get "/:agent_slug/imagenes/:slug/:revision_id", to: "agent/public_catalog#image", as: :agent_site_image
+    get "/:agent_slug", to: "agent/public_catalog#index", as: :agent_site
+  end
 end

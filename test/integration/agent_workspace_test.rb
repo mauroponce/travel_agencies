@@ -12,7 +12,7 @@ class AgentWorkspaceTest < ActionDispatch::IntegrationTest
     get "/test/sign-in", params: { email: user.email, purpose: "agent_onboarding" }
     assert_redirected_to agent_onboarding_path
     assert_difference "AgentWorkspace.count", 1 do
-      post agent_onboarding_path, params: { agent_workspace: { business_name: "Mi agencia independiente", public_name: "Lucía", whatsapp: "+54 9 11 5555 1234", subdomain: "lucia-#{SecureRandom.hex(3)}" } }
+      post agent_onboarding_path, params: { agent_workspace: { name: "Mi agencia independiente", whatsapp: "+54 9 11 5555 1234", slug: "lucia-#{SecureRandom.hex(3)}" } }
     end
     assert_empty user.memberships
     get agent_onboarding_path
@@ -156,7 +156,7 @@ class AgentWorkspaceTest < ActionDispatch::IntegrationTest
     login_agent(workspace)
     get agent_website_path
     assert_response :success
-    patch agent_website_path, params: { agent_workspace: { business_name: "Nueva marca", whatsapp: "5491155551234" } }
+    patch agent_website_path, params: { agent_workspace: { name: "Nueva marca", whatsapp: "5491155551234" } }
     assert_response :redirect
     get preview_agent_website_path
     assert_response :success

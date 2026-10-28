@@ -36,6 +36,18 @@ class ApplicationController < ActionController::Base
     Current.company = resolution.company
     Current.company_domain = resolution.company_domain
     Current.agent_workspace = resolution.agent_workspace
+    if Current.host_scope == "platform" && AgentWorkspace.enabled?
+      if controller_path == "agent/public_catalog" && params[:agent_slug].present?
+        Current.agent_workspace = AgentWorkspace.find_by!(slug: params[:agent_slug], status: "active")
+        Current.host_scope = "agent"
+      elsif controller_path.start_with?("agent/") && !%w[agent/onboarding agent/public_catalog].include?(controller_path)
+        Current.agent_workspace = current_user&.agent_workspace
+        Current.host_scope = "agent"
+      elsif controller_path == "pwa" && current_user&.agent_workspace&.active?
+        Current.agent_workspace = current_user.agent_workspace
+        Current.host_scope = "agent"
+      end
+    end
   end
 
   def enforce_host_scope
@@ -68,7 +80,7 @@ class ApplicationController < ActionController::Base
     return unless current_user
 
     if Current.host_scope == "agent"
-      raise Pundit::NotAuthorizedError unless current_agent_workspace.active? && current_agent_workspace.owner_id == current_user.id
+      raise Pundit::NotAuthorizedError unless current_agent_workspace&.active? && current_agent_workspace.owner_id == current_user.id
       Current.role = "agent"
       Time.zone = current_agent_workspace.timezone
       return

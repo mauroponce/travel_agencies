@@ -38,7 +38,19 @@ module AgentHelper
     "https://wa.me/#{current_agent_workspace.whatsapp}?text=#{ERB::Util.url_encode(message)}"
   end
   def agent_trip_public_url(trip)
-    current_agent_workspace.url(path: agent_public_trip_path(slug: trip.slug))
+    current_agent_workspace.url(path: agent_site_trip_path(agent_slug: current_agent_workspace.slug, slug: trip.slug))
+  end
+
+  def agent_catalog_public_url
+    current_agent_workspace.url
+  end
+
+  def agent_about_photo_public_url
+    current_agent_workspace.url(path: agent_site_about_photo_path(agent_slug: current_agent_workspace.slug, blob_id: current_agent_workspace.about_photo.blob_id))
+  end
+
+  def agent_image_public_url(trip, revision)
+    current_agent_workspace.url(path: agent_site_image_path(agent_slug: current_agent_workspace.slug, slug: trip.slug, revision_id: revision.id))
   end
 
   def agent_share_text(trip)

@@ -4,6 +4,6 @@ class AgentWorkspacePolicy
   end
 
   def access?
-    @workspace.active? && @context.user&.id == @workspace.owner_id && @context.agent_workspace&.id == @workspace.id
+    @workspace&.active? && @context.user&.id == @workspace.owner_id && @context.agent_workspace&.id == @workspace.id
   end
 end

@@ -2,7 +2,7 @@ const { test, expect } = require("@playwright/test")
 
 test.beforeEach(async ({ page, baseURL }) => {
   const platform = new URL(baseURL)
-  platform.hostname = "platform.lvh.me"
+  platform.hostname = "localhost"
   await page.goto(platform.href)
 })
 
