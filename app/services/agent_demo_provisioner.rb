@@ -1,7 +1,9 @@
 class AgentDemoProvisioner
   def self.call
     raise "Agent demo data is local only" unless Rails.env.local?
-    %w[agente agente-otro agente-nuevo-desktop-chromium agente-nuevo-mobile-chromium].each do |name|
+    names = %w[agente agente-otro agente-nuevo-desktop-chromium agente-nuevo-mobile-chromium]
+    names += %w[agente-buscador-desktop agente-buscador-mobile] if Rails.env.test? && ENV["AGENT_E2E_FIXTURES"] == "true"
+    names.each do |name|
       user = User.find_or_create_by!(google_sub: "demo-#{name}") { |record| record.assign_attributes(email: "#{name}@turistack.local", name: name.titleize) }
       next if name.start_with?("agente-nuevo")
       workspace = user.agent_workspace || AgentWorkspace.create!(owner: user, business_name: "Viajes #{name.titleize}", public_name: user.name, whatsapp: "5491155550303", subdomain: name)

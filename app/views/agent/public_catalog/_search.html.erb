@@ -1,0 +1,20 @@
+<section class="agent-public-search" aria-labelledby="agent-search-title" data-controller="agent-catalog-search" data-agent-catalog-search-url-value="<%= agent_public_search_path_for_workspace %>" data-action="click@window->agent-catalog-search#dismiss">
+  <div class="agent-search-intro">
+    <span class="agent-eyebrow">ENCONTRÁ TU PRÓXIMA ESCAPADA</span>
+    <h2 id="agent-search-title">¿A dónde querés viajar?</h2>
+    <p>Buscá un destino o un viaje y empezá a planear.</p>
+  </div>
+  <%= form_with url: agent_public_catalog_filter_url, method: :get, class: "agent-search-form", html: { role: "search" } do |f| %>
+    <div class="agent-search-field">
+      <span class="agent-search-icon" aria-hidden="true"><%= app_icon("search") %></span>
+      <%= f.search_field :q, id: "agent-catalog-query", value: params[:q], placeholder: "Probá con Córdoba, Mendoza…", maxlength: 200, autocomplete: "off", role: "combobox", aria: { label: "Buscar destino o viaje", autocomplete: "list", expanded: "false", controls: "agent-search-results", describedby: "agent-search-hint" }, data: { agent_catalog_search_target: "input", action: "input->agent-catalog-search#search focus->agent-catalog-search#search keydown->agent-catalog-search#navigate" } %>
+      <button type="button" class="agent-search-clear" aria-label="Borrar búsqueda" data-agent-catalog-search-target="clear" data-action="agent-catalog-search#clear" <%= "hidden" if params[:q].blank? %>>×</button>
+      <%= f.submit "Buscar viajes", class: "btn btn-primary" %>
+    </div>
+    <div class="agent-search-dropdown" data-agent-catalog-search-target="dropdown" hidden>
+      <p class="agent-search-status" role="status" aria-live="polite" data-agent-catalog-search-target="status"></p>
+      <div id="agent-search-results" role="listbox" aria-label="Viajes disponibles" data-agent-catalog-search-target="results"></div>
+    </div>
+  <% end %>
+  <p id="agent-search-hint" class="agent-search-hint">Sugerencias de viajes publicados y vigentes, desde 2 letras.</p>
+</section>

@@ -46,7 +46,10 @@ test("agent chooses public sections and publishes a personal introduction with a
     await presentationToggle.uncheck()
     await catalogToggle.uncheck()
     await expect(page.getByLabel("Texto sobre mí")).toBeHidden()
-    await page.getByRole("button", { name: "Guardar cambios", exact: true }).click()
+    await Promise.all([
+      page.waitForResponse(response => ["POST", "PATCH"].includes(response.request().method()) && new URL(response.url()).pathname === "/agente/mi-web"),
+      page.getByRole("button", { name: "Guardar cambios", exact: true }).click()
+    ])
     await visitor.reload()
     await expect(visitor.locator("#sobre-mi, #presentacion, #viajes")).toHaveCount(0)
     expect((await visitor.request.get(photoUrl)).status()).toBe(404)

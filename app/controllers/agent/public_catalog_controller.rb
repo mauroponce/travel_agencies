@@ -6,8 +6,24 @@ module Agent
     layout "agent"
     def index
       return unless current_agent_workspace.show_catalog?
-      @suppliers = current_agent_workspace.agent_suppliers.active.where(id: current_agent_workspace.agent_trips.publicly_visible.joins(:published_revision).select("agent_trip_revisions.agent_supplier_id")).order(:name, :id)
-      @trips, @pagination = paginate(CatalogQuery.call(workspace: current_agent_workspace, filters: params.permit(*CatalogQuery::FILTERS), public_view: true))
+      @owner_view = current_user.present? && current_user.id == current_agent_workspace.owner_id
+      @suppliers = if @owner_view
+        current_agent_workspace.agent_suppliers.order(:name, :id)
+      else
+        current_agent_workspace.agent_suppliers.active.where(id: current_agent_workspace.agent_trips.publicly_visible.joins(:published_revision).select("agent_trip_revisions.agent_supplier_id")).order(:name, :id)
+      end
+      @trips, @pagination = paginate(CatalogQuery.call(workspace: current_agent_workspace, filters: params.permit(*CatalogQuery::FILTERS), public_view: !@owner_view))
+    end
+    def search
+      raise ActiveRecord::RecordNotFound unless current_agent_workspace.show_catalog?
+      query = params[:q].to_s.strip.first(200)
+      trips = query.length < 2 ? [] : CatalogQuery.call(workspace: current_agent_workspace, filters: { q: query }, public_view: true).limit(6)
+      render json: { results: trips.map do |trip|
+        revision = trip.published_revision
+        { title: revision.title, destination: revision.destination, date: revision.departs_on.strftime("%d/%m/%Y"),
+          price: helpers.agent_money(revision), url: helpers.agent_trip_public_url(trip),
+          image_url: (helpers.agent_image_public_url(trip, revision) if revision.cover.attached?) }
+      end }
     end
     def show
       @trip = current_agent_workspace.agent_trips.publicly_visible.find_by!(slug: params[:slug])

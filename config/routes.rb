@@ -5,6 +5,7 @@ Rails.application.routes.draw do
   end
   agent_host = ->(request) { AgentWorkspace.enabled? && HostnameRegistration.where(company_id: nil).exists?(hostname: PlatformHosts.normalize(request.host)) }
   get "/", to: "agent/public_catalog#index", as: :agent_public_catalog, constraints: agent_host
+  get "/buscar-viajes", to: "agent/public_catalog#search", as: :agent_public_search, constraints: agent_host
   get "/viajes/:slug", to: "agent/public_catalog#show", as: :agent_public_trip, constraints: agent_host
   get "/agente/imagenes/:slug/:revision_id", to: "agent/public_catalog#image", as: :agent_public_image
   namespace :agent, path: "agente" do
@@ -123,6 +124,7 @@ Rails.application.routes.draw do
 
   constraints ->(request) { AgentWorkspace.enabled? && request.host == PlatformHosts.platform_host } do
     get "/:agent_slug/sobre-mi/foto/:blob_id", to: "agent/public_catalog#about_photo", as: :agent_site_about_photo
+    get "/:agent_slug/buscar-viajes", to: "agent/public_catalog#search", as: :agent_site_search
     get "/:agent_slug/viajes/:slug", to: "agent/public_catalog#show", as: :agent_site_trip
     get "/:agent_slug/imagenes/:slug/:revision_id", to: "agent/public_catalog#image", as: :agent_site_image
     get "/:agent_slug", to: "agent/public_catalog#index", as: :agent_site

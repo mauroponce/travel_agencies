@@ -45,6 +45,18 @@ module AgentHelper
     current_agent_workspace.url
   end
 
+  def agent_public_search_path_for_workspace
+    if request.host == PlatformHosts.platform_host
+      agent_site_search_path(agent_slug: current_agent_workspace.slug)
+    else
+      agent_public_search_path
+    end
+  end
+
+  def agent_public_catalog_filter_url
+    controller_path == "agent/website" ? preview_agent_website_path : request.path
+  end
+
   def agent_about_photo_public_url
     current_agent_workspace.url(path: agent_site_about_photo_path(agent_slug: current_agent_workspace.slug, blob_id: current_agent_workspace.about_photo.blob_id))
   end
@@ -60,6 +72,7 @@ module AgentHelper
 
   def agent_status(trip)
     return "Vencido" if trip.expired?
+    return "Empresa pausada" if trip.status == "published" && trip.current_revision&.agent_supplier&.status == "paused"
     { "draft" => "Borrador", "published" => "Publicado", "unpublished" => "Despublicado", "archived" => "Archivado" }.fetch(trip.status)
   end
 end
