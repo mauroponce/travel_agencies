@@ -7,6 +7,7 @@ module Agent
     def show
       response.headers["Cache-Control"] = "private, no-store"
       @workspace = current_user&.agent_workspace || AgentWorkspace.new(name: current_user&.name)
+      return redirect_to(agent_root_path) if @workspace.persisted? && @workspace.active?
       @workspace.slug = AgentWorkspace.suggest_slug(@workspace.name) if current_user && @workspace.new_record?
     end
 
@@ -21,17 +22,17 @@ module Agent
     def create
       return redirect_to(agent_onboarding_path) unless current_user
       @workspace = current_user.agent_workspace
-      return redirect_to(agent_onboarding_path) if @workspace
+      return redirect_to(agent_root_path) if @workspace
       @workspace = AgentWorkspace.new(params.expect(agent_workspace: [ :name, :whatsapp, :slug, :presentation ]))
       @workspace.owner = current_user
       if @workspace.save
-        redirect_to agent_onboarding_path, notice: "Tu web está lista. Ingresá a tu panel para cargar y publicar tu primer viaje."
+        redirect_to agent_root_path, notice: "Tu web está lista. Cargá y publicá tu primer viaje."
       else
         suggest_alternative
         render :show, status: :unprocessable_entity
       end
     rescue ActiveRecord::RecordNotUnique
-      return redirect_to(agent_onboarding_path) if current_user.reload.agent_workspace
+      return redirect_to(agent_root_path) if current_user.reload.agent_workspace
       @workspace.errors.add(:slug, "ya está en uso; elegí otro o usá la sugerencia")
       suggest_alternative
       render :show, status: :unprocessable_entity

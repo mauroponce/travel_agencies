@@ -14,10 +14,13 @@ class AgentWorkspaceTest < ActionDispatch::IntegrationTest
     assert_difference "AgentWorkspace.count", 1 do
       post agent_onboarding_path, params: { agent_workspace: { name: "Mi agencia independiente", whatsapp: "+54 9 11 5555 1234", slug: "lucia-#{SecureRandom.hex(3)}" } }
     end
+    assert_redirected_to agent_root_path
+    follow_redirect!
+    assert_response :success
+    assert_includes response.body, "Piloto de lanzamiento"
     assert_empty user.memberships
     get agent_onboarding_path
-    assert_response :success
-    assert_includes response.body, "Ingresar a mi espacio"
+    assert_redirected_to agent_root_path
     login_agent(user.reload.agent_workspace)
     get agent_root_path
     assert_response :success

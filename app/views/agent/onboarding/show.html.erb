@@ -34,8 +34,6 @@
         <small id="slug-help">Podés cambiar el link antes de crear tu espacio. Usá letras minúsculas, números o guiones. Al guardar validaremos que esté disponible.</small>
         <small id="slug-status" role="status" aria-live="polite" data-agent-signup-target="status"></small>
         <button type="button" class="agent-link agent-slug-suggestion" data-agent-signup-target="suggestion" data-action="agent-signup#useSuggestion" <%= "hidden" unless @suggested_slug %> data-slug="<%= @suggested_slug %>">Usar <%= @suggested_slug %></button>
-        <%= f.label :presentation, "Presentación (opcional)" %>
-        <%= f.text_area :presentation, placeholder: "Contales a tus clientes qué viajes ofrecés." %>
         <%= f.submit "Crear mi espacio", class: "btn btn-primary" %>
       <% end %>
     <% end %>

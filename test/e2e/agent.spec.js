@@ -35,13 +35,10 @@ test("agent signs up with an editable name and public slug and publishes a manua
     await page.getByLabel("WhatsApp con código de país").fill("5491155551234")
     await page.getByRole("button", { name: "Crear mi espacio" }).click()
   }
-  const workspaceLink = page.getByRole("link", { name: "Ingresar a mi espacio" })
-  await expect(workspaceLink).toBeVisible()
-  const website = await page.getByRole("link", { name: "Ver mi web", exact: true }).getAttribute("href")
-  expect(website).toBe(`${platform}/${slug}`)
-  await expect(workspaceLink).toHaveAttribute("href", `${platform}/agente`)
-  await workspaceLink.click()
+  await expect(page).toHaveURL(`${platform}/agente`)
   await expect(page.getByRole("heading", { name: "Todo listo para tu próximo viaje" })).toBeVisible()
+  const website = await page.getByRole("link", { name: "Ver mi web ↗", exact: true }).getAttribute("href")
+  expect(website).toBe(`${platform}/${slug}`)
   await page.getByRole("link", { name: "Agregar viaje", exact: true }).click()
   const title = `Bariloche de ${testInfo.project.name}`
   await page.getByLabel("O crear una empresa nueva").fill("Operador propio")

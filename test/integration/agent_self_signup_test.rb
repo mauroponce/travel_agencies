@@ -41,7 +41,7 @@ class AgentSelfSignupTest < ActionDispatch::IntegrationTest
 
     assert_difference "AgentWorkspace.count", 1 do
       post agent_onboarding_path, params: signup_params
-      assert_redirected_to agent_onboarding_path
+      assert_redirected_to agent_root_path
     end
     workspace = user.reload.agent_workspace
     assert_equal "silvina-martinez", workspace.slug
@@ -49,8 +49,9 @@ class AgentSelfSignupTest < ActionDispatch::IntegrationTest
     assert_nil workspace.hostname_registration
     assert_equal PlatformHosts.url(host: PlatformHosts.platform_host, path: "/silvina-martinez"), workspace.url
     follow_redirect!
-    assert_select "a[href=?]", workspace.url, text: "Ver mi web"
-    assert_select "a[href=?]", workspace.url(path: agent_root_path), text: "Ingresar a mi espacio"
+    assert_response :success
+    assert_select "h1", text: "Todo listo para tu próximo viaje"
+    assert_select "a[href=?]", workspace.url, text: "Ver mi web ↗"
 
     get new_agent_trip_path
     assert_response :success
@@ -103,7 +104,7 @@ class AgentSelfSignupTest < ActionDispatch::IntegrationTest
       assert_select "input[name='agent_workspace[slug]']"
       assert_difference "AgentWorkspace.count", 1 do
         post agent_onboarding_path, params: signup_params(slug: "silvina-#{environment}")
-        assert_redirected_to agent_onboarding_path
+        assert_redirected_to agent_root_path
       end
       workspace = User.find_by!(google_sub: @google_uid).agent_workspace
       reset!
@@ -153,10 +154,10 @@ class AgentSelfSignupTest < ActionDispatch::IntegrationTest
       end
     end
     post agent_onboarding_path, params: signup_params
-    assert_redirected_to agent_onboarding_path
+    assert_redirected_to agent_root_path
     assert_no_difference [ "AgentWorkspace.count", "HostnameRegistration.count" ] do
       post agent_onboarding_path, params: signup_params(slug: "segunda-web")
-      assert_redirected_to agent_onboarding_path
+      assert_redirected_to agent_root_path
     end
   end
 
@@ -202,7 +203,7 @@ class AgentSelfSignupTest < ActionDispatch::IntegrationTest
     signup_attributes = signup_params(slug: "mi-marca")
     signup_attributes[:agent_workspace][:name] = "Mi nombre elegido"
     post agent_onboarding_path, params: signup_attributes
-    assert_redirected_to agent_onboarding_path
+    assert_redirected_to agent_root_path
     workspace = User.find_by!(google_sub: @google_uid).agent_workspace
     assert_equal "Mi nombre elegido", workspace.name
     assert_equal workspace.name, workspace.public_name
@@ -225,11 +226,11 @@ class AgentSelfSignupTest < ActionDispatch::IntegrationTest
     assert_select "input[name='agent_workspace[name]'][value='Silvina Martínez Viajes']"
     assert_select "input[name='agent_workspace[slug]'][value=?]", proposed
     assert_select "input[name='agent_workspace[whatsapp]'][value='+54 9 11 5555 1234']"
-    assert_select "textarea[name='agent_workspace[presentation]']", text: "Viajes con atención personal"
+    assert_select "textarea[name='agent_workspace[presentation]']", count: 0
     assert_select "[role=alert]", text: /ya está en uso/
     assert_select "button[data-slug=?]:not([hidden])", "#{proposed}-2", text: "Usar #{proposed}-2"
     post agent_onboarding_path, params: signup_params(slug: "#{proposed}-2")
-    assert_redirected_to agent_onboarding_path
+    assert_redirected_to agent_root_path
   end
 
   test "name errors use the single visible field label and preserve a custom link" do
@@ -294,7 +295,7 @@ class AgentSelfSignupTest < ActionDispatch::IntegrationTest
 
   def signup_params(slug: "silvina-martinez")
     { agent_workspace: { name: "Silvina Martínez Viajes",
-      whatsapp: "+54 9 11 5555 1234", slug:, presentation: "Viajes con atención personal" } }
+      whatsapp: "+54 9 11 5555 1234", slug: } }
   end
 
   def mock_google_identity(verified: true)

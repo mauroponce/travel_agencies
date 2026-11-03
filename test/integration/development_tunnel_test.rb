@@ -82,11 +82,12 @@ class DevelopmentTunnelTest < ActionDispatch::IntegrationTest
 
     assert_no_difference "HostnameRegistration.count" do
       post agent_onboarding_path, params: { agent_workspace: { name: "Agente del túnel", slug: "agente-del-tunel", whatsapp: "5491155551234" } }
-      assert_redirected_to agent_onboarding_path
+      assert_redirected_to agent_root_path
     end
     follow_redirect!
-    assert_select "a[href=?]", "https://#{TUNNEL_HOST}/agente-del-tunel", text: "Ver mi web"
-    assert_select "a[href=?]", "https://#{TUNNEL_HOST}/agente", text: "Ingresar a mi espacio"
+    assert_response :success
+    assert_select "h1", text: "Todo listo para tu próximo viaje"
+    assert_select "a[href=?]", "https://#{TUNNEL_HOST}/agente-del-tunel", text: "Ver mi web ↗"
     get agent_site_path(agent_slug: "agente-del-tunel")
     assert_response :success
     assert_select "h1", text: "Agente del túnel"
