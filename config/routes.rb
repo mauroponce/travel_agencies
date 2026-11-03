@@ -42,7 +42,7 @@ Rails.application.routes.draw do
   if Rails.env.development?
     local_platform_host = ->(request) { %w[localhost 127.0.0.1].include?(request.host) && request.host != PlatformHosts.platform_host }
     get "/", constraints: local_platform_host, to: redirect(status: 302) { |_params, request|
-      URI.parse(request.url).tap { |url| url.host = PlatformHosts.platform_host }.to_s
+      PlatformHosts.url(host: PlatformHosts.platform_host, path: request.path, query: request.query_string.presence)
     }
   end
 

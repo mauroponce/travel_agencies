@@ -24,6 +24,27 @@ class DevelopmentTunnelTest < ActionDispatch::IntegrationTest
     OmniAuth.config.mock_auth[:google_oauth2] = @previous_google_mock
   end
 
+  test "localhost redirects to the HTTPS tunnel without the local port and preserves the query" do
+    Rails.application.reload_routes!
+
+    %w[localhost 127.0.0.1].each do |hostname|
+      host! "#{hostname}:3000"
+      https! false
+      get "/", params: { from: "local browser" }
+
+      assert_response :found
+      assert_redirected_to "https://#{TUNNEL_HOST}/?from=local+browser"
+    end
+
+    host! TUNNEL_HOST
+    https!
+    get URI(response.location).request_uri
+    assert_response :success
+  ensure
+    Rails.env = @previous_environment
+    Rails.application.reload_routes!
+  end
+
   test "one HTTPS tunnel serves the platform and completes Google signup without a public port" do
     get root_path
     assert_response :success
