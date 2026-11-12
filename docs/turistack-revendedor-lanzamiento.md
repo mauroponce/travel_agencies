@@ -10,6 +10,8 @@ Alta autónoma: Google → nombre/marca, slug y WhatsApp → proveedor → impor
 
 El panel vive en `/agente`. La web canónica es `/:agent_slug` y la ficha `/:agent_slug/viajes/:slug`, en `PLATFORM_HOST`. Los hosts existentes se conservan. No configurar subdominios nuevos como requisito de alta. Las landings empresariales mantienen su contenido anterior; la landing de plataforma anuncia únicamente Pro.
 
+La URL del asesor es una decisión de producto independiente del aislamiento empresarial por subdominios. En staging/producción los metadatos canónicos y `og:url` usan HTTPS y el dominio principal; `og:image` se sirve en el mismo origen de la página, también para hosts históricos. No cambiar la estrategia para acomodar pruebas antiguas.
+
 `User` es identidad, `Company`/`Membership` son accesos empresariales y `AgentWorkspace` es el negocio personal. `AgentSupplier` es un contacto privado: no busca, crea ni enlaza empresas por coincidencias de nombre, email o teléfono. Empresas y asesores no acceden a datos ajenos. Los módulos operativos de agencias no forman parte de Pro.
 
 ## Suscripción y vencimiento
@@ -37,6 +39,7 @@ Aplicar estas migraciones incrementales después de las existentes, sin editar l
 - `20261112121000_create_agent_clients`: agenda y notas con claves compuestas de espacio.
 - `20261112122000_add_agent_ai_consumption_units`: consumo por intento e índice mensual.
 - `20261112123000_allow_general_identity_authentication`: propósito de login general, separado de operador.
+- `20261112124000_encrypt_agent_contacts`: cifra contactos y notas existentes, incluidos espacios vencidos/suspendidos, sin cambiar IDs, referencias, fechas ni acuerdos. Reemplaza el índice de nombres por espacio/archivo/ID.
 
 La primera asigna a cada piloto una transición gratuita explícita de **30 días desde el momento de migración**, con `origin=pilot_transition` y fin persistido, incluso si el espacio está suspendido. No altera propietarios, slugs, archivos, revisiones, estados ni membresías. No declara a nadie cliente pago. El `ON CONFLICT` impide reiniciar una transición si se repite el backfill; Rails registra la migración ejecutada. `AGENT_PILOT_TRANSITION_DAYS` permite definir de 1 a 90 días **antes de migrar**. Comunicar el vencimiento a los pilotos antes de habilitar la nueva versión; Mi plan lo muestra. Cambiar esa variable después no extiende períodos existentes.
 
@@ -51,6 +54,14 @@ El job reserva `AgentAiExecution.consumption_units` bajo el mismo lock del espac
 Archivos de hasta 10 MB. PDF inicialmente hasta 10 páginas, configurable hasta un máximo duro de 20; se valida cada página antes de enviar el documento completo, con timeout de parseo. Hasta 50 fichas por extracción y salida de proveedor acotada a 16000 tokens. Poppler convierte solo la primera página para vista previa, con límites de CPU, memoria, tiempo y tamaño. El original se conserva privado; una ficha puede necesitar un flyer propio si el PDF contiene varias propuestas.
 
 La agenda requiere nombre y teléfono normalizado con código de país; email opcional. Los nombres/contactos del directorio de proveedores no se publican como datos estructurados; las fichas identifican al asesor. Las notas son privadas, fechadas, con referencia opcional a un viaje del mismo espacio. Archivar no borra notas. No hay creación automática por clic en WhatsApp ni lectura de conversaciones. Las exportaciones CSV de contactos y notas neutralizan fórmulas; `/agente/export.json` exporta datos del negocio autenticado. Los originales se descargan por las rutas privadas de importaciones/viajes; el JSON no empaqueta los archivos binarios. Lecturas y exportaciones usan `private, no-store`. Parámetros de contactos/notas se filtran de logs y las auditorías contienen identificadores, sin texto privado.
+
+`AgentClient.name`, `phone`, `email` y `AgentClientNote.body` usan Active Record Encryption no determinista con las mismas claves estables de pasajeros. PostgreSQL/backups nuevos contienen ciphertext; IDs, relaciones de viajes y fechas siguen visibles para mantener integridad. La aplicación descifra solo para el propietario autorizado, incluidos CSV/JSON, que contienen información privada legible y deben guardarse con acceso restringido. El cifrado de aplicación no reemplaza TLS, permisos de base/storage ni protección de claves/backups.
+
+La búsqueda conserva coincidencias parciales literales de nombre/teléfono/email, sin distinguir mayúsculas. Recorre por lotes de 100 únicamente el espacio autorizado y filtra archivados antes de descifrar; ordena en memoria y pagina por IDs. No guarda índices con nombres, fragmentos, hashes de teléfonos ni términos de búsqueda. Costo O(N) por directorio: adecuado para el piloto; medir latencia/volumen antes de escalar. Las notas no se consultan durante la búsqueda.
+
+La migración acepta texto plano exclusivamente en sus lectores internos, cifra por fila bajo lock y es reanudable: no vuelve a cifrar filas ya completas. Verifica que los sobres existentes sean descifrables antes de escribir; una clave incorrecta aborta. La aplicación normal rechaza texto plano y `agent:audit` detecta campos sin cifrar o ilegibles sin imprimir contenido. No habilitar Pro hasta completar y auditar. `down` es irreversible para evitar devolver datos privados a texto plano.
+
+Política inicial de retención: vencer, suspender o archivar conserva contactos, notas, referencias y originales; no hay borrado automático. El propietario puede exportarlos desde agenda y exportación JSON aun con plan vencido. Una solicitud de eliminación se atiende manualmente, verificando identidad y alcance, revisando referencias y obligaciones aplicables antes de ejecutar un procedimiento específico autorizado; esta entrega no borra filas ni incorpora una purga. Registrar la atención sin copiar contenido privado. Backups previos pueden conservar texto plano: restringir acceso, cifrar el soporte, inventariar retención y acordar su vencimiento antes del piloto. No eliminarlos como parte de esta actualización. Conservar las claves necesarias durante toda la vida de los backups.
 
 Las rutas globales de Active Storage siguen deshabilitadas. Cada imagen pública revalida permiso y revisión. Rack::Attack cubre fichas canónicas y antiguas, catálogos por slug, búsquedas, imágenes/fotos, altas, sugerencias e importaciones. Staging hereda producción: Rails cache Redis compartida por todas las instancias; usar el mismo `REDIS_URL` en web/worker. Memoria local no sirve como límite global multiinstancia.
 
@@ -72,10 +83,12 @@ Conservar `AGENT_ENABLED`, `GEMINI_API_KEY`, `GEMINI_MODEL=gemini-3.5-flash-lite
 
 ## Actualización y reversión seguras
 
-Esta entrega no ejecuta push, despliegues ni operaciones sobre datos productivos.
+Runtime único: Ruby **3.4.12**, fijado en `.ruby-version` (leído por `ruby/setup-ruby`), Docker y documentación. Rails 8.1 y las dependencias mantienen sus versiones. Reconstruir imágenes web/worker; no reutilizar imágenes con Ruby 3.4.1.
+
+Esta entrega prepara una rama/PR; no despliega ni opera sobre datos productivos.
 
 1. Revisar el diff completo, incluidos cambios locales previos. Tomar backup consistente de PostgreSQL y storage/bucket y probar restauración aislada. Registrar tag anterior, configuración y claves estables. Ver [procedimiento de infraestructura](despliegue-dominios.md).
-2. Comunicar transición a pilotos y fijar configuración compartida. Mantener `AGENT_ENABLED=false` durante el cambio, detener/drenar jobs Agent y evitar mezclar workers antiguos sin permisos comerciales con nuevos. Las agencias conservan su operación.
+2. Comunicar transición a pilotos y fijar configuración compartida. Mantener `AGENT_ENABLED=false` en todos los procesos durante el cambio, drenar/detener workers y cerrar procesos web antiguos antes de cifrar: el código anterior no puede leer ciphertext. Usar una ventana de mantenimiento coordinada para esta actualización compartida. No mezclar lectores/escritores antiguos con nuevos.
 3. En staging primero, ejecutar `bin/rails db:migrate` una sola vez con la nueva imagen. Sin resets, seeds ni cambios de claves. Reiniciar todos los procesos web/worker en la misma versión. Si la instalación nunca finalizó hosts, ejecutar su procedimiento existente `agent:finalize_hosts` en el orden documentado.
 4. Ejecutar `tenant_integrity:audit` y `agent:audit`. Revisar que todos los espacios tengan suscripción con fin definido y que los suspendidos sigan suspendidos. Usar Redis compartido y storage accesible desde web/worker.
 5. Habilitar `AGENT_ENABLED=true`; probar Google, dos empresas sin Pro, prueba nueva, vencimiento, imágenes/búsqueda, reactivación, clientes y exportación con identidades separadas. Verificar precio y fechas del piloto en Mi plan. Activar manualmente solo períodos acordados.
@@ -83,30 +96,37 @@ Esta entrega no ejecuta push, despliegues ni operaciones sobre datos productivos
 
 Reversión preferida: deshabilitar `AGENT_ENABLED` en web y worker, conservar todas las migraciones/datos y corregir hacia adelante. Si se revierte código, mantener Agent deshabilitado: una versión anterior no aplica vencimiento ni cuotas mensuales. No hacer `db:rollback` sobre una base con suscripciones/clientes/notas: perdería historia de pruebas y agenda. Una restauración completa requiere un destino aislado, base y archivos del mismo punto y reconciliación de escrituras posteriores. No borrar volúmenes ni bajar las tablas de agencias.
 
+Tras cifrar, conservar además los lectores cifrados y `ACTIVE_RECORD_ENCRYPTION_KEY` original en cualquier versión de recuperación. Si la migración se interrumpe, mantener Pro cerrado y volver a ejecutar con la misma clave; algunas filas ya estarán cifradas. No intentar resolver errores cambiando claves ni activando lectura global de texto plano.
+
 ## Verificación
 
 Comandos requeridos: `bin/rails test`, `bin/rails zeitwerk:check`, `bin/rubocop`, `bin/brakeman --no-pager`, `bin/bundler-audit`, `npm run test:e2e`, `bin/rails tenant_integrity:audit`, `bin/rails agent:audit`, `git diff --check`. Ejecutar Rails y auditorías con una base local/test, nunca inferir infraestructura remota.
 
 Playwright usa por defecto una base nueva `turistack_e2e_<timestamp>_test`, que puede eliminarse después de revisar evidencias, solo identificándola explícitamente como descartable. `E2E_DB_NAME` permite elegir una base vacía terminada en `_test`. OAuth/Gemini se simulan. No se debilitan los checks de CI.
 
-## Evidencia local de esta entrega — 12/11/2026
+## Evidencia de estabilización — 12/11/2026
 
-Base de referencia `0e649269b215da640f79c19a3ed1c5e57d9c372a`, conservando los cambios locales previos. Verificación final sobre código actualizado, PostgreSQL local y respuestas OAuth/Gemini simuladas:
+Referencia: `efe5be3b22d2a22cd95714100d16dcf57203a63b`, último `main` comprobado antes de crear `fix/pilot-stabilization-privacy`. La [CI anterior](https://github.com/mauroponce/travel_agencies/actions/runs/43154881424) fallaba realmente al instalar Ruby 3.4.1 en Ubuntu 26.04 y al exigir en staging el canonical antiguo. Se corrigieron ambos contratos sin retirar controles. El recorrido de Google en navegador detectó además un bloqueo de CSP en el regreso al origen: la página de autenticación ahora permite únicamente el destino de la solicitud validada, además de Google y el host de autenticación.
 
-| Verificación | Resultado real |
+Verificación local con Ruby 3.4.12, Rails 8.1.4 y PostgreSQL:
+
+| Control | Resultado real |
 | --- | --- |
-| `PARALLEL_WORKERS=2 bin/rails test` | 230 pruebas, 2898 aserciones, 0 fallos, 0 errores, 0 omisiones. |
+| `PARALLEL_WORKERS=2 bin/rails test` | 241 pruebas, 3017 aserciones, sin fallos, errores ni omisiones. |
 | `RAILS_ENV=test bin/rails zeitwerk:check` | Carga completa correcta. |
-| `bin/rubocop` | 258 archivos, sin infracciones. |
-| `bin/brakeman --no-pager` | 79 controles, 0 errores, 0 advertencias de seguridad. |
+| `bin/rubocop` | Sin infracciones. |
+| `bin/brakeman --no-pager` | 0 errores y 0 advertencias de seguridad. |
 | `bin/bundler-audit` | Sin vulnerabilidades conocidas. |
-| `npm run test:e2e` | 46 recorridos correctos en Chromium de escritorio y Pixel 7; incluye alta → proveedor → publicación → WhatsApp → cliente → nota. |
-| `RAILS_ENV=test bin/rails tenant_integrity:audit` | OK; avisos por hosts y CNAME de fixtures locales que no corresponden al proxy de prueba. |
-| `RAILS_ENV=test bin/rails agent:audit` | OK, incluidas suscripciones y referencias de notas. |
-| `git diff --check` y `git diff --cached --check` | Correctos. |
+| `bin/importmap audit` | Sin paquetes vulnerables. |
+| `RAILS_ENV=test bin/rails tenant_integrity:audit` | OK. |
+| `RAILS_ENV=test bin/rails agent:audit` | OK, incluye cifrado y referencias privadas. |
 
-Se verificó además con dos clientes de caché independientes sobre un Redis local descartable que el contador de Rack::Attack se comparte atómicamente (lecturas sucesivas 1 y 2). Las pruebas de middleware ejercitan los límites reales de las rutas canónicas, búsquedas, imágenes, alta y exclusión de assets. Las migraciones se aplicaron en test y el backfill de pilotos se probó dos veces sin reiniciar fechas ni levantar suspensiones.
+Las pruebas nuevas cubren ciphertext no determinista, búsqueda parcial por propietario/archivo, migración reanudable desde texto plano con plan vencido/suspendido y precio histórico, claves incompatibles sin sobrescritura, logs sin datos privados, exportaciones y cookies independientes por host. Las carreras de publicación y respuesta de Gemini comprueban acceso fresco y descarte tras vencimiento, conservando originales y consumo. Se mantienen las pruebas anteriores de cuotas simultáneas, reintentos, idempotencia, páginas PDF y operación empresarial.
 
-El comando original de Brakeman fallaba al cargar `timeout` 0.6 en Ruby 3.4 por su prueba protegida de Ractor. `bin/brakeman` ahora carga esa misma dependencia antes de la trampa de excepciones del escáner. Se mantiene `--ensure-latest`, sin ignorar controles ni advertencias; el comando solicitado terminó correctamente. Los fallos detectados durante las primeras corridas se corrigieron antes de la verificación final.
+`agent_pilot.spec.js` recorre Google simulado mediante el intercambio real de hosts, alta/prueba, proveedor, PDF con cuatro salidas, revisión de dos fichas, publicación, filtros destino/fechas, WhatsApp, cliente/nota/exportación, vencimiento, bloqueo, lectura, renovación mediante UI de operador y restitución exclusiva de la revisión publicada. Compara las dos membresías empresariales antes y después y rechaza otro asesor. Las fixtures solo existen en test con `AGENT_E2E_FIXTURES=true`; Playwright usa CSRF y deshabilita conexiones externas mediante WebMock.
 
-La revisión visual móvil comprobó contraste, menú, agenda y ausencia de desbordamiento. No se validaron DNS/TLS, Google/SMTP/Gemini de cuentas reales ni el selector/envío real de WhatsApp en Android/iOS. No se hizo push, despliegue ni acceso a datos productivos. Los logs locales quedan en `tmp/pro-verification/` y los artefactos de Playwright en `test-results/` (ambos fuera de Git).
+`bin/smoke-staging` crea un proyecto Compose y credenciales sintéticas únicos: migra una base vacía y una base anterior con datos de agencias y contactos Pro en texto plano; arranca web/worker/PostgreSQL/Redis; valida HTTP anónimo canónico y antiguo, metadatos HTTPS, imágenes, originales privados y ausencia de fixtures de test; comprueba reinicio, despublicación y restauración consistente de DB/storage cifrado con la misma clave. No usa credenciales ni datos de un entorno existente.
+
+Los resultados definitivos de GitHub Actions se consultan en el PR de esta rama: `scan_ruby`, `scan_js`, `lint`, `test`, `Docker development boot` y `Required checks` deben finalizar en éxito en el último commit. Los logs locales quedan en `tmp/stabilization/` y las trazas de navegador en `test-results/`, fuera de Git.
+
+Antes del piloto real siguen siendo necesarios DNS/TLS del dominio principal, autenticación y hosts históricos, OAuth Google con callbacks autorizados, Redis compartido, PostgreSQL y almacenamiento privado con backups restaurables, claves estables custodiadas, SMTP y una cuenta Gemini con límites y monitoreo. No se validaron credenciales, DNS ni servicios de cuentas reales ni envío nativo de WhatsApp en Android/iOS; Pixel 7 en Playwright no acredita ese envío. No se ejecutó despliegue ni se accedió a datos productivos. Revisar independientemente el PR y ejecutar el recorrido de staging real antes de admitir usuarios del piloto.

@@ -5,6 +5,7 @@ on:
   push:
 
 jobs:
+  # Every setup-ruby step reads .ruby-version; RuntimeVersionTest checks Docker's pin.
   scan_ruby:
     runs-on: ubuntu-latest
 

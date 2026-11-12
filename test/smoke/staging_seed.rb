@@ -11,6 +11,8 @@ Agent::SaveTrip.call(workspace:, trip:, source_import: task, publish: true, attr
   "agent_supplier_id" => supplier.id, "title" => "Oferta smoke", "destination" => "Salta", "departs_on" => 2.months.from_now.to_date,
   "price_cents" => 45_000_000, "currency" => "ARS", "price_unit" => "per_person"
 })
+client = workspace.agent_clients.create!(name: "PRIVATE-SMOKE-CLIENT-ACTIVE", phone: "5491155550103", email: "PRIVATE-SMOKE-EMAIL-ACTIVE@example.invalid")
+client.notes.create!(agent_workspace: workspace, agent_trip: trip, body: "PRIVATE-SMOKE-NOTE-ACTIVE")
 AgentAiJob.perform_later("import", task.id)
 # Waiting is conditional, so a healthy worker completes immediately.
 deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 45

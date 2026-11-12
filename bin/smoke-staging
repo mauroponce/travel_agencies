@@ -49,26 +49,19 @@ EOF
 docker build -t "$TURISTACK_IMAGE" .
 # Upgrade a pre-Revendedor agency database, then start the complete current stack.
 "${compose[@]}" up -d --wait --wait-timeout 120 db redis
+# Run every migration on a genuinely empty database as well as the upgrade below.
+"${compose[@]}" exec -T db createdb -U smoke turistack_fresh_staging
+"${compose[@]}" run --rm -e DB_NAME=turistack_fresh_staging -e POSTGRES_DB=turistack_fresh_staging migrate bin/rails runner 'ActiveRecord::Base.connection_pool.migration_context.migrate; abort "pending migrations" if ActiveRecord::Base.connection_pool.migration_context.needs_migration?'
+"${compose[@]}" exec -T db dropdb -U smoke turistack_fresh_staging
 # MigrationContext avoids Rails 8.1's automatic latest-schema load on an empty DB.
 "${compose[@]}" run --rm migrate bin/rails runner 'ActiveRecord::Base.connection_pool.migration_context.migrate(20261020120000)'
 "${compose[@]}" run --rm -T migrate bin/rails runner - < test/smoke/staging_legacy_seed.rb
+"${compose[@]}" run --rm migrate bin/rails runner 'ActiveRecord::Base.connection_pool.migration_context.migrate(20261112123000)'
+"${compose[@]}" run --rm -T migrate bin/rails runner - < test/smoke/staging_previous_pro_seed.rb
 "${compose[@]}" up -d --wait --wait-timeout 180 web worker
 "${compose[@]}" exec -T web bin/rails agent:finalize_hosts tenant_integrity:audit agent:audit agent:operations
 "${compose[@]}" exec -T web bin/rails runner - < test/smoke/staging_seed.rb
-"${compose[@]}" exec -T web curl --fail --silent --header 'Host: reseller.smoke.example.test' http://localhost:3000/viajes/smoke-public > "$smoke_root/public.html"
-# Check actual anonymous HTTP output, including absolute HTTPS metadata.
-ruby - "$smoke_root/public.html" <<'RUBY'
-html = File.read(ARGV.fetch(0))
-abort "missing public title" unless html.include?("Oferta smoke")
-abort "missing HTTPS canonical" unless html.include?('rel="canonical" href="https://reseller.smoke.example.test/viajes/smoke-public"')
-image = html[/property="og:image" content="([^"]+)"/, 1]
-abort "missing HTTPS image" unless image&.start_with?("https://reseller.smoke.example.test/agente/imagenes/")
-abort "private notes exposed" if html.include?("PRIVATE SMOKE NOTES")
-RUBY
-# The revision ID comes from our isolated DB; no login or signed storage URL is needed.
-image_path="$("${compose[@]}" exec -T web bin/rails runner 'puts Rails.application.routes.url_helpers.agent_public_image_path(slug: "smoke-public", revision_id: AgentTrip.find_by!(slug: "smoke-public").published_revision_id)' | tail -1)"
-"${compose[@]}" exec -T web curl --fail --silent --header 'Host: reseller.smoke.example.test' "http://localhost:3000$image_path" > "$smoke_root/public.jpg"
-test "$(od -An -tx1 -N3 "$smoke_root/public.jpg" | tr -d ' \n')" = ffd8ff
+"${compose[@]}" exec -T web bin/rails runner - < test/smoke/staging_public_verify.rb
 # Production-shaped restart: persist DB, original PDF and converted JPEG volumes.
 "${compose[@]}" restart web worker
 "${compose[@]}" up -d --no-deps --wait --wait-timeout 180 web worker
@@ -79,7 +72,9 @@ bin/backup-turistack
 backup_path="$(find "$BACKUP_ROOT/staging" -mindepth 1 -maxdepth 1 -type d ! -name '*.incomplete' | head -1)"
 test -n "$backup_path"
 "${compose[@]}" exec -T web bin/rails runner 'AgentTrip.find_by!(slug: "smoke-public").update!(status: "unpublished"); File.write(Rails.root.join("storage/stale-smoke-file"), "must disappear")'
+SMOKE_UNPUBLISHED=true "${compose[@]}" exec -T -e SMOKE_UNPUBLISHED=true web bin/rails runner - < test/smoke/staging_public_verify.rb
 RESTORE_CONFIRM=restore-staging bin/restore-turistack "$backup_path"
 "${compose[@]}" exec -T web bin/rails runner - < test/smoke/staging_verify.rb
+"${compose[@]}" exec -T web bin/rails runner - < test/smoke/staging_public_verify.rb
 "${compose[@]}" exec -T web bin/rails runner 'abort "stale file survived restore" if File.exist?(Rails.root.join("storage/stale-smoke-file"))'
 echo 'Staging clean migrations, agency/reseller coexistence, worker, public PDF, persistence and backup/restore: OK'

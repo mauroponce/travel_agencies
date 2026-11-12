@@ -95,8 +95,9 @@ class SessionsController < ApplicationController
   def membership_for(authentication_request, user)
     return if authentication_request.company.nil?
 
+    bind = Arel::Nodes::BindParam.new(ActiveRecord::Relation::QueryAttribute.new("email", user.email.downcase, ActiveRecord::Type::String.new))
     CompanyInvitation.available.where(company: authentication_request.company)
-      .where("lower(email) = ?", user.email.downcase).find_each { |invitation| invitation.accept!(user) }
+      .where(CompanyInvitation.arel_table[:email].lower.eq(bind)).find_each { |invitation| invitation.accept!(user) }
     user.memberships.active.find_by(company: authentication_request.company)
   end
 

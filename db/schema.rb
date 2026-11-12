@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_12_123000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_12_124000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -106,7 +106,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_123000) do
     t.datetime "archived_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["agent_workspace_id", "archived_at", "name"], name: "idx_on_agent_workspace_id_archived_at_name_23862f635a"
+    t.index ["agent_workspace_id", "archived_at", "id"], name: "idx_on_agent_workspace_id_archived_at_id_d8c83077ac"
     t.index ["agent_workspace_id"], name: "index_agent_clients_on_agent_workspace_id"
     t.index ["id", "agent_workspace_id"], name: "index_agent_clients_on_id_and_agent_workspace_id", unique: true
   end

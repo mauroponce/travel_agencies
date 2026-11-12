@@ -1,5 +1,6 @@
 class AgentClient < ApplicationRecord
   include AgentCommercialRecord
+  encrypts :name, :phone, :email
   belongs_to :agent_workspace
   has_many :notes, class_name: "AgentClientNote", dependent: :restrict_with_error
   normalizes :name, with: ->(value) { value.to_s.strip }

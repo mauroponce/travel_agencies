@@ -142,7 +142,7 @@ class AgentProTest < ActionDispatch::IntegrationTest
     assert_response :not_found
     assert_raises(ActiveRecord::RecordInvalid) { @client.notes.create!(agent_workspace: @workspace, body: "No", agent_trip: other_trip) }
     post agent_clients_path, params: { agent_client: { name: "=1+1", phone: "+54 9 11 1111 1111", agent_workspace_id: other.id } }
-    created = @workspace.agent_clients.find_by!(name: "=1+1")
+    created = @workspace.agent_clients.find(response.location.split("/").last)
     assert_equal "5491111111111", created.phone
     post agent_client_notes_path(created), params: { agent_client_note: { body: "+FORMULA", agent_trip_id: @trip.id, agent_workspace_id: other.id } }
     get export_agent_clients_path(format: :csv)
@@ -168,16 +168,50 @@ class AgentProTest < ActionDispatch::IntegrationTest
     previous_logger = ActiveRecord::Base.logger
     ActiveRecord::Base.logger = ActiveSupport::Logger.new(buffer)
     post agent_clients_path, params: { agent_client: { name: "CONTACTO-SECRETO-UNICOTEST", phone: "5491166667777", email: "privado-unique@example.test" } }
-    client = @workspace.agent_clients.find_by!(phone: "5491166667777")
+    client = @workspace.agent_clients.find(response.location.split("/").last)
     post agent_client_notes_path(client), params: { agent_client_note: { body: "NOTA-SECRETA-UNICOTEST" } }
     get agent_clients_path, params: { q: "CONTACTO-SECRETO-UNICOTEST" }
     assert_response :success
     assert_includes response.body, "CONTACTO-SECRETO-UNICOTEST"
+    get agent_suppliers_path, params: { q: "CONTACTO-SECRETO-UNICOTEST" }
+    assert_response :success
     %w[CONTACTO-SECRETO-UNICOTEST NOTA-SECRETA-UNICOTEST privado-unique@example.test 5491166667777].each do |secret|
       assert_not_includes buffer.string, secret
     end
   ensure
     ActiveRecord::Base.logger = previous_logger if previous_logger
+  end
+
+  test "private agenda and exports require the owner on both platform and historical hosts" do
+    host! PlatformHosts.platform_host
+    [ agent_client_path(@client), export_agent_clients_path(format: :csv), agent_export_path(format: :json) ].each do |path|
+      get path
+      assert_response :redirect
+      assert_not_includes response.body, @client.name
+    end
+    other = agent_workspace
+    login_agent(other)
+    get agent_client_path(@client)
+    assert_response :not_found
+    get agent_export_path(format: :json)
+    assert_response :success
+    assert_empty response.parsed_body["clients"]
+    login_agent(@workspace)
+    host! other.hostname
+    # This host retains the other owner's independent session. A foreign ID
+    # must still be inaccessible; cookies are deliberately not shared by hosts.
+    get agent_client_path(@client)
+    assert_response :not_found
+    assert_not_includes response.body, @client.name
+    host! PlatformHosts.platform_host
+    get agent_client_path(@client)
+    assert_response :success
+    assert_includes response.headers["Cache-Control"], "private"
+    assert_includes response.headers["Cache-Control"], "no-store"
+    get agent_site_trip_path(agent_slug: @workspace.slug, slug: @trip.slug)
+    assert_response :success
+    assert_not_includes response.body, @client.name
+    assert_not_includes response.body, @client.notes.sole.body
   end
   test "legacy hosts serve images and personal photos on the same origin and still enforce expiry" do
     workspace = agent_workspace(show_about: true)

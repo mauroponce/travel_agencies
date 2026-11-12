@@ -17,7 +17,8 @@ module Auth
       raise InvalidIdentity, "Google no confirmó el correo de esta cuenta." unless uid.present? && email.present? && verified
 
       user = User.find_or_initialize_by(google_sub: uid)
-      conflict = User.where.not(id: user.id).find_by("lower(email) = ?", email)
+      bind = Arel::Nodes::BindParam.new(ActiveRecord::Relation::QueryAttribute.new("email", email, ActiveRecord::Type::String.new))
+      conflict = User.where.not(id: user.id).find_by(User.arel_table[:email].lower.eq(bind))
       raise InvalidIdentity, "Ese correo ya está vinculado a otra identidad de Google." if conflict
 
       user.update!(email:, name: info["name"].presence || email.split("@").first, avatar_url: info["image"])

@@ -6,7 +6,7 @@ La operación anterior de agencias (salidas, inventario, reservas, pasajeros, pa
 
 ## Requisitos
 
-- Ruby 3.4.1, PostgreSQL 14+ y Redis 7+
+- Ruby 3.4.12, PostgreSQL 14+ y Redis 7+
 - Docker y Docker Compose para el flujo en contenedores
 - Credenciales OAuth 2.0 de Google para una aplicación web
 

@@ -5,14 +5,7 @@ module Agent
     def index
       scope = current_agent_workspace.agent_clients
       scope = scope.active unless params[:archived] == "1"
-      if params[:q].present?
-        term = "%#{AgentClient.sanitize_sql_like(params[:q].to_s.first(200))}%"
-        attribute = ActiveRecord::Relation::QueryAttribute.new("agent_client_search", term, ActiveRecord::Type::String.new)
-        bind = Arel::Nodes::BindParam.new(attribute)
-        table = AgentClient.arel_table
-        scope = scope.where(table[:name].matches(bind).or(table[:phone].matches(bind)).or(table[:email].matches(bind)))
-      end
-      @clients, @pagination = paginate(scope.order(:name, :id))
+      @clients, @pagination = paginate(ClientDirectory.call(scope:, query: params[:q]))
     end
 
     def new = @client = current_agent_workspace.agent_clients.new

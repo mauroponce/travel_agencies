@@ -9,7 +9,12 @@ Rails.application.configure do
     policy.connect_src :self, :https
     policy.base_uri :self
     # Chrome applies form-action to redirects after POST, including OAuth hops.
-    policy.form_action :self, -> { PlatformHosts.url(host: PlatformHosts.auth_host) }, "https://accounts.google.com"
+    policy.form_action :self, -> { PlatformHosts.url(host: PlatformHosts.auth_host) }, "https://accounts.google.com", lambda {
+      if Current.host_scope == "auth"
+        pending = AuthenticationRequest.find_by(id: session[:authentication_request_id])
+        PlatformHosts.url(host: pending.return_hostname) if pending&.available?
+      end
+    }
     policy.frame_ancestors :none
   end
   config.content_security_policy_nonce_generator = ->(_request) { SecureRandom.base64(16) }

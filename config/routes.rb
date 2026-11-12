@@ -66,6 +66,11 @@ Rails.application.routes.draw do
   get "/auth/failure", to: "sessions#failure"
   delete "/session", to: "sessions#destroy", as: :session
   get "/test/sign-in", to: "sessions#test_sign_in" if Rails.env.test?
+  if Rails.env.test? && ENV["AGENT_E2E_FIXTURES"] == "true"
+    get "/test/pro-lifecycle/prepare", to: "e2e_pro_lifecycle#prepare"
+    get "/test/pro-lifecycle", to: "e2e_pro_lifecycle#show"
+    post "/test/pro-lifecycle/expire", to: "e2e_pro_lifecycle#expire"
+  end
 
   resource :onboarding, only: :show
   post "/context", to: "contexts#update", as: :context

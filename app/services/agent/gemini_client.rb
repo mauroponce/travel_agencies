@@ -31,6 +31,7 @@ module Agent
       request["Content-Type"] = "application/json"
       request["x-goog-api-key"] = key
       request.body = { contents: [ { role: "user", parts: } ], generationConfig: { temperature: 0, maxOutputTokens: 16000, responseMimeType: "application/json", responseJsonSchema: AiContract.provider_schema(kind) } }.to_json
+      Access.new(task.agent_workspace).require_commercial!
       response = Net::HTTP.start(uri.host, uri.port, use_ssl: true, open_timeout: 10, read_timeout: 60, write_timeout: 30) { |http| http.request(request) }
       unless response.is_a?(Net::HTTPSuccess)
         raise Failure.new("provider_#{response.code}", transient: response.code == "429" || response.code.to_i >= 500)
@@ -42,6 +43,8 @@ module Agent
       raise Failure.new("incomplete_response", usage:) unless candidate && candidate["finishReason"] == "STOP"
       output = candidate.fetch("content").fetch("parts").reject { |part| part["thought"] }.map { |part| part["text"].to_s }.join
       [ AiContract.parse(kind, output, today:), usage ]
+    rescue Pundit::NotAuthorizedError
+      raise Failure.new("plan_expired")
     rescue Timeout::Error, SocketError, IOError, SystemCallError
       raise Failure.new("network", transient: true)
     rescue JSON::ParserError, KeyError, AiContract::Invalid

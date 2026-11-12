@@ -5,7 +5,9 @@ module Agent
       scope = current_agent_workspace.agent_suppliers
       if params[:q].present?
         term = "%#{AgentSupplier.sanitize_sql_like(params[:q].to_s.first(200))}%"
-        scope = scope.where("name ILIKE :q OR contact_name ILIKE :q OR email ILIKE :q OR phone ILIKE :q", q: term)
+        bind = Arel::Nodes::BindParam.new(ActiveRecord::Relation::QueryAttribute.new("agent_supplier_query", term, ActiveRecord::Type::String.new))
+        table = AgentSupplier.arel_table
+        scope = scope.where(table[:name].matches(bind).or(table[:contact_name].matches(bind)).or(table[:email].matches(bind)).or(table[:phone].matches(bind)))
       end
       @suppliers, @pagination = paginate(scope.order(:name, :id))
       @counts = current_agent_workspace.agent_trips.joins(:current_revision).group("agent_trip_revisions.agent_supplier_id").count

@@ -1,5 +1,6 @@
 class AgentClientNote < ApplicationRecord
   include AgentCommercialRecord
+  encrypts :body
   belongs_to :agent_workspace
   belongs_to :agent_client
   belongs_to :agent_trip, optional: true

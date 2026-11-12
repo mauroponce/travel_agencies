@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-ARG RUBY_VERSION=3.4.1
+ARG RUBY_VERSION=3.4.12
 FROM ruby:${RUBY_VERSION}-slim AS base
 WORKDIR /rails
 ENV BUNDLE_DEPLOYMENT=1 BUNDLE_PATH=/usr/local/bundle BUNDLE_WITHOUT=development:test RAILS_LOG_TO_STDOUT=1 CONTAINERIZED=true

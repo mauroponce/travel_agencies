@@ -23,6 +23,19 @@ module Agent
           findings << "Invalid revision pointer #{trip.id}" unless revision.agent_trip_id == trip.id && revision.agent_workspace_id == trip.agent_workspace_id
         end
       end
+      { AgentClient => %w[name phone email], AgentClientNote => %w[body] }.each do |model, fields|
+        model.find_each do |record|
+          fields.each do |field|
+            next if record.read_attribute_before_type_cast(field).nil?
+            begin
+              raise ActiveRecord::Encryption::Errors::Decryption unless record.encrypted_attribute?(field)
+              record.public_send(field)
+            rescue ActiveRecord::Encryption::Errors::Base
+              findings << "Unreadable or plaintext private field #{model.name} #{record.id}: #{field}"
+            end
+          end
+        end
+      end
       findings
     end
   end
