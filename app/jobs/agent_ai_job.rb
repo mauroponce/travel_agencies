@@ -13,7 +13,10 @@ class AgentAiJob < ApplicationJob
     data, usage = Agent::GeminiClient.call(kind:, task:)
     task.agent_workspace.with_lock do
       task.lock!
-      return execution.update!(status: "discarded", duration_ms: elapsed(started), usage:) unless task.processing_token == token && task.agent_workspace.active?
+      unless task.processing_token == token && Agent::Access.new(task.agent_workspace).commercial?
+        task.update!(status: "error", error_code: "plan_expired", processing_token: nil) if task.processing_token == token
+        return execution.update!(status: "discarded", duration_ms: elapsed(started), usage:)
+      end
       if kind == "import"
         data.fetch("trips").each_with_index do |attributes, position|
           task.items.create!(agent_workspace: task.agent_workspace, position:, extracted: attributes)
@@ -39,7 +42,11 @@ class AgentAiJob < ApplicationJob
   def claim(task, kind)
     task.agent_workspace.with_lock do
       task.lock!
-      return unless task.agent_workspace.active? && task.status == "pending"
+      return unless task.status == "pending"
+      unless Agent::Access.new(task.agent_workspace).commercial?
+        task.update!(status: "error", error_code: "plan_expired", processing_token: nil)
+        return
+      end
       running = [ AgentImport, AgentSearch ].sum { |model| model.where(agent_workspace: task.agent_workspace, status: "processing").where("started_at > ?", LEASE.ago).count }
       if running >= ENV.fetch("AGENT_AI_CONCURRENCY", 2).to_i.clamp(1, 10)
         self.class.set(wait: 5.seconds).perform_later(task.is_a?(AgentImport) ? "import" : "search", task.id)
@@ -47,16 +54,19 @@ class AgentAiJob < ApplicationJob
       end
       return task.update!(status: "error", error_code: "attempts_exhausted") && nil if task.attempts >= 3
       begin
+        units = kind == "import" ? Agent::AiRequests.upload_units(task.source.attached? ? task.source.blob : nil) : 1
         Agent::AiRequests.check_daily!(workspace: task.agent_workspace, kind:)
+        Agent::AiRequests.check_monthly!(workspace: task.agent_workspace, units:)
       rescue Agent::AiRequests::Limited
-        task.update!(status: "error", error_code: "daily_limit", processing_token: nil)
+        code = Agent::AiRequests.monthly_remaining(task.agent_workspace) < units ? "monthly_limit" : "daily_limit"
+        task.update!(status: "error", error_code: code, processing_token: nil)
         return
       end
       token = SecureRandom.uuid
       task.update!(status: "processing", processing_token: token, started_at: Time.current, attempts: task.attempts + 1)
       execution = task.agent_workspace.agent_ai_executions.create!(
         (kind == "import" ? { agent_import: task } : { agent_search: task }).merge(
-          model: Agent::GeminiClient.model, contract_version: Agent::AiContract::VERSION, status: "processing"))
+          consumption_units: units, model: Agent::GeminiClient.model, contract_version: Agent::AiContract::VERSION, status: "processing"))
       [ token, execution ]
     end
   end
@@ -67,7 +77,7 @@ class AgentAiJob < ApplicationJob
     retry_task = false
     task.with_lock do
       if task.processing_token == token
-        retry_task = transient && task.attempts < 3 && task.agent_workspace.active?
+        retry_task = transient && task.attempts < 3 && Agent::Access.new(task.agent_workspace).commercial?
         task.update!(status: retry_task ? "pending" : "error", error_code: code, processing_token: nil)
       end
       execution&.update!(status: "error", error_code: code, duration_ms: started && elapsed(started), usage:)

@@ -6,25 +6,16 @@ test.beforeEach(async ({ page, baseURL }) => {
   await page.goto(platform.href)
 })
 
-test("landing connects Google sign-in and demonstrates all three roles", async ({ page }) => {
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Cada viaje, cada venta,en un solo lugar.")
+test("platform landing describes the real Pro scope and manual subscription", async ({ page }) => {
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Tu marca, tus viajes,tus clientes.")
   const signIn = page.getByRole("button", { name: "Ingresar con Google", exact: true }).first()
   await expect(signIn).toBeVisible()
   await expect(signIn.locator("..")).toHaveAttribute("action", "/auth/start")
   await expect(signIn.locator("..")).toHaveAttribute("method", "post")
-
-  const roles = page.getByRole("combobox", { name: "Cambiar perfil de demostración" })
-  await roles.selectOption("reseller")
-  await expect(page.locator("#appCrumbTitle")).toHaveText("Mis ventas")
-  await expect(page.locator("#appRows")).toContainText("TS-1048")
-  await roles.selectOption("coordinator")
-  await expect(page.locator("#appCrumbTitle")).toHaveText("Mis salidas")
-  await expect(page.locator("#appRows")).toContainText("Terminal Varela")
-  await roles.selectOption("admin")
-  await expect(page.locator("#appCrumbTitle")).toHaveText("Vista general")
-  await expect(page.locator("#appRows")).toContainText("38 / 45")
-
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+  await expect(page.getByRole("heading", { name: "Turistack Pro · USD 19.00 por mes" })).toBeVisible()
+  await expect(page.getByText(/sin débito automático/).first()).toBeVisible()
+  await expect(page.getByRole("heading", { name: "Clientes y notas privados" })).toBeVisible()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
 })
 
 test("landing navigation supports the keyboard on desktop and mobile", async ({ page }, testInfo) => {
@@ -37,15 +28,12 @@ test("landing navigation supports the keyboard on desktop and mobile", async ({ 
     await expect(menu).toHaveAttribute("aria-expanded", "false")
     await expect(menu).toBeFocused()
     await menu.click()
-    await page.getByRole("navigation", { name: "Navegación móvil" }).getByRole("link", { name: "Para tu equipo" }).click()
-    await expect(page).toHaveURL(/#proof$/)
+    await page.getByRole("navigation", { name: "Navegación móvil" }).getByRole("link", { name: "Mi plan" }).click()
+    await expect(page).toHaveURL(/#plan$/)
     await expect(menu).toHaveAttribute("aria-expanded", "false")
   } else {
-    const thirdStep = page.getByRole("button", { name: "Paso tres: coordiná el viaje", exact: true })
-    await thirdStep.focus()
-    await thirdStep.press("Enter")
-    await expect(thirdStep).toHaveAttribute("aria-pressed", "true")
-    await expect(page.locator('[data-vis="2"]')).toHaveAttribute("aria-hidden", "false")
+    await page.getByRole("navigation", { name: "Navegación principal" }).getByRole("link", { name: "Cómo funciona" }).click()
+    await expect(page).toHaveURL(/#tour$/)
   }
 })
 

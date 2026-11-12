@@ -60,6 +60,8 @@ class ApplicationController < ActionController::Base
       AgentWorkspace.enabled? && AgentWorkspace.self_signup_enabled? && Current.host_scope == "platform"
     when "landing", "onboardings"
       %w[tenant platform agent].include?(Current.host_scope)
+    when "contexts"
+      %w[tenant platform agent].include?(Current.host_scope)
     when "pwa"
       %w[tenant agent].include?(Current.host_scope)
     else

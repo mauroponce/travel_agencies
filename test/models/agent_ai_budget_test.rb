@@ -42,6 +42,7 @@ class AgentAiBudgetTest < ActiveSupport::TestCase
   end
 
   test "daily budget resets at workspace midnight rather than UTC midnight" do
+    @workspace.agent_subscription.update!(trial_starts_at: Time.utc(2026, 10, 20), trial_ends_at: Time.utc(2026, 11, 20))
     # Buenos Aires midnight is 03:00 UTC.
     travel_to Time.utc(2026, 10, 26, 2, 59, 0) do
       2.times { |i| Agent::AiRequests.create!(workspace: @workspace, kind: "search", attributes: { query: "Salta", idempotency_key: i.to_s }) }

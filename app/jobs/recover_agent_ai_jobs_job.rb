@@ -11,7 +11,7 @@ class RecoverAgentAiJobsJob < ApplicationJob
             task.agent_workspace.agent_ai_executions.where(source_key => task.id, status: "processing")
               .update_all(status: "discarded", error_code: "lease_expired", updated_at: Time.current)
             task.update!(status: task.attempts >= 3 ? "error" : "pending", processing_token: nil, error_code: task.attempts >= 3 ? "attempts_exhausted" : nil)
-            enqueue = task.status == "pending" && task.agent_workspace.active?
+            enqueue = task.status == "pending" && Agent::Access.new(task.agent_workspace).commercial?
           end
         end
         AgentAiJob.perform_later(kind, task.id) if enqueue

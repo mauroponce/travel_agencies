@@ -1,4 +1,5 @@
 class AgentTrip < ApplicationRecord
+  include AgentCommercialRecord
   belongs_to :agent_workspace
   belongs_to :current_revision, class_name: "AgentTripRevision", optional: true
   belongs_to :published_revision, class_name: "AgentTripRevision", optional: true
@@ -25,6 +26,7 @@ class AgentTrip < ApplicationRecord
         errors.add(:agent_workspace, "está suspendido")
         raise ActiveRecord::RecordInvalid, self
       end
+      Agent::Access.new(agent_workspace).require_commercial!
       with_lock do
         revision = current_revision
         raise ActiveRecord::RecordInvalid, self unless revision

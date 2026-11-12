@@ -1,13 +1,13 @@
 <% if @form_error %><p class="agent-alert" role="alert"><%= @form_error %></p><% end %><%= render "agent/errors", record: @revision %><%= form_with model: @revision, scope: :agent_trip_revision, url: form_url, method: form_method, class: "agent-form agent-form-grid", multipart: true do |f| %><% if @trip&.persisted? %><%= hidden_field_tag :expected_revision_id, params[:expected_revision_id].presence || @trip.current_revision_id %><% end %>
   <% if @retained_cover %><%= hidden_field_tag :retained_cover, retained_cover_token %><p class="agent-wide">Conservamos tu archivo: <%= @retained_cover.filename %>. Podés reemplazarlo abajo.</p><% end %>
   <% if @source_import %><%= hidden_field_tag :source_import_id, @source_import.id %><p class="agent-wide">Se conservará el flyer de la importación.</p><% end %>
-  <div class="agent-field"><%= f.label :agent_supplier_id, "Empresa proveedora" %><%= f.select :agent_supplier_id, @suppliers.map { |s| [s.name + (s.active? ? "" : " (pausada)"),s.id] }, {include_blank: "Seleccionar empresa"} %></div>
-  <div class="agent-field"><%= f.label :new_supplier_name, "O crear una empresa nueva" %><%= f.text_field :new_supplier_name, value: params.dig(:agent_trip_revision, :new_supplier_name) %><small>Si completás este nombre, se crea y selecciona al guardar el viaje.</small></div>
+  <div class="agent-field"><%= f.label :agent_supplier_id, "Proveedor" %><%= f.select :agent_supplier_id, @suppliers.map { |s| [s.name + (s.active? ? "" : " (pausada)"),s.id] }, {include_blank: "Seleccionar proveedor"} %></div>
+  <div class="agent-field"><%= f.label :new_supplier_name, "O crear un proveedor nuevo" %><%= f.text_field :new_supplier_name, value: params.dig(:agent_trip_revision, :new_supplier_name) %><small>Si completás este nombre, se crea y selecciona al guardar el viaje.</small></div>
   <% {title: "Título del viaje", destination: "Destino", region: "Provincia o región", price_basis: "Base del precio (ej. base doble)", hotel: "Hotel", meal_plan: "Régimen de comidas", transport: "Transporte", departure_location: "Lugar de salida"}.each do |key,label| %>
     <div class="agent-field"><%= f.label key, label %><%= f.text_field key %></div>
   <% end %>
-  <div class="agent-field"><%= f.label :departs_on, "Fecha de salida" %><%= f.date_field :departs_on %></div>
-  <div class="agent-field"><%= f.label :returns_on, "Fecha de regreso" %><%= f.date_field :returns_on %></div>
+  <div class="agent-field"><%= f.label :departs_on, "Fecha de salida" %><%= argentine_date_field(f, :departs_on) %></div>
+  <div class="agent-field"><%= f.label :returns_on, "Fecha de regreso" %><%= argentine_date_field(f, :returns_on) %></div>
   <div class="agent-field"><%= f.label :duration_days, "Duración en días" %><%= f.number_field :duration_days, min: 1 %></div>
   <div class="agent-field"><%= f.label :duration_nights, "Cantidad de noches" %><%= f.number_field :duration_nights, min: 0 %></div>
   <div class="agent-field"><%= f.label :price, "Precio final del proveedor" %><%= f.text_field :price, value: params.dig(:agent_trip_revision, :price) || (@revision.price_cents && money_input_value(@revision.price_cents)), inputmode: "decimal" %></div>

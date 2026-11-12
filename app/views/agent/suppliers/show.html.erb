@@ -1,14 +1,14 @@
 <div class="agent-heading">
-  <div><span class="agent-eyebrow">EMPRESA PROVEEDORA</span>
+  <div><span class="agent-eyebrow">PROVEEDOR PRIVADO</span>
     <h1><%= @supplier.name %></h1>
-    <p><%= @supplier.active? ? "Activa" : "Pausada" %></p>
+    <p><%= @supplier.active? ? "Activo" : "Pausado" %></p>
   </div>
-  <%= link_to "Editar empresa", edit_agent_supplier_path(@supplier), class: "btn" %></div>
+  <%= link_to "Editar proveedor", edit_agent_supplier_path(@supplier), class: "btn" %></div>
 <section class="agent-panel">
   <dl class="agent-details"><% {website: "Sitio web", notes: "Notas internas", contact_name: "Contacto", phone: "Teléfono", email: "Email", commercial_terms: "Condiciones comerciales", commission_terms: "Comisión"}.each do |key, label| %>
       <dt><%= label %></dt>
       <dd><%= @supplier.public_send(key).presence || "Sin registrar" %></dd>
     <% end %></dl>
-  <%= link_to "Ver viajes de esta empresa", agent_trips_path(supplier_id: @supplier.id), class: "btn btn-primary" %></section>
+  <%= link_to "Ver viajes de este proveedor", agent_trips_path(supplier_id: @supplier.id), class: "btn btn-primary" %></section>
 
-<%= button_to "Eliminar empresa", agent_supplier_path(@supplier), method: :delete, class: "btn", data: { turbo_confirm: "¿Eliminar esta empresa? Si tiene viajes asociados, podés pausarla." } %>
+<%= button_to "Eliminar proveedor", agent_supplier_path(@supplier), method: :delete, class: "btn", data: { turbo_confirm: "¿Eliminar este proveedor? Si tiene viajes asociados, podés pausarla." } %>

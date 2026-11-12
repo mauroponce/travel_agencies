@@ -20,7 +20,7 @@
     <h2>Criterios interpretados</h2>
     <dl class="agent-details"><% @search.filters.each do |key,value| %>
         <dt><%= agent_filter_label(key) %></dt>
-        <dd><%= value %></dd>
+        <dd><%= %w[from to].include?(key) ? argentine_date(value) : value %></dd>
       <% end %></dl>
     <% @search.interpretation.each do |note| %>
       <p class="agent-alert"><%= note %></p>

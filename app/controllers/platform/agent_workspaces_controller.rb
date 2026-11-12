@@ -2,7 +2,7 @@ module Platform
   class AgentWorkspacesController < ApplicationController
     before_action -> { raise Pundit::NotAuthorizedError unless current_user.platform_operator? }
     def index
-      @workspaces, @pagination = paginate(AgentWorkspace.includes(:owner, :hostname_registration).order(:business_name, :id))
+      @workspaces, @pagination = paginate(AgentWorkspace.includes(:owner, :hostname_registration, :agent_subscription).order(:business_name, :id))
     end
     def new
       @workspace = AgentWorkspace.new(whatsapp: "541160347665")
@@ -14,7 +14,7 @@ module Platform
       if @workspace.save
         AgentWorkspaceMailer.invite(@workspace).deliver_later
         AuditRecorder.call(action: "agent_workspace.invited", auditable: @workspace)
-        redirect_to platform_agent_workspaces_path, notice: "Revendedor creado. Invitación enviada al correo indicado."
+        redirect_to platform_agent_workspaces_path, notice: "Asesor creado. Invitación enviada al correo indicado."
       else
         render :new, status: :unprocessable_entity
       end

@@ -1,20 +1,45 @@
-<section class="agent-public-search" aria-labelledby="agent-search-title" data-controller="agent-catalog-search" data-agent-catalog-search-url-value="<%= agent_public_search_path_for_workspace %>" data-action="click@window->agent-catalog-search#dismiss">
+<section class="agent-public-search" aria-labelledby="agent-search-title">
   <div class="agent-search-intro">
     <span class="agent-eyebrow">ENCONTRÁ TU PRÓXIMA ESCAPADA</span>
     <h2 id="agent-search-title">¿A dónde querés viajar?</h2>
-    <p>Buscá un destino o un viaje y empezá a planear.</p>
+    <p>Elegí un destino y descubrí tu próximo viaje.</p>
   </div>
-  <%= form_with url: agent_public_catalog_filter_url, method: :get, class: "agent-search-form", html: { role: "search" } do |f| %>
+  <%= form_with url: agent_public_catalog_filter_url, method: :get, class: "agent-search-form destination-picker", html: { role: "search" }, data: { controller: "destination-picker", action: "click@window->destination-picker#dismiss focusout->destination-picker#blur turbo:before-cache@document->destination-picker#reset" } do |f| %>
+    <%= f.hidden_field :destination, value: params[:destination], data: { destination_picker_target: "value" } %>
     <div class="agent-search-field">
       <span class="agent-search-icon" aria-hidden="true"><%= app_icon("search") %></span>
-      <%= f.search_field :q, id: "agent-catalog-query", value: params[:q], placeholder: "Probá con Córdoba, Mendoza…", maxlength: 200, autocomplete: "off", role: "combobox", aria: { label: "Buscar destino o viaje", autocomplete: "list", expanded: "false", controls: "agent-search-results", describedby: "agent-search-hint" }, data: { agent_catalog_search_target: "input", action: "input->agent-catalog-search#search focus->agent-catalog-search#search keydown->agent-catalog-search#navigate" } %>
-      <button type="button" class="agent-search-clear" aria-label="Borrar búsqueda" data-agent-catalog-search-target="clear" data-action="agent-catalog-search#clear" <%= "hidden" if params[:q].blank? %>>×</button>
-      <%= f.submit "Buscar viajes", class: "btn btn-primary" %>
+      <input type="text" id="agent-catalog-destination" role="combobox" aria-label="Destino" aria-autocomplete="list" aria-expanded="false" aria-controls="destination-options" autocomplete="off" spellcheck="false" placeholder="Buscá o elegí un destino" value="<%= params[:destination].presence || 'Todos los destinos' %>" data-destination-picker-target="input" data-action="focus->destination-picker#open input->destination-picker#filter keydown->destination-picker#navigate">
+      <button type="button" class="destination-toggle" aria-label="Mostrar destinos" data-action="destination-picker#toggle"><%= app_icon("chevron-down") %></button>
     </div>
-    <div class="agent-search-dropdown" data-agent-catalog-search-target="dropdown" hidden>
-      <p class="agent-search-status" role="status" aria-live="polite" data-agent-catalog-search-target="status"></p>
-      <div id="agent-search-results" role="listbox" aria-label="Viajes disponibles" data-agent-catalog-search-target="results"></div>
+    <div class="destination-menu" data-destination-picker-target="menu" hidden>
+      <div class="destination-menu-heading"><span>EXPLORÁ LOS DESTINOS</span><small>Elegí uno para ver sus viajes</small></div>
+      <div id="destination-options" class="destination-options" role="listbox" aria-label="Destinos disponibles">
+        <% [["Todos los destinos", ""]].concat(@destinations.map { |destination| [destination, destination] }).each_with_index do |(label, value), index| %>
+          <button type="button" id="destination-option-<%= index %>" class="destination-option" role="option" tabindex="-1" aria-selected="<%= params[:destination].to_s == value %>" data-destination-picker-target="option" data-value="<%= value %>" data-label="<%= label %>" data-action="click->destination-picker#choose">
+            <span class="destination-option-icon" aria-hidden="true"><%= app_icon(value.blank? ? "grid" : "route") %></span>
+            <span class="destination-option-label"><%= label %></span>
+            <span class="destination-option-check" aria-hidden="true">✓</span>
+          </button>
+        <% end %>
+      </div>
+      <p class="destination-status" role="status" aria-live="polite" data-destination-picker-target="status"></p>
     </div>
   <% end %>
-  <p id="agent-search-hint" class="agent-search-hint">Sugerencias de viajes publicados y vigentes, desde 2 letras.</p>
 </section>
+
+<details class="agent-panel agent-catalog-filters"><summary>Más filtros de viajes</summary>
+  <%= form_with url: agent_public_catalog_filter_url, method: :get, class: "agent-filters" do |f| %>
+    <%= f.hidden_field :destination, value: params[:destination] %>
+    <%= f.search_field :q, value: params[:q], placeholder: "Buscar viajes", aria: { label: "Buscar viajes" } %>
+    <%= argentine_date_field(f, :from, value: params[:from], aria: { label: "Desde" }) %>
+    <%= argentine_date_field(f, :to, value: params[:to], aria: { label: "Hasta" }) %>
+    <%= f.select :currency, AgentTripRevision::CURRENCIES, { include_blank: "Moneda", selected: params[:currency] }, aria: { label: "Moneda" } %>
+    <%= f.select :price_unit, AgentTripRevision::PRICE_UNITS.map { |key, label| [label, key] }, { include_blank: "Unidad del precio", selected: params[:price_unit] }, aria: { label: "Unidad del precio" } %>
+    <%= f.number_field :max_price, value: params[:max_price], min: 0, step: "0.01", placeholder: "Precio máximo", aria: { label: "Precio máximo" } %>
+    <%= f.text_field :meal_plan, value: params[:meal_plan], placeholder: "Comidas", aria: { label: "Comidas" } %>
+    <%= f.text_field :transport, value: params[:transport], placeholder: "Transporte", aria: { label: "Transporte" } %>
+    <%= f.select :sort, [["Fecha de salida", "date"], ["Menor precio", "price_asc"], ["Mayor precio", "price_desc"]], { selected: params[:sort] }, aria: { label: "Ordenar" } %>
+    <%= f.submit "Filtrar", class: "btn btn-primary" %><%= link_to "Limpiar", agent_public_catalog_filter_url, class: "btn" %>
+    <small>Para comparar precios elegí moneda y unidad.</small>
+  <% end %>
+</details>

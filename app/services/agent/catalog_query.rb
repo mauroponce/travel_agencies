@@ -2,6 +2,7 @@ module Agent
   class CatalogQuery
     FILTERS = %w[q supplier_id status destination region from to min_price max_price currency price_unit meal_plan transport departure_location min_days max_days sort].freeze
     def self.call(workspace:, filters: {}, public_view: false, search: false)
+      return workspace.agent_trips.none if public_view && !Agent::Access.new(workspace).public?
       filters = filters.to_h.stringify_keys.slice(*FILTERS)
       revision = public_view ? :published_revision : :current_revision
       scope = workspace.agent_trips

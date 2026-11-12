@@ -11,7 +11,7 @@ module Agent
       if params[:commit_action] == "create_supplier"
         supplier = current_agent_workspace.agent_suppliers.create!(name: params.require(:new_supplier_name))
         @item.update!(review_data: @item.review_data.merge("agent_supplier_id" => supplier.id))
-        return redirect_to edit_agent_import_item_path(@import, @item), notice: "Empresa creada. Tus correcciones se conservaron."
+        return redirect_to edit_agent_import_item_path(@import, @item), notice: "Proveedor creado. Tus correcciones se conservaron."
       end
       return redirect_to(edit_agent_import_item_path(@import, @item), notice: "Revisión guardada.") if params[:commit_action] == "review"
       raw["price_cents"] = raw["price"].present? ? MoneyParser.call(raw.delete("price")) : nil
@@ -20,7 +20,7 @@ module Agent
       trip = SaveTrip.call(workspace: current_agent_workspace, attributes: raw, item: @item, trip: target,
         expected_revision_id: target ? params[:expected_revision_id].to_s : nil, publish: params[:commit_action] == "publish")
       redirect_to agent_trip_path(trip), notice: "Ficha guardada."
-    rescue ActiveRecord::RecordInvalid, MoneyParser::InvalidAmount, UploadValidator::Invalid, ActiveRecord::RecordNotUnique, ActiveRecord::StaleObjectError => error
+    rescue ActiveRecord::RecordInvalid, ::MoneyParser::InvalidAmount, UploadValidator::Invalid, ActiveRecord::RecordNotUnique, ActiveRecord::StaleObjectError => error
       @review_error = form_error_message(error)
       prepare_review
       render :edit, status: error.is_a?(ActiveRecord::StaleObjectError) ? :conflict : :unprocessable_entity
@@ -32,10 +32,17 @@ module Agent
     end
     def prepare_review
       data = @item.extracted.slice(*AgentTripRevision::FIELDS).merge(@item.review_data.except("price"))
+      unless @item.review_data.key?("departs_on")
+        evidence = @item.extracted["evidence"]
+        date_evidence = evidence["departs_on"] if evidence.is_a?(Hash)
+        data["departs_on"] = Agent::DepartureDate.call(value: data["departs_on"],
+          text: @item.extracted["departure_text"].presence || date_evidence,
+          today: Time.current.in_time_zone(current_agent_workspace.timezone).to_date)
+      end
       if @item.review_data.key?("price")
         data["price_cents"] = begin
           @item.review_data["price"].present? ? MoneyParser.call(@item.review_data["price"]) : nil
-        rescue MoneyParser::InvalidAmount
+        rescue ::MoneyParser::InvalidAmount
           nil
         end
       end

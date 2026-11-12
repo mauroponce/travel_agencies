@@ -68,4 +68,30 @@ class AgentAiBudgetConcurrencyTest < ActiveSupport::TestCase
   ensure
     previous ? ENV["AGENT_SEARCHES_PER_DAY"] = previous : ENV.delete("AGENT_SEARCHES_PER_DAY")
   end
+  test "simultaneous jobs cannot overspend the last monthly unit" do
+    workspace = agent_workspace
+    previous = ENV["AGENT_PRO_MONTHLY_AI_UNITS"]
+    ENV["AGENT_PRO_MONTHLY_AI_UNITS"] = "1"
+    tasks = 2.times.map { |i| workspace.agent_searches.create!(query: "Salta", idempotency_key: "job-#{i}") }
+    request = stub_gemini(filters: Agent::AiContract.search_properties.keys.index_with { nil }, interpretation: [])
+    ready, start = Queue.new, Queue.new
+    threads = tasks.map do |task|
+      Thread.new do
+        ActiveRecord::Base.connection_pool.with_connection do
+          ready << true
+          start.pop
+          AgentAiJob.perform_now("search", task.id)
+        end
+      end
+    end
+    2.times { ready.pop }
+    2.times { start << true }
+    threads.each(&:value)
+    assert_equal %w[completed error], tasks.map { |task| task.reload.status }.sort
+    assert_equal "monthly_limit", tasks.find { |task| task.status == "error" }.error_code
+    assert_equal 1, workspace.agent_ai_executions.count
+    assert_requested request, times: 1
+  ensure
+    previous ? ENV["AGENT_PRO_MONTHLY_AI_UNITS"] = previous : ENV.delete("AGENT_PRO_MONTHLY_AI_UNITS")
+  end
 end

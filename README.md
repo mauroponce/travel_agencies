@@ -1,6 +1,8 @@
 # Turistack
 
-SaaS multiempresa para agencias de turismo argentinas. Incluye catálogo, salidas e inventario compartido, reservas, pasajeros cifrados, pagos, rendiciones, comisiones, embarque, PWA y notificaciones. El tenant se resuelve por hostname sobre una base PostgreSQL compartida.
+Turistack Pro organiza el negocio de un asesor de viajes independiente: proveedores privados, importaciones revisadas, viajes, web personal, enlaces a WhatsApp y clientes con notas privadas. Cuesta USD 19 por mes, con activación y renovación manual, sin débito automático.
+
+La operación anterior de agencias (salidas, inventario, reservas, pasajeros, pagos y rendiciones) conserva sus rutas, tablas y permisos. Es un producto separado de Pro. Se utiliza PostgreSQL compartido con aislamiento por empresa o espacio personal, según el módulo.
 
 ## Requisitos
 
@@ -82,6 +84,7 @@ bin/brakeman --no-pager
 bin/bundler-audit
 npm run test:e2e
 bin/rails tenant_integrity:audit
+bin/rails agent:audit
 git diff --check
 ```
 
@@ -97,22 +100,22 @@ Los listados administrativos usan orden total (criterio funcional más `id`) par
 
 La arquitectura funcional se documenta en [docs/arquitectura.md](docs/arquitectura.md) y [docs/reglas-negocio.md](docs/reglas-negocio.md).
 
-## Turistack Revendedor
+## Turistack Pro
 
-Piloto controlado para revendedores independientes. Incluye proveedores privados, catálogo versionado, importación de varias fichas por imagen/PDF con Gemini, comparador, sitio público y buscador privado. No incluye cobros de suscripción, reservas autónomas, sincronización con proveedores ni automatización de WhatsApp.
+Con `AGENT_ENABLED=true`, una persona entra con Google desde `/agente/alta`, configura su nombre/marca, WhatsApp y slug y obtiene una única prueba de 14 días. El alta autónoma funciona también en staging/producción después de finalizar la integridad de hosts existente. Reintentar onboarding o ingresar nuevamente no reinicia la prueba. La invitación manual por operador sigue disponible.
 
-Para desarrollo, conservar el `.env` existente y completar `GEMINI_API_KEY` y `GEMINI_MODEL=gemini-3.5-flash-lite`; la clave real nunca va en `.env.example`. `bin/dev` carga `.env` mediante Foreman. Para comandos Rails aislados, cargar previamente las variables del archivo. Arrancar también Redis/Sidekiq para procesar IA; las pruebas usan respuestas simuladas y no necesitan una clave real.
+URLs canónicas: `https://PLATFORM_HOST/:agent_slug` y `/:agent_slug/viajes/:slug`. El panel sigue en `/agente`. Se conservan los hosts antiguos de asesores; no se exige subdominio ni dominio propio. Google usa el callback único en `AUTH_HOST`. Las cookies siguen limitadas a cada host.
 
-Para desarrollo/test, después de `bin/rails db:migrate`, abrir `http://platform.lvh.me:3000/agente/alta`, ingresar con Google y elegir un subdominio. Iniciar sesión desde ese subdominio para entrar al panel. El callback local único sigue siendo `http://auth.lvh.me:3000/auth/google_oauth2/callback`. `bin/rails db:seed` agrega agentes de demostración solo en desarrollo/test; no crea datos de agente en staging/producción.
+El login general del dominio principal permite abrir `/context` y ver **Mi espacio** y **Empresas que me dan acceso**. Tener varias membresías no requiere Pro. Cada host empresarial valida su propia sesión; si aún no existe, se ingresa con Google usando el intercambio efímero existente. Cancelar o vencer Pro nunca elimina la identidad ni modifica membresías.
 
-En staging/producción el operador crea la cuenta desde **Revendedores** e invita el correo verificado por Google; el alta autónoma se limita a development/test.
+**Mi plan** muestra precio, vencimiento, unidades mensuales y solicitud de activación manual. Un operador autorizado en `PLATFORM_ADMIN_GOOGLE_EMAILS` activa o renueva un mes desde `/platform/agent_workspaces`. No hay cobro ni débito automático. `AgentSubscription` es la fuente de permisos comerciales; la columna histórica `AgentWorkspace.plan` se ignora y se conserva solo para compatibilidad de rollback.
 
-Configuración: `AGENT_ENABLED`, `GEMINI_API_KEY`, `GEMINI_MODEL`, `AGENT_IMPORTS_PER_MINUTE=5`, `AGENT_SEARCHES_PER_MINUTE=20` y `AGENT_AI_CONCURRENCY=2`. El piloto no tiene cuota mensual de IA. Los documentos admitidos son JPG/PNG/WebP/PDF de hasta 10 MB, con hasta 100 páginas por PDF y 50 candidatos por extracción. Un error de Gemini permite carga o búsqueda manual. Los límites de ráfaga y concurrencia son por espacio.
+Al vencer se conservan viajes, archivos, revisiones, clientes y notas. El dueño puede leer y exportar en privado (`/agente/export.json` y CSV de contactos/notas), solicitar reactivación y acceder a sus empresas. Se bloquean escrituras comerciales y jobs de IA; web, búsquedas e imágenes públicas responden 404. Reactivar restaura la última revisión publicada, sin publicar borradores. La suspensión administrativa sigue siendo independiente y bloquea el espacio.
 
-La producción queda preparada para **turistack.com**, con `auth.turistack.com`, redirección de `www` y subdominios de agentes. Ver el [procedimiento DNS y de activación](docs/despliegue-dominios.md#producción-turistackcom), incluida la finalización de hosts antes de habilitar Agente. Falta configurar el servidor Hetzner y los servicios externos; los archivos de ejemplo no contienen credenciales reales.
+La IA conserva Gemini y su modelo configurado, idempotencia, límites diarios/por minuto y concurrencia. El presupuesto inicial es **200 unidades por mes calendario de la zona del espacio**, sin acumulación: una búsqueda o una imagen cuesta una unidad por intento; un PDF cuesta una por página por intento. Errores del proveedor y reintentos consumen; una repetición idempotente sin ejecución adicional no consume. Los límites se comprueban bajo el lock del espacio al reservar `AgentAiExecution`. Máximo inicial: 10 MB, 10 páginas de PDF, 50 fichas por extracción. La IA no publica y no recibe clientes ni notas. Con cuota agotada y Pro vigente siguen funcionando la carga y los filtros manuales.
 
-Verificación adicional: `bin/rails agent:audit`. Los recorridos Playwright usan `AGENT_E2E_FIXTURES=true` exclusivamente en test, con el cliente HTTP y los jobs reales pero respuestas Gemini simuladas. `E2E_PORT=3101 npm run test:e2e` permite usar otro puerto sin reutilizar servidores ajenos.
+Para desarrollo, conservar el `.env` existente y completar `GEMINI_API_KEY` y el modelo actual `GEMINI_MODEL=gemini-3.5-flash-lite`. Web y worker usan la misma configuración. Para comandos aislados, cargar el entorno previamente; no versionar secretos. Redis/Sidekiq procesa los jobs. Los tests simulan OAuth/Gemini sin llamadas facturables.
 
-## Turistack Revendedor MVP
+Variables nuevas, transición finita del piloto, activación manual, actualización y reversión: [guía de lanzamiento](docs/turistack-revendedor-lanzamiento.md). Contrato breve para futuras tareas: [alcance de Pro](docs/turistack-pro-alcance.md).
 
-El piloto incorpora alta desde el operador con invitación Google, proveedores privados, fichas manuales o desde Gemini, conservación del flyer/PDF original, catálogo público y compartir archivo con enlace y alternativas manuales. Procedimiento de staging, variables, migraciones, seguridad, rollback y pruebas Android/iOS: [guía de lanzamiento](docs/turistack-revendedor-lanzamiento.md).
+Playwright crea una base nueva `turistack_e2e_<marca-de-tiempo>_test` con `db:prepare db:seed`, exclusivamente local/test; no resetea bases existentes. `E2E_DB_NAME` permite elegir una base de prueba vacía. `E2E_PORT=3101 npm run test:e2e` usa otro puerto. Los fixtures HTTP y jobs simulados se activan solo con `AGENT_E2E_FIXTURES=true` en test. Las pruebas de escritorio y Pixel 7 incluyen alta → proveedor → viaje → publicación → enlace WhatsApp → cliente → nota. No prueban el selector nativo ni el envío real de WhatsApp.

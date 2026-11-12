@@ -1,12 +1,12 @@
 <div class="page-heading">
-  <div><div class="eyebrow">NUEVO ESPACIO</div><h1 class="page-title">Crear revendedor</h1><p class="subtitle">Invitá a un agente y configurá su web.</p></div>
+  <div><div class="eyebrow">NUEVO ESPACIO</div><h1 class="page-title">Crear asesor</h1><p class="subtitle">Invitá a un asesor y configurá su web.</p></div>
 </div>
 <section class="card card-body max-w-3xl">
   <%= render "agent/errors", record: @workspace %>
   <%= form_with model: @workspace, url: platform_agent_workspaces_path, class: "agent-form" do |f| %>
     <%= f.label :name, "Nombre" %><%= f.text_field :name, required: true %>
-    <%= f.label :invited_email, "Correo de Google del revendedor" %><%= f.email_field :invited_email, required: true %>
-    <%= f.label :slug, "Link público (opcional)" %><%= f.text_field :slug, placeholder: "Se genera a partir del nombre" %><small><%= PlatformHosts.platform_host %>/nombre-del-agente</small>
+    <%= f.label :invited_email, "Correo de Google del asesor" %><%= f.email_field :invited_email, required: true %>
+    <%= f.label :slug, "Link público (opcional)" %><%= f.text_field :slug, placeholder: "Se genera a partir del nombre" %><small><%= PlatformHosts.platform_host %>/nombre-del-asesor</small>
     <%= f.label :whatsapp, "WhatsApp comercial con código de país" %><%= f.telephone_field :whatsapp, required: true %>
     <p>Se enviará una invitación. El acceso requiere ingresar con esa cuenta de Google.</p>
     <%= f.submit "Crear y enviar invitación", class: "btn btn-primary" %>

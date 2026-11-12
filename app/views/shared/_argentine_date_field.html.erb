@@ -1,0 +1,8 @@
+<div class="argentine-date-field" data-controller="argentine-date" data-argentine-date-datetime-value="<%= datetime %>">
+  <%= hidden_field_tag name, iso_value, id: "#{id}_iso", data: { argentine_date_target: "iso" } %>
+  <%= text_field_tag nil, display_value, **options, id:, placeholder: datetime ? "DD/MM/AAAA HH:mm" : "DD/MM/AAAA", autocomplete: "off", spellcheck: false,
+    data: { argentine_date_target: "display", action: "input->argentine-date#update change->argentine-date#update" } %>
+  <% picker_options = { id: "#{id}_picker", class: "argentine-date-picker", tabindex: -1, aria: { hidden: true }, data: { argentine_date_target: "picker", action: "change->argentine-date#choose" } } %>
+  <%= datetime ? datetime_local_field_tag(nil, iso_value, **picker_options) : date_field_tag(nil, iso_value, **picker_options) %>
+  <button type="button" class="argentine-date-calendar" aria-label="Abrir calendario" aria-controls="<%= id %>" data-action="argentine-date#open"><%= app_icon("calendar") %></button>
+</div>

@@ -1,0 +1,11 @@
+<div class="agent-heading"><div><span class="agent-eyebrow">AGENDA PRIVADA</span><h1>Mis clientes</h1><p>Registrá contactos manualmente. Solo vos podés verlos y consultar sus notas.</p></div><% if agent_access.commercial? %><%= link_to "Agregar cliente", new_agent_client_path, class: "btn btn-primary" %><% end %></div>
+<section class="agent-panel">
+  <%= form_with url: agent_clients_path, method: :get, class: "agent-form" do |f| %>
+    <%= f.label :q, "Buscar clientes" %><%= f.search_field :q, value: params[:q] %>
+    <label><%= f.check_box :archived, { checked: params[:archived] == "1" }, "1", "0" %> Incluir archivados</label><%= f.submit "Buscar", class: "btn" %>
+  <% end %>
+  <div class="agent-actions"><%= link_to "Exportar contactos", export_agent_clients_path(format: :csv), class: "btn" %><%= link_to "Exportar notas", export_agent_clients_path(format: :csv, notes: "1"), class: "btn" %></div>
+  <% @clients.each do |client| %><article class="agent-row"><h2><%= link_to client.name, agent_client_path(client) %></h2><p><%= client.phone %> · <%= client.email %><%= " · Archivado" if client.archived_at %></p></article><% end %>
+  <% if @clients.empty? %><p>Todavía no hay clientes para esta búsqueda.</p><% end %>
+</section>
+<%= render "agent/pagination", pagination: @pagination %>

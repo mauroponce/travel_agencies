@@ -1,249 +1,112 @@
-# Turistack Revendedor: piloto y lanzamiento
+# Turistack Pro: guía de lanzamiento
 
-La validación y los cambios posteriores al MVP `dbd0f019` están en [Hardening y evidencia de lanzamiento](turistack-revendedor-hardening.md). Los resultados al final de este documento corresponden a la entrega anterior.
+Esta guía describe el comportamiento actual de Pro. El nombre de archivo se conserva por compatibilidad con enlaces anteriores. La evidencia histórica del piloto queda en [hardening anterior](turistack-revendedor-hardening.md); sus cifras no acreditan esta entrega.
 
-## Producto y arquitectura
+## Producto y acceso
 
-El recorrido es: operador crea una cuenta → invitación por correo → Google verifica el correo invitado → proveedor → carga manual o flyer → revisión humana → publicación → ficha pública → compartir archivo y enlace.
+USD 19 al mes, activación y renovación manual, sin débito automático. Google es el único login. Desde el dominio principal se puede ingresar a membresías empresariales sin contratar Pro ni crear un negocio personal. `/context` muestra Mi espacio y Empresas que me dan acceso. El cambio valida una membresía activa de esa identidad y un dominio autorizado; el host elegido revalida sesión y permisos. Si no hay sesión en ese host, se usa su botón Google y el intercambio efímero existente, sin compartir cookies entre subdominios.
 
-Se reutiliza `AgentWorkspace`, ya presente en el árbol de trabajo, como tenant del revendedor. `Company` conserva la operación de agencias. Proveedores son `AgentSupplier` privados de un espacio, nunca tenants. La tabla `hostname_registrations` comparte la reserva de hosts entre ambos productos, y `TenantResolver` resuelve el propietario. Se conserva el contrato existente de OAuth, dominios propios, inventario y reservas de agencias. Los nombres internos `Agent*` y `AGENT_*` se conservan para evitar una migración de identidad innecesaria.
+Alta autónoma: Google → nombre/marca, slug y WhatsApp → proveedor → importar o crear viaje → revisar → publicar → compartir → consulta → registro manual de cliente y nota. Disponible donde `AGENT_ENABLED` esté habilitado y la integridad de hosts finalizada. Una identidad solo tiene un espacio personal; reintentos no crean otra prueba.
 
-En staging/producción el piloto se provisiona desde `/platform/agent_workspaces`, accesible desde **Revendedores** en el panel del operador. El alta autónoma queda disponible únicamente en development/test. El operador completa nombre comercial/público, subdominio, WhatsApp y correo de Google. No se crean usuarios con identidades ficticias: el propietario se asigna al confirmar ese correo con Google. El WhatsApp de demostración del formulario es `+541160347665`; debe sustituirse por el número real del revendedor.
+El panel vive en `/agente`. La web canónica es `/:agent_slug` y la ficha `/:agent_slug/viajes/:slug`, en `PLATFORM_HOST`. Los hosts existentes se conservan. No configurar subdominios nuevos como requisito de alta. Las landings empresariales mantienen su contenido anterior; la landing de plataforma anuncia únicamente Pro.
 
-Un viaje tiene revisiones inmutables y un slug permanente. Editar un borrador conserva la versión pública anterior hasta publicar la nueva revisión. Solo se publican datos revisados; IA nunca publica. Un título omitido se completa con el destino informado por la persona. ARS y precio por persona son las opciones iniciales de carga manual; una extracción ambigua conserva `null` para revisión. No hay inventario ni cupos supuestos. Viajes vencidos, proveedores pausados y cuentas suspendidas se ocultan del catálogo.
+`User` es identidad, `Company`/`Membership` son accesos empresariales y `AgentWorkspace` es el negocio personal. `AgentSupplier` es un contacto privado: no busca, crea ni enlaza empresas por coincidencias de nombre, email o teléfono. Empresas y asesores no acceden a datos ajenos. Los módulos operativos de agencias no forman parte de Pro.
 
-## Archivos, extracción y privacidad
+## Suscripción y vencimiento
 
-- JPG/JPEG, PNG, WebP y PDF: hasta 10 MB; validación MIME y firma, PDF sin cifrado/corrupción y hasta 100 páginas. Gemini recibe el documento completo y puede devolver hasta 50 candidatos. Salida limitada a 16000 tokens; hasta tres intentos automáticos por fallos transitorios. Timeout HTTP de conexión 10 s, lectura 60 s y escritura 30 s. Límites de ráfaga y concurrencia por cuenta.
-- `AgentImport.source` conserva el archivo recibido; `preview` conserva su imagen compartible. Al confirmar, `AgentTripRevision.flyer_source` y `cover` mantienen la relación con esos blobs. Para imágenes se reutiliza exactamente el mismo blob y los mismos bytes. No hay rediseño, sobreimpresión ni marca de agua.
-- Para PDF se conserva el documento original privado y se crea un JPEG de la primera página, máximo 1600 px, mediante Poppler (`pdftoppm`). La extracción sigue incluyendo todas las páginas admitidas. Un documento de varios viajes puede requerir que la persona suba un flyer específico para cada ficha; la imagen compartida representa la primera página del documento.
-- Poppler está instalado en la etapa base de Docker. Se ejecuta sin shell, sin usar el nombre aportado por el usuario, con directorio temporal, límites de CPU/memoria/tamaño y timeout de 15 s. No procesa enlaces externos ni ejecuta instrucciones del documento.
-- El cliente Gemini y la validación JSON están desacoplados (`Agent::GeminiClient`, `Agent::AiContract`). Solo se aceptan los campos comerciales del contrato; IDs de tenant/permisos no forman parte de la respuesta admitida. No se envían reservas, pasajeros ni notas privadas de proveedores.
-- Las rutas globales de Active Storage permanecen desactivadas. El original solo se descarga desde rutas privadas autorizadas. La imagen pública se sirve por una ruta estable que vuelve a comprobar tenant, publicación y revisión; al despublicar devuelve 404. No hay enlaces firmados de descarga que venzan. Una copia ya descargada o almacenada por terceros no puede revocarse desde Turistack.
-- Si Gemini falla o no tiene credenciales, **Cargar viaje manualmente** conserva el archivo recibido. Los códigos de error y estados se guardan sin almacenar respuestas HTTP sensibles ni claves.
+`AgentSubscription` es la única fuente de estado comercial. `AgentWorkspace.plan` es una columna histórica ignorada por el modelo, retenida para compatibilidad de esquema. `Agent::Access` se usa desde controllers, consultas públicas, servicios, modelos de escritura y jobs; los permisos se calculan con fechas en cada operación, sin job nocturno.
 
-Gemini utiliza JSON estructurado ([documentación oficial](https://ai.google.dev/gemini-api/docs/generate-content/structured-output)). La selección final del modelo depende de su disponibilidad en la cuenta y región. La configuración inicial conserva `gemini-3.5-flash-lite`; no se hicieron llamadas pagas con credenciales reales.
+Nuevas altas: prueba de 14 días, creada en la misma transacción que el espacio. El estado `trialing` concede acceso entre inicio inclusive y fin exclusivo. `active` usa el período manual vigente; `inactive` no concede acceso. La cancelación al vencimiento conserva acceso hasta el final del período y excluye gracia. Por defecto no hay gracia. La suspensión administrativa en `AgentWorkspace.status` es independiente y bloquea el espacio aunque la suscripción esté vigente.
 
-## Compartir y prueba manual obligatoria
+Al vencer se conservan todas las filas y archivos. El propietario mantiene lectura y exportación privada y puede solicitar activación. Se rechazan nuevas importaciones, ediciones, publicaciones y ejecuciones de IA. Web, búsqueda, fotos e imágenes públicas devuelven 404. No se cambian estados de viajes ni punteros de revisión. Reactivar restituye la última revisión publicada; los borradores siguen privados. Las membresías empresariales y la identidad no se modifican.
 
-**Compartir flyer en WhatsApp** prepara un `File` desde los bytes descargados de una ruta privada. La descarga anticipada evita perder la activación del toque antes de abrir `navigator.share`. Se comprueba HTTPS, disponibilidad de `navigator.canShare`, compatibilidad de archivo y tipo MIME. Se intenta compartir archivo, texto y URL; cuando la comprobación lo requiere se omite el campo URL porque el texto ya contiene el enlace.
+Activación manual:
 
-La API abre el selector del sistema; la persona elige WhatsApp y, si corresponde, **Mi estado**. No existe confirmación de publicación de un Estado. El destino puede omitir texto, URL o combinaciones de contenido. La interfaz nunca anuncia que publicó nada. Siempre ofrece **Descargar flyer**, **Copiar enlace** y **Copiar texto para estado**, con selección manual del texto si el portapapeles no está disponible. Cancelaciones y errores conservan esas alternativas. `wa.me` solo se usa para contactar al revendedor, incluyendo nombre y URL del viaje.
+1. El asesor abre **Mi plan → Solicitar activación o renovación manual**. No introduce datos de tarjetas ni paga en Turistack.
+2. Un operador cuyo correo Google esté autorizado en `PLATFORM_ADMIN_GOOGLE_EMAILS` ingresa al dominio principal y abre `/platform/agent_workspaces`.
+3. Revisa la solicitud y coordina el pago por fuera del producto. Pulsa **Activar / renovar un mes** una sola vez por período acordado. Cada pulsación agrega un mes calendario desde el fin futuro vigente o desde ahora si está vencido. No hay un webhook ni conciliación automática.
+4. Comprueba estado, fin del período, auditoría `agent_subscription.month_granted` y web pública. La acción no levanta suspensiones administrativas. Se guarda actor, identificadores y cambios de estado/fechas/precio, sin contenido de clientes ni notas.
 
-Ver [Web Share API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Share_API) y [activación de usuario en WebKit](https://webkit.org/blog/13862/the-user-activation-api/).
+El precio se guarda en centavos enteros USD en la suscripción. Cambiar el precio por entorno afecta nuevas altas; no reescribe acuerdos existentes. Las rutas del asesor no admiten estado, precio, plan ni fechas comerciales mediante parámetros. La renovación manual no vuelve a crear una prueba.
 
-Antes de producción, registrar resultados reales con fecha, versión de OS, navegador y WhatsApp:
+## Migraciones y transición del piloto
 
-1. Android con Chrome sobre HTTPS: cargar JPG recibido de WhatsApp, importar, revisar, publicar y abrir la ficha sin sesión.
-2. Compartir → WhatsApp → conversación y luego Mi estado. Verificar que sea el flyer original; comprobar por separado si llegaron texto y enlace. No interpretar el cierre del selector como publicación.
-3. Safari en iPhone: repetir, incluida cancelación, segundo intento y destino que omita el texto. Copiar/pegar el enlace manualmente.
-4. PDF de varias páginas: verificar vista previa de primera página, descarga del original intacto y JPEG compartido. Repetir con PNG y WebP; si el destino rechaza WebP, descargarlo y comprobar el comportamiento del teléfono.
-5. Navegador sin compartir archivos y portapapeles denegado: descargar, seleccionar/copiar texto y publicar manualmente.
-6. Despublicar y suspender la cuenta: fichas e imágenes deben responder 404; otro revendedor no puede acceder a originales ni modificar datos.
+Aplicar estas migraciones incrementales después de las existentes, sin editar las históricas:
 
-Playwright cubre escritorio y viewport móvil, Gemini simulado, bytes del archivo, descarga, texto/enlace, cancelación, errores y fallbacks. El selector del sistema, HTTPS del staging y WhatsApp real no quedan demostrados por esos mocks.
+- `20261112120000_add_agent_pro_subscriptions`: crea y completa suscripciones del piloto.
+- `20261112121000_create_agent_clients`: agenda y notas con claves compuestas de espacio.
+- `20261112122000_add_agent_ai_consumption_units`: consumo por intento e índice mensual.
+- `20261112123000_allow_general_identity_authentication`: propósito de login general, separado de operador.
 
-## Migraciones y preflight
+La primera asigna a cada piloto una transición gratuita explícita de **30 días desde el momento de migración**, con `origin=pilot_transition` y fin persistido, incluso si el espacio está suspendido. No altera propietarios, slugs, archivos, revisiones, estados ni membresías. No declara a nadie cliente pago. El `ON CONFLICT` impide reiniciar una transición si se repite el backfill; Rails registra la migración ejecutada. `AGENT_PILOT_TRANSITION_DAYS` permite definir de 1 a 90 días **antes de migrar**. Comunicar el vencimiento a los pilotos antes de habilitar la nueva versión; Mi plan lo muestra. Cambiar esa variable después no extiende períodos existentes.
 
-La base preparada incluye `20261025120000` (espacios, proveedores, viajes, importaciones, registro de hosts y contexto OAuth), `20261025121000` (revisión humana), `20261025122000` (unaccent) y `20261025123000` (integridad adicional). Esta entrega agrega **`20261025130000_complete_reseller_catalog.rb`**: sitio/notas privadas de proveedores, índice único de nombre por cuenta, descripción/noches y restricciones de duración/moneda, correo invitado y propietario diferido.
+Las ejecuciones históricas reciben una unidad por intento: no se puede reconstruir de forma fiable cuántas páginas se procesaron antes. Todas las nuevas ejecuciones computan páginas. No borrar consumo para reiniciar cuotas.
 
-Antes de migrar una instalación que ya probó Agente, comprobar duplicados. La migración aborta si encuentra nombres repetidos; no fusiona ni borra datos automáticamente:
+## Cuotas, archivos y privacidad
 
-```sql
-SELECT agent_workspace_id, lower(btrim(name)), count(*)
-FROM agent_suppliers GROUP BY 1, 2 HAVING count(*) > 1;
-SELECT id FROM agent_trip_revisions
-WHERE duration_days <= 0 OR currency NOT IN ('', 'ARS', 'USD', 'EUR', 'BRL');
-```
+Presupuesto mensual de 200 unidades, compartido entre importaciones y búsquedas de un espacio. Se renueva el día 1 a medianoche en su zona horaria, sin acumulación ni reinicio al renovar Pro. Imagen o búsqueda: una unidad por intento; PDF: una por página y por intento. Cada llamada reservada consume incluso por errores de red/proveedor, respuesta inválida, reintento automático/manual, lease vencido o descarte posterior. Validaciones rechazadas antes de reservar no consumen. Repetir la misma solicitud idempotente no crea ejecución ni consumo adicional.
 
-Resolver los nombres con el dueño del catálogo, preservando sus relaciones. Si se parte de la versión de agencias y las tablas `agent_*` aún no existen, estas consultas no aplican hasta las migraciones iniciales. PostgreSQL debe permitir la extensión `unaccent`.
+El job reserva `AgentAiExecution.consumption_units` bajo el mismo lock del espacio usado para límites diarios y concurrencia. Comprueba permisos antes de llamar a Gemini y antes de guardar el resultado. Los reintentos conservan el consumo histórico. El archivo y las correcciones se mantienen al agotar cuota; con Pro vigente se puede crear manualmente desde el mismo original. IA nunca publica ni recibe clientes/notas. Se conserva el proveedor y modelo Gemini existente; no se hicieron llamadas facturables reales en las verificaciones.
 
-## Variables y servicios
+Archivos de hasta 10 MB. PDF inicialmente hasta 10 páginas, configurable hasta un máximo duro de 20; se valida cada página antes de enviar el documento completo, con timeout de parseo. Hasta 50 fichas por extracción y salida de proveedor acotada a 16000 tokens. Poppler convierte solo la primera página para vista previa, con límites de CPU, memoria, tiempo y tamaño. El original se conserva privado; una ficha puede necesitar un flyer propio si el PDF contiene varias propuestas.
 
-| Configuración | Uso |
+La agenda requiere nombre y teléfono normalizado con código de país; email opcional. Los nombres/contactos del directorio de proveedores no se publican como datos estructurados; las fichas identifican al asesor. Las notas son privadas, fechadas, con referencia opcional a un viaje del mismo espacio. Archivar no borra notas. No hay creación automática por clic en WhatsApp ni lectura de conversaciones. Las exportaciones CSV de contactos y notas neutralizan fórmulas; `/agente/export.json` exporta datos del negocio autenticado. Los originales se descargan por las rutas privadas de importaciones/viajes; el JSON no empaqueta los archivos binarios. Lecturas y exportaciones usan `private, no-store`. Parámetros de contactos/notas se filtran de logs y las auditorías contienen identificadores, sin texto privado.
+
+Las rutas globales de Active Storage siguen deshabilitadas. Cada imagen pública revalida permiso y revisión. Rack::Attack cubre fichas canónicas y antiguas, catálogos por slug, búsquedas, imágenes/fotos, altas, sugerencias e importaciones. Staging hereda producción: Rails cache Redis compartida por todas las instancias; usar el mismo `REDIS_URL` en web/worker. Memoria local no sirve como límite global multiinstancia.
+
+## Variables
+
+| Variable | Inicial | Aplicación |
+| --- | --- | --- |
+| `AGENT_PRO_PRICE_CENTS` | `1900` | Precio USD de nuevas suscripciones; entero, sin flotantes. |
+| `AGENT_PRO_TRIAL_DAYS` | `14` | Prueba de nuevas altas, de 1 a 90 días. |
+| `AGENT_PRO_GRACE_DAYS` | `0` | Gracia de períodos activos no cancelados, de 0 a 30 días. |
+| `AGENT_PRO_MONTHLY_AI_UNITS` | `200` | Presupuesto mensual, de 0 a 100000 unidades por espacio. |
+| `AGENT_PILOT_TRANSITION_DAYS` | `30` | Solo al migrar pilotos, de 1 a 90 días; no vuelve a correr. |
+| `AGENT_MAX_PDF_PAGES` | `10` | Límite de documento, de 1 a 20 páginas. |
+| `AGENT_IMPORTS_PER_DAY` / `AGENT_SEARCHES_PER_DAY` | `25` / `100` | Intentos y altas de solicitudes por día local. |
+| `AGENT_IMPORTS_PER_MINUTE` / `AGENT_SEARCHES_PER_MINUTE` | `5` / `20` | Ráfagas por espacio. |
+| `AGENT_AI_CONCURRENCY` | `2` | Ejecuciones simultáneas por espacio. |
+
+Conservar `AGENT_ENABLED`, `GEMINI_API_KEY`, `GEMINI_MODEL=gemini-3.5-flash-lite`, `REDIS_URL`, almacenamiento privado compartido y las variables de OAuth/hosts/SMTP existentes. No rotar `ACTIVE_RECORD_ENCRYPTION_KEY` ni `SECRET_KEY_BASE` como parte de esta actualización. Los defaults se aplican sin añadir variables obligatorias.
+
+## Actualización y reversión seguras
+
+Esta entrega no ejecuta push, despliegues ni operaciones sobre datos productivos.
+
+1. Revisar el diff completo, incluidos cambios locales previos. Tomar backup consistente de PostgreSQL y storage/bucket y probar restauración aislada. Registrar tag anterior, configuración y claves estables. Ver [procedimiento de infraestructura](despliegue-dominios.md).
+2. Comunicar transición a pilotos y fijar configuración compartida. Mantener `AGENT_ENABLED=false` durante el cambio, detener/drenar jobs Agent y evitar mezclar workers antiguos sin permisos comerciales con nuevos. Las agencias conservan su operación.
+3. En staging primero, ejecutar `bin/rails db:migrate` una sola vez con la nueva imagen. Sin resets, seeds ni cambios de claves. Reiniciar todos los procesos web/worker en la misma versión. Si la instalación nunca finalizó hosts, ejecutar su procedimiento existente `agent:finalize_hosts` en el orden documentado.
+4. Ejecutar `tenant_integrity:audit` y `agent:audit`. Revisar que todos los espacios tengan suscripción con fin definido y que los suspendidos sigan suspendidos. Usar Redis compartido y storage accesible desde web/worker.
+5. Habilitar `AGENT_ENABLED=true`; probar Google, dos empresas sin Pro, prueba nueva, vencimiento, imágenes/búsqueda, reactivación, clientes y exportación con identidades separadas. Verificar precio y fechas del piloto en Mi plan. Activar manualmente solo períodos acordados.
+6. Monitorear jobs, consumo/unidades, errores seguros, disco, almacenamiento y auditorías. Probar compartir en Android/Chrome y Safari/iPhone sobre HTTPS real. Playwright con Pixel 7 no valida envío real de WhatsApp ni selector nativo.
+
+Reversión preferida: deshabilitar `AGENT_ENABLED` en web y worker, conservar todas las migraciones/datos y corregir hacia adelante. Si se revierte código, mantener Agent deshabilitado: una versión anterior no aplica vencimiento ni cuotas mensuales. No hacer `db:rollback` sobre una base con suscripciones/clientes/notas: perdería historia de pruebas y agenda. Una restauración completa requiere un destino aislado, base y archivos del mismo punto y reconciliación de escrituras posteriores. No borrar volúmenes ni bajar las tablas de agencias.
+
+## Verificación
+
+Comandos requeridos: `bin/rails test`, `bin/rails zeitwerk:check`, `bin/rubocop`, `bin/brakeman --no-pager`, `bin/bundler-audit`, `npm run test:e2e`, `bin/rails tenant_integrity:audit`, `bin/rails agent:audit`, `git diff --check`. Ejecutar Rails y auditorías con una base local/test, nunca inferir infraestructura remota.
+
+Playwright usa por defecto una base nueva `turistack_e2e_<timestamp>_test`, que puede eliminarse después de revisar evidencias, solo identificándola explícitamente como descartable. `E2E_DB_NAME` permite elegir una base vacía terminada en `_test`. OAuth/Gemini se simulan. No se debilitan los checks de CI.
+
+## Evidencia local de esta entrega — 12/11/2026
+
+Base de referencia `0e649269b215da640f79c19a3ed1c5e57d9c372a`, conservando los cambios locales previos. Verificación final sobre código actualizado, PostgreSQL local y respuestas OAuth/Gemini simuladas:
+
+| Verificación | Resultado real |
 | --- | --- |
-| `GEMINI_API_KEY` | Secreto de servidor, misma configuración en web/worker; no incluirlo en imagen ni Git. Sin clave, carga manual. |
-| `GEMINI_MODEL` | Modelo Flash-Lite habilitado en la cuenta; inicial `gemini-3.5-flash-lite`. |
-| `AGENT_ENABLED` | `false` durante migración/primera actualización, `true` después de finalizar registro de hosts. |
-| `AGENT_IMPORTS_PER_MINUTE` | Predeterminado 5 por cuenta. |
-| `AGENT_SEARCHES_PER_MINUTE` | Predeterminado 20, para el buscador ya existente. |
-| `AGENT_AI_CONCURRENCY` | Predeterminado 2 por cuenta. |
-| `ACTIVE_STORAGE_SERVICE` | `local` con volumen compartido por web/worker, o `s3` con bucket persistente privado y credenciales `S3_*`. |
-| `REDIS_URL` | Redis del entorno; Sidekiq debe estar activo, con recuperación de trabajos de IA cada minuto. |
-| `CADDY_ASK_SECRET` | Secreto compartido Caddy/web para autorizar TLS de subdominios registrados activos. |
-| `PLATFORM_BASE_DOMAIN`, `PLATFORM_HOST`, `AUTH_HOST`, `CUSTOM_DOMAIN_CNAME_TARGET`, `APP_PROTOCOL=https`, `CADDY_SITE_ADDRESSES` | DNS, OAuth centralizado y HTTPS; usar dominios propios de staging. |
-| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `PLATFORM_ADMIN_GOOGLE_EMAILS`, `SMTP_*`, `MAILER_FROM` | OAuth, operador e invitaciones por correo. |
-| `SECRET_KEY_BASE`, `ACTIVE_RECORD_ENCRYPTION_KEY`, `POSTGRES_*` | Secretos y persistencia ya exigidos por la infraestructura actual. Nunca mezclar `DATABASE_URL` con `DB_*`. |
+| `PARALLEL_WORKERS=2 bin/rails test` | 230 pruebas, 2898 aserciones, 0 fallos, 0 errores, 0 omisiones. |
+| `RAILS_ENV=test bin/rails zeitwerk:check` | Carga completa correcta. |
+| `bin/rubocop` | 258 archivos, sin infracciones. |
+| `bin/brakeman --no-pager` | 79 controles, 0 errores, 0 advertencias de seguridad. |
+| `bin/bundler-audit` | Sin vulnerabilidades conocidas. |
+| `npm run test:e2e` | 46 recorridos correctos en Chromium de escritorio y Pixel 7; incluye alta → proveedor → publicación → WhatsApp → cliente → nota. |
+| `RAILS_ENV=test bin/rails tenant_integrity:audit` | OK; avisos por hosts y CNAME de fixtures locales que no corresponden al proxy de prueba. |
+| `RAILS_ENV=test bin/rails agent:audit` | OK, incluidas suscripciones y referencias de notas. |
+| `git diff --check` y `git diff --cached --check` | Correctos. |
 
-## Construcción segura
+Se verificó además con dos clientes de caché independientes sobre un Redis local descartable que el contador de Rack::Attack se comparte atómicamente (lecturas sucesivas 1 y 2). Las pruebas de middleware ejercitan los límites reales de las rutas canónicas, búsquedas, imágenes, alta y exclusión de assets. Las migraciones se aplicaron en test y el backfill de pilotos se probó dos veces sin reiniciar fechas ni levantar suspensiones.
 
-`.dockerignore` excluye `**/.env*`, salvo el ejemplo de la raíz, y `config/master.key`. `bin/check-docker-secrets` se ejecuta inmediatamente después de copiar el contexto y hace fallar la construcción si recibió un archivo de entorno o la clave maestra. Una prueba Rails comprueba las reglas, incluidos directorios anidados. Construir desde la raíz del repositorio usando ese Dockerfile; nunca pasar claves como `ARG`, `ENV` de build ni archivos copiados. Los secretos se inyectan únicamente al ejecutar contenedores mediante `env_file`.
+El comando original de Brakeman fallaba al cargar `timeout` 0.6 en Ruby 3.4 por su prueba protegida de Ractor. `bin/brakeman` ahora carga esa misma dependencia antes de la trampa de excepciones del escáner. Se mantiene `--ensure-latest`, sin ignorar controles ni advertencias; el comando solicitado terminó correctamente. Los fallos detectados durante las primeras corridas se corrigieron antes de la verificación final.
 
-```bash
-docker build --pull -t ghcr.io/ORGANIZACION/turistack:SHA_INMUTABLE .
-```
-
-El tag debe identificar un commit completo y revisado. No construir desde un árbol con cambios sin incorporar. Verificar que `bin/check-docker-secrets` haya pasado en el log; no publicar imágenes si falla.
-
-## Staging: procedimiento exacto
-
-Este documento prepara acciones; no se ejecutó despliegue remoto ni se modificó infraestructura real.
-
-1. Preparar el host aislado siguiendo [despliegue-dominios.md](despliegue-dominios.md). Configurar DNS `staging.turistack.com`, `auth.staging.turistack.com`, `tenants.staging.turistack.com` y `*.staging.turistack.com` hacia staging. Registrar en Google `https://auth.staging.turistack.com/auth/google_oauth2/callback`. No reutilizar bases, buckets, claves ni volúmenes productivos.
-2. Copiar en el host `compose.staging.yml`, `deploy/Caddyfile` y `.env.staging` basado en `deploy/env.staging.example`, con permisos `chmod 600 .env.staging`. Reemplazar todos los ejemplos, completar SMTP, almacenamiento, Gemini y `CADDY_ASK_SECRET`; mantener `AGENT_ENABLED=false`. Conservar el mismo secreto en web y Caddy.
-3. Respaldar PostgreSQL y storage/S3 y verificar una restauración en otro destino. Registrar tag/digest anterior. Para backup local en el host, con Compose configurado:
-
-   ```bash
-   export ENV_FILE=.env.staging
-   docker compose --env-file .env.staging -f compose.staging.yml exec -T db sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc' > backup-staging.dump
-   ```
-
-   Además respaldar el volumen `turistack-staging_storage_data` o el bucket, con un punto consistente respecto de la base. No usar `down -v`.
-
-4. Incorporar y revisar la rama, publicar imagen inmutable y ejecutar desde el checkout autorizado:
-
-   ```bash
-   DEPLOY_HOST=HOST_STAGING \
-   DEPLOY_USER=deploy \
-   DEPLOY_ENVIRONMENT=staging \
-   DEPLOY_PATH=/opt/turistack-staging \
-   TURISTACK_IMAGE=ghcr.io/ORGANIZACION/turistack:SHA_INMUTABLE \
-   bin/deploy-hetzner
-   ```
-
-   El script construye/publica imagen, valida Compose, espera PostgreSQL/Redis, migra una sola vez y actualiza web/worker/Caddy. Requiere Docker registry y SSH previamente configurados.
-
-5. **Después de que todos los procesos web/worker estén en esta versión**, desde `/opt/turistack-staging` del host:
-
-   ```bash
-   export ENV_FILE=.env.staging
-   docker compose --env-file .env.staging -f compose.staging.yml exec -T web bin/rails agent:finalize_hosts
-   docker compose --env-file .env.staging -f compose.staging.yml exec -T web bin/rails tenant_integrity:audit
-   docker compose --env-file .env.staging -f compose.staging.yml exec -T web bin/rails agent:audit
-   ```
-
-   Esa finalización agrega la restricción compartida de hosts y completa el propósito de transferencias OAuth antiguas. No ejecutarla mientras sigan procesos de la versión previa que no registra hosts.
-
-6. Cambiar en `.env.staging` a `AGENT_ENABLED=true` y recrear web/worker/Caddy sin tocar volúmenes:
-
-   ```bash
-   docker compose --env-file .env.staging -f compose.staging.yml up -d --no-deps --force-recreate web worker caddy
-   docker compose --env-file .env.staging -f compose.staging.yml ps
-   docker compose --env-file .env.staging -f compose.staging.yml logs --tail=100 web worker caddy
-   curl --fail --silent --show-error https://staging.turistack.com/up
-   ```
-
-7. Entrar como operador, abrir **Revendedores → Crear revendedor**, crear Silvina con `silvinamartinez` y su correo real. Confirmar entrega de invitación, inicio con Google y que el certificado HTTPS de `silvinamartinez.staging.turistack.com` se emita. Completar el recorrido de aceptación con un flyer sin datos personales, revisar errores/consumo de Gemini y ejecutar la matriz manual Android/iOS. Reiniciar web/worker y comprobar que original, JPEG y ficha sigan disponibles.
-
-## Rollback y observabilidad
-
-Primera respuesta ante una falla del piloto: cambiar `AGENT_ENABLED=false` y recrear web/worker. Se ocultan los catálogos y se detiene la extracción; no se eliminan archivos ni filas. Las agencias conservan su producto.
-
-Preferir corrección hacia adelante. No ejecutar `db:rollback` a ciegas: revertir la migración exige no tener propietarios pendientes (`owner_id IS NULL`), y quitar migraciones iniciales borra catálogos. Tras `agent:finalize_hosts`, una versión previa que no conoce el registro compartido no es compatible para crear dominios. Si se necesita volver a esa versión, detener escrituras y restaurar el backup de base y archivos como un conjunto, con un procedimiento aprobado y reconciliando las escrituras posteriores. Para una versión compatible, fijar el tag anterior y repetir la actualización Compose, dejando el piloto deshabilitado hasta verificar compatibilidad de propietarios pendientes y trabajos en cola.
-
-Monitorear salud web, worker y cola default, disco/bucket, errores `agent_ai.failed`, estados `AgentImport`/`AgentAiExecution`, duración/attempts y códigos seguros. No volcar claves, cuerpos de proveedor ni originales en logs. Verificar restauración de backups periódicamente y retención de archivos; no purgar blobs aún referenciados por revisiones/importaciones.
-
-## CI y protección de main
-
-CI incluye escaneo Ruby/JS, RuboCop, Rails, carga Zeitwerk, auditorías de integridad y Playwright. Instala Poppler para probar PDFs. El job agregado **Required checks** solo aprueba si los cinco jobs base aprobaron. `crass` queda fijado por lockfile en 1.0.8, sin excepciones para su vulnerabilidad. El test de staging elimina explícitamente `DATABASE_URL` y otras variables de base/contenedor heredadas antes de definir `DB_*`; `RuntimeConfiguration` mantiene sus validaciones.
-
-Para bloquear merges, un administrador debe crear/actualizar el ruleset de `main` en GitHub: requerir PR, revisión independiente, resolución de conversaciones y el status check **Required checks**, con rama actualizada, prohibiendo force push y borrado. El conector disponible no expone administración de protección de ramas y no hay `gh` autenticado en este entorno; la política remota no se cambió. Tras el primer CI de la rama, seleccionar el nombre exacto emitido por GitHub en el ruleset y probar que una ejecución fallida bloquee la integración. Un workflow por sí solo no configura protección remota.
-
-## Límites pendientes y fuera de alcance
-
-Pendientes de producción: staging real con DNS/TLS/OAuth/SMTP, confirmar modelo/cuota de Gemini con un flyer real, persistencia y restauración reales, matriz Android/iOS y activación remota del ruleset. Los tests simulados no sustituyen esas comprobaciones.
-
-Se postergan reservas, cupos, pagos, rendiciones, comisiones automáticas, CRM, chatbots, automatizaciones y envío masivo de WhatsApp, suscripciones, cobros recurrentes, alta pública y generación creativa de flyers. El buscador/comparador que ya estaba preparado en el árbol se conserva sin ampliar su alcance.
-
-## Verificación histórica del MVP (dbd0f019)
-
-- `bin/rails test`: 156 pruebas, 945 aserciones, sin fallos, errores ni omisiones.
-- `bin/rails zeitwerk:check`: correcto.
-- `bin/rubocop`: 219 archivos, sin infracciones.
-- `bin/brakeman --no-pager`: cero errores y advertencias de seguridad.
-- `bin/bundler-audit`: sin vulnerabilidades; crass 1.0.8.
-- `npm run test:e2e`: 18 recorridos correctos, escritorio y móvil Chromium, Gemini y selector del sistema simulados.
-- `bin/rails tenant_integrity:audit` y `bin/rails agent:audit`: correctos. La base local emite una advertencia por el host demo de agencia ausente de `CADDY_SITE_ADDRESSES`; la configuración real del proxy debe completarse en staging.
-- `git diff --check` y `git diff --cached --check`: correctos.
-- Test de arranque staging ejecutado además con `DATABASE_URL` heredada: correcto, manteniendo SSL y cookies seguras.
-- Construcción Docker local con assets y comprobación de ausencia de secretos: correcta. Conversión PDF probada dentro de la imagen como UID 1000, filesystem de solo lectura, sin red y sin capacidades adicionales: JPEG válido.
-- Nueva migración revertida/reaplicada en una base descartable, seguida de `agent:finalize_hosts` y ambas auditorías: correcto. No se usaron bases remotas.
-
-## Archivos de esta intervención
-
-El árbol inicial ya contenía la implementación preparada de `Agent*`. Se conservó ese trabajo; el siguiente inventario distingue archivos agregados en esta intervención de archivos modificados sobre esa base.
-
-Archivos nuevos:
-
-- `app/javascript/controllers/flyer_share_controller.js`
-- `app/mailers/agent_workspace_mailer.rb`
-- `app/services/agent/flyer.rb`
-- `app/services/agent/money_parser.rb`
-- `app/views/agent/trips/_share.html.erb`
-- `app/views/agent_workspace_mailer/invite.html.erb`
-- `app/views/platform/agent_workspaces/new.html.erb`
-- `bin/check-docker-secrets`
-- `db/migrate/20261025130000_complete_reseller_catalog.rb`
-- `docs/turistack-revendedor-lanzamiento.md`
-- `test/e2e/reseller.spec.js`
-- `test/integration/public_availability_test.rb`
-- `test/integration/reseller_invitation_test.rb`
-- `test/integration/reseller_mvp_test.rb`
-- `test/lib/docker_build_safety_test.rb`
-- `test/models/reseller_integrity_test.rb`
-
-Archivos modificados sobre el árbol inicial:
-
-- `.dockerignore`
-- `.github/workflows/ci.yml`
-- `Dockerfile`
-- `Gemfile.lock`
-- `README.md`
-- `app/assets/stylesheets/agent.css`
-- `app/controllers/agent/base_controller.rb`
-- `app/controllers/agent/imports_controller.rb`
-- `app/controllers/agent/public_catalog_controller.rb`
-- `app/controllers/agent/suppliers_controller.rb`
-- `app/controllers/agent/trips_controller.rb`
-- `app/controllers/agent/website_controller.rb`
-- `app/controllers/application_controller.rb`
-- `app/controllers/authentication_controller.rb`
-- `app/controllers/platform/agent_workspaces_controller.rb`
-- `app/controllers/sessions_controller.rb`
-- `app/helpers/agent_helper.rb`
-- `app/jobs/agent_ai_job.rb`
-- `app/models/agent_import.rb`
-- `app/models/agent_supplier.rb`
-- `app/models/agent_trip.rb`
-- `app/models/agent_trip_revision.rb`
-- `app/models/agent_workspace.rb`
-- `app/services/agent/ai_contract.rb`
-- `app/services/agent/gemini_client.rb`
-- `app/services/agent/save_trip.rb`
-- `app/views/agent/dashboard/show.html.erb`
-- `app/views/agent/import_items/edit.html.erb`
-- `app/views/agent/imports/index.html.erb`
-- `app/views/agent/imports/show.html.erb`
-- `app/views/agent/onboarding/show.html.erb`
-- `app/views/agent/public_catalog/index.html.erb`
-- `app/views/agent/public_catalog/show.html.erb`
-- `app/views/agent/suppliers/_form.html.erb`
-- `app/views/agent/suppliers/show.html.erb`
-- `app/views/agent/trips/_details.html.erb`
-- `app/views/agent/trips/_filters.html.erb`
-- `app/views/agent/trips/_form.html.erb`
-- `app/views/agent/trips/new.html.erb`
-- `app/views/agent/trips/show.html.erb`
-- `app/views/landing/show.html.erb`
-- `app/views/layouts/agent.html.erb`
-- `app/views/platform/agent_workspaces/index.html.erb`
-- `app/views/platform/companies/index.html.erb`
-- `app/views/public_trips/show.html.erb`
-- `config/routes.rb`
-- `db/schema.rb`
-- `docs/arquitectura.md`
-- `docs/despliegue-dominios.md`
-- `lib/tasks/tenant_integrity.rake`
-- `test/integration/agent_workspace_test.rb`
-- `test/lib/protected_environment_boot_test.rb`
-- `test/support_agent_data.rb`
+La revisión visual móvil comprobó contraste, menú, agenda y ausencia de desbordamiento. No se validaron DNS/TLS, Google/SMTP/Gemini de cuentas reales ni el selector/envío real de WhatsApp en Android/iOS. No se hizo push, despliegue ni acceso a datos productivos. Los logs locales quedan en `tmp/pro-verification/` y los artefactos de Playwright en `test-results/` (ambos fuera de Git).

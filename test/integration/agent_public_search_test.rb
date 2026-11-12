@@ -25,7 +25,8 @@ class AgentPublicSearchTest < ActionDispatch::IntegrationTest
       assert_includes result.fetch("price"), "500.000"
       assert_equal workspace.url(path: agent_site_trip_path(agent_slug: workspace.slug, slug: trip.slug)), result.fetch("url")
       image_path = agent_site_image_path(agent_slug: workspace.slug, slug: trip.slug, revision_id: trip.published_revision_id)
-      assert_equal workspace.url(path: image_path), result.fetch("image_url")
+      expected_image = hostname == workspace.hostname ? PlatformHosts.url(host: hostname, path: agent_public_image_path(slug: trip.slug, revision_id: trip.published_revision_id)) : workspace.url(path: image_path)
+      assert_equal expected_image, result.fetch("image_url")
       assert_equal %w[date destination image_url price title url], result.keys.sort
       host! PlatformHosts.platform_host
       get image_path
@@ -41,6 +42,7 @@ class AgentPublicSearchTest < ActionDispatch::IntegrationTest
     workspace = agent_workspace
     live = agent_trip(workspace:, departs_on: Date.current)
     live.publish!
+    workspace.agent_subscription.update!(trial_starts_at: 2.days.ago)
     travel_to 1.day.ago do
       agent_trip(workspace:, title: "Córdoba pasada", departs_on: Date.current).publish!
     end
@@ -95,22 +97,65 @@ class AgentPublicSearchTest < ActionDispatch::IntegrationTest
     assert_response :not_found
   end
 
-  test "top search filters public cards and works in the private website preview" do
+  test "destination selector filters public cards and works in the private website preview" do
     workspace = agent_workspace(show_about: true)
     agent_trip(workspace:).publish!
     agent_trip(workspace:, title: "Mendoza especial", destination: "Mendoza").publish!
     host! PlatformHosts.platform_host
-    get agent_site_path(agent_slug: workspace.slug), params: { q: "Cor" }
+    get agent_site_path(agent_slug: workspace.slug), params: { destination: "Córdoba" }
     assert_response :success
     assert_select "main > section:first-child.agent-public-search"
-    assert_select "input[role=combobox][value=Cor]"
+    assert_select ".destination-option[aria-selected=true] .destination-option-label", text: "Córdoba"
+    assert_select ".destination-option", count: 3
+    assert_select "input[role=combobox][aria-autocomplete=list][value='Córdoba']"
+    assert_select "input[name=destination][type=hidden][value='Córdoba']"
+    assert_select ".agent-public-search input[type=search], .agent-public-search input[type=submit]", count: 0
+    assert_select ".agent-catalog-filters input[type=search]", count: 1
     assert_select ".agent-trip-card h2", text: "Córdoba en verano"
     assert_select ".agent-trip-card h2", text: "Mendoza especial", count: 0
     get "/test/sign-in", params: { email: workspace.owner.email }
     get preview_agent_website_path
     assert_response :success
     assert_select ".agent-search-form[action=?]", preview_agent_website_path
-    assert_select "[data-agent-catalog-search-url-value=?]", agent_site_search_path(agent_slug: workspace.slug)
+    assert_select ".destination-option", count: 3
+    get preview_agent_website_path, params: { destination: "Mendoza" }
+    assert_select ".agent-trip-card h2", text: "Mendoza especial"
+    assert_select ".agent-trip-card h2", text: "Córdoba en verano", count: 0
+  end
+
+  test "destination options are unique and public and filtering matches the complete destination" do
+    workspace = agent_workspace
+    trip = agent_trip(workspace:)
+    trip.publish!
+    agent_trip(workspace:).publish!
+    agent_trip(workspace:, destination: "Córdoba Sierras", title: "Otra propuesta").publish!
+    agent_trip(workspace:, destination: "Destino privado")
+    agent_trip(workspace: agent_workspace, destination: "Destino ajeno").publish!
+    workspace.agent_subscription.update!(trial_starts_at: 2.days.ago)
+    travel_to 1.day.ago do
+      agent_trip(workspace:, destination: "Destino vencido", departs_on: Date.current).publish!
+    end
+    supplier = workspace.agent_suppliers.create!(name: "Empresa pausada")
+    agent_trip(workspace:, supplier:, destination: "Destino pausado").publish!
+    supplier.update!(status: "paused")
+    Agent::SaveTrip.call(workspace:, trip:, expected_revision_id: trip.current_revision_id,
+      attributes: trip.current_revision.attributes.slice(*AgentTripRevision::FIELDS).merge("destination" => "Revisión privada"))
+
+    [ [ PlatformHosts.platform_host, agent_site_path(agent_slug: workspace.slug) ],
+      [ workspace.hostname, agent_public_catalog_path ] ].each do |hostname, path|
+      host! hostname
+      get path, params: { destination: "Córdoba" }
+      assert_response :success
+      assert_select ".destination-option", count: 3
+      assert_select ".destination-option[data-value='Córdoba']", count: 1
+      assert_select ".destination-option[data-value='Córdoba Sierras']", count: 1
+      assert_select ".agent-trip-card", count: 2
+      assert_select ".agent-trip-card h2", text: "Otra propuesta", count: 0
+      get path, params: { destination: "Destino ajeno" }
+      assert_select ".agent-trip-card", count: 0
+      get path, params: { destination: "" }
+      assert_select ".agent-trip-card", count: 3
+    end
   end
 
   test "only the owner sees inactive past and draft trips on their public page and preview stays public" do
@@ -124,6 +169,7 @@ class AgentPublicSearchTest < ActionDispatch::IntegrationTest
     archived = agent_trip(workspace:, title: "Propuesta archivada")
     archived.publish!
     archived.update!(status: "archived")
+    workspace.agent_subscription.update!(trial_starts_at: 2.days.ago)
     travel_to 1.day.ago do
       agent_trip(workspace:, title: "Propuesta pasada", departs_on: Date.current).publish!
     end
@@ -144,7 +190,7 @@ class AgentPublicSearchTest < ActionDispatch::IntegrationTest
       assert_response :success
       private_titles.each { |title| assert_select ".agent-trip-card h2", text: title }
       assert_select ".agent-badge", text: "Vencido"
-      assert_select ".agent-badge", text: "Empresa pausada"
+      assert_select ".agent-badge", text: "Proveedor pausado"
       assert_select ".agent-alert", text: /Vista de agente/
       assert_includes response.headers["Cache-Control"], "no-store"
       get path, params: { status: "unpublished" }

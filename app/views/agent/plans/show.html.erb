@@ -1,0 +1,15 @@
+<div class="agent-heading"><div><span class="agent-eyebrow">TURISTACK PRO</span><h1>Mi plan</h1><p>Tu negocio como asesor de viajes independiente.</p></div></div>
+<section class="agent-panel">
+  <h2><%= @subscription.label %></h2>
+  <p><%= @subscription.currency %> <%= money_input_value(@subscription.price_cents) %> por mes. Activación y renovación manual, sin débito automático.</p>
+  <p>Vencimiento: <strong><%= argentine_date(@subscription.ends_at&.in_time_zone(current_agent_workspace.timezone)) %></strong></p>
+  <% if @subscription.origin == "pilot_transition" && @subscription.status == "trialing" %><p>Transición gratuita del piloto hasta esta fecha. No te convertimos en cliente pago automáticamente.</p><% end %>
+  <p>Al vencer conservás tus datos, la lectura y la exportación privada. La web pública y las escrituras se deshabilitan hasta reactivar Pro.</p>
+  <p>IA: <%= Agent::AiRequests.monthly_used(current_agent_workspace) %> de <%= AgentSubscription.monthly_units %> unidades este mes; <%= Agent::AiRequests.monthly_remaining(current_agent_workspace) %> disponibles.</p>
+  <p>Una búsqueda o imagen consume una unidad por intento; cada página de PDF consume una unidad por intento. Errores y reintentos también consumen. El presupuesto se renueva el día 1 a medianoche en <%= current_agent_workspace.timezone %>, sin acumulación. Límites diarios: <%= Agent::AiRequests.daily_limit("import") %> importaciones y <%= Agent::AiRequests.daily_limit("search") %> búsquedas. La carga y los filtros manuales siguen disponibles con Pro vigente.</p>
+  <div class="agent-actions">
+    <% if @subscription.activation_requested_at %><p role="status">Activación manual solicitada. La plataforma coordinará los próximos pasos.</p><% else %><%= button_to "Solicitar activación o renovación manual", request_activation_agent_plan_path, class: "btn btn-primary" %><% end %>
+    <% if agent_access.commercial? && !@subscription.cancel_at_period_end %><%= button_to "Cancelar al vencimiento", cancel_agent_plan_path, class: "btn" %><% end %>
+    <%= link_to "Exportar mis datos", agent_export_path(format: :json), class: "btn" %>
+  </div>
+</section>

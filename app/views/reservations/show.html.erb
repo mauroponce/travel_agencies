@@ -54,7 +54,7 @@
         </div>
         <div>
           <%= label_tag "payment_received_on", "Fecha" %>
-          <%= date_field_tag "payment[received_on]", Date.current, required: true %>
+          <%= argentine_date_field_tag("payment[received_on]", Date.current, required: true) %>
         </div>
         <div>
           <%= label_tag "payment_proof", "Comprobante opcional" %>

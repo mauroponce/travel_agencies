@@ -91,6 +91,86 @@ class AgentAiTest < ActiveSupport::TestCase
     assert_empty @workspace.agent_trips
   end
 
+  test "a flyer with four departures without a year creates four separate review items" do
+    travel_to Time.zone.local(2026, 11, 3, 12)
+    @workspace.agent_subscription.update!(trial_starts_at: 1.day.ago, trial_ends_at: 13.days.from_now)
+    task = @workspace.agent_imports.create!(idempotency_key: SecureRandom.uuid, source: png_upload)
+    departures = [ 3, 10, 17, 24 ].map do |day|
+      { "label" => "#{day} de febrero", "departs_on" => nil, "returns_on" => nil }
+    end
+    trip = gemini_trip(title: "Bombinhas · Playas de Mariscal", destination: "Bombinhas", departs_on: nil,
+      duration_days: 10, duration_nights: 7, hotel: "Residencial Flórida Premium", transport: "Bus semi cama",
+      price_cents: 40_000, currency: "USD", price_basis: "Base cuádruple",
+      conditions: "USD 470 base triple; USD 695 base doble; USD 25 gastos de reserva.", departures:)
+    request = stub_gemini(trips: [ trip ])
+
+    AgentAiJob.perform_now("import", task.id)
+
+    assert_equal "completed", task.reload.status
+    items = task.items.order(:position)
+    assert_equal [ 0, 1, 2, 3 ], items.pluck(:position)
+    assert_equal departures.pluck("label"), items.map { |item| item.extracted["departure_text"] }
+    items.each_with_index do |item, index|
+      assert_equal "2027-02-#{[ 3, 10, 17, 24 ][index].to_s.rjust(2, '0')}", item.extracted["departs_on"]
+      assert_equal "Residencial Flórida Premium", item.extracted["hotel"]
+      assert_equal 7, item.extracted["duration_nights"]
+      assert_equal "USD", item.extracted["currency"]
+      assert_equal trip["conditions"], item.extracted["conditions"]
+      assert_equal item.extracted["departure_text"], item.extracted["evidence"]["departs_on"]
+      assert_empty item.extracted["warnings"]
+    end
+    AgentAiJob.perform_now("import", task.id)
+    assert_equal 4, task.items.count
+    assert_requested request, times: 1
+    assert_empty @workspace.agent_trips
+  end
+
+  test "import date context and inference use the workspace day rather than the UTC day" do
+    @workspace.update!(timezone: "America/Argentina/Buenos_Aires")
+    travel_to Time.utc(2026, 11, 4, 1, 30)
+    @workspace.agent_subscription.update!(trial_starts_at: 1.day.ago, trial_ends_at: 13.days.from_now)
+    task = @workspace.agent_imports.create!(idempotency_key: SecureRandom.uuid, source: png_upload)
+    departures = [ { "label" => "3 de noviembre", "departs_on" => nil, "returns_on" => nil } ]
+    stub_gemini(trips: [ gemini_trip(departs_on: nil, departures:) ])
+    assert_includes Agent::GeminiClient.prompt("import", task), "Hoy es 2026-11-03"
+    AgentAiJob.perform_now("import", task.id)
+    assert_equal "completed", task.reload.status
+    assert_equal "2026-11-03", task.items.first.extracted["departs_on"]
+  end
+
+  test "each dated departure keeps its own dates and other itineraries keep their own attributes" do
+    departures = [ 3, 10, 17, 24 ].map do |day|
+      { "label" => "#{day} de febrero de 2030", "departs_on" => "2030-02-#{day.to_s.rjust(2, '0')}", "returns_on" => nil }
+    end
+    data = Agent::AiContract.parse("import", { trips: [
+      gemini_trip(destination: "Bombinhas", hotel: "Hotel de Bombinhas", departs_on: nil, departures:),
+      gemini_trip(destination: "Salta", hotel: "Hotel de Salta")
+    ] }.to_json)
+    assert_equal 5, data["trips"].size
+    assert_equal departures.pluck("departs_on"), data["trips"].first(4).pluck("departs_on")
+    assert data["trips"].first(4).all? { |trip| trip["hotel"] == "Hotel de Bombinhas" && trip["returns_on"].nil? }
+    assert_equal "Hotel de Salta", data["trips"].last["hotel"]
+  end
+
+  test "departure expansion rejects invalid data and enforces the total fifty item limit" do
+    departure = { "label" => "3 de febrero", "departs_on" => nil, "returns_on" => nil }
+    [ [], "3 y 10 de febrero", [ departure.merge("label" => nil) ],
+      [ departure.merge("departs_on" => "2030-02-30") ],
+      [ departure.merge("departs_on" => "2030-02-03", "returns_on" => "2030-02-01") ],
+      [ departure.merge("injected" => true) ] ].each do |departures|
+      assert_raises(Agent::AiContract::Invalid) do
+        Agent::AiContract.parse("import", { trips: [ gemini_trip(departures:) ] }.to_json)
+      end
+    end
+    trips = [ gemini_trip(departures: Array.new(26) { departure }), gemini_trip(departures: Array.new(25) { departure }) ]
+    task = @workspace.agent_imports.create!(idempotency_key: SecureRandom.uuid, source: png_upload)
+    stub_gemini(trips:)
+    AgentAiJob.perform_now("import", task.id)
+    assert_equal "error", task.reload.status
+    assert_equal "invalid_response", task.error_code
+    assert_empty task.items
+  end
+
   test "PDF import uses the same validated extraction contract" do
     task = @workspace.agent_imports.create!(idempotency_key: SecureRandom.uuid)
     task.source.attach(io: StringIO.new(Prawn::Document.new { text "Córdoba" }.render), filename: "flyer.pdf", content_type: "application/pdf")
@@ -167,7 +247,8 @@ class AgentAiTest < ActiveSupport::TestCase
     assert_nil task.processing_token
     @workspace.update!(status: "suspended")
     AgentAiJob.perform_now("search", task.id)
-    assert_equal "pending", task.reload.status
+    assert_equal "error", task.reload.status
+    assert_equal "plan_expired", task.error_code
     assert_not_requested :post, %r{https://generativelanguage.googleapis.com/}
   end
 end

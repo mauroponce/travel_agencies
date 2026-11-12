@@ -5,6 +5,15 @@ module Agent
   class UploadValidator
     class Invalid < StandardError; end
     TYPES = %w[image/jpeg image/png image/webp application/pdf].freeze
+    def self.max_pdf_pages = Integer(ENV.fetch("AGENT_MAX_PDF_PAGES", "10")).clamp(1, 20)
+    def self.consumption_units(upload)
+      mime = call(upload)
+      return 1 unless mime == "application/pdf"
+      io = upload.respond_to?(:tempfile) ? upload.tempfile : upload
+      PDF::Reader.new(io).page_count
+    ensure
+      io.rewind if io.respond_to?(:rewind)
+    end
     def self.call(upload, images_only: false)
       io = upload.respond_to?(:tempfile) ? upload.tempfile : upload
       raise Invalid, "Seleccioná un archivo válido." unless io.respond_to?(:rewind) && io.respond_to?(:read)
@@ -22,7 +31,7 @@ module Agent
       if mime == "application/pdf"
         Timeout.timeout(8, Invalid, "El PDF es demasiado complejo. Usá un documento más pequeño.") do
           reader = PDF::Reader.new(io)
-          raise Invalid, "El PDF debe tener entre 1 y 100 páginas." unless reader.page_count.between?(1, 100)
+          raise Invalid, "El PDF debe tener entre 1 y #{max_pdf_pages} páginas." unless reader.page_count.between?(1, max_pdf_pages)
           # Parse each page so corrupt/encrypted input fails before reaching Gemini.
           reader.pages.each { |page| page.text }
         end

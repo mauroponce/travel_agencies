@@ -20,6 +20,9 @@ class SessionsController < ApplicationController
       when "company" then membership
       when "agent" then AgentWorkspace.enabled? && authentication_request.agent_workspace.active? && authentication_request.agent_workspace.accept_invitation!(user)
       when "agent_onboarding" then AgentWorkspace.enabled? && AgentWorkspace.self_signup_enabled?
+      when "identity"
+        AgentWorkspace.find_by(invited_email: user.email, status: "active")&.accept_invitation!(user) if AgentWorkspace.enabled?
+        true
       when "operator"
         user.platform_operator? || (AgentWorkspace.enabled? && (
           user.agent_workspace&.active? || AgentWorkspace.find_by(invited_email: user.email, status: "active")&.accept_invitation!(user)))
@@ -61,6 +64,11 @@ class SessionsController < ApplicationController
         reset_session
         session[:user_id] = user.id
         return redirect_to agent_root_path
+      end
+      if !user.platform_operator?
+        reset_session
+        session[:user_id] = user.id
+        return redirect_to context_path
       end
       raise Pundit::NotAuthorizedError unless user.platform_operator?
       reset_session

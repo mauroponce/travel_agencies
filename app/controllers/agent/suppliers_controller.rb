@@ -17,7 +17,7 @@ module Agent
       @supplier = current_agent_workspace.agent_suppliers.new(supplier_params)
       if @supplier.save
         audit("agent_supplier.created", @supplier)
-        redirect_to agent_supplier_path(@supplier), notice: "Empresa registrada."
+        redirect_to agent_supplier_path(@supplier), notice: "Proveedor registrado."
       else
         render :new, status: :unprocessable_entity
       end
@@ -25,7 +25,7 @@ module Agent
     def update
       if @supplier.update(supplier_params)
         audit("agent_supplier.updated", @supplier)
-        redirect_to agent_supplier_path(@supplier), notice: "Empresa actualizada."
+        redirect_to agent_supplier_path(@supplier), notice: "Proveedor actualizado."
       else
         render :edit, status: :unprocessable_entity
       end
@@ -33,9 +33,9 @@ module Agent
     def destroy
       if @supplier.destroy
         audit("agent_supplier.deleted", @supplier)
-        redirect_to agent_suppliers_path, notice: "Empresa eliminada."
+        redirect_to agent_suppliers_path, notice: "Proveedor eliminado."
       else
-        redirect_to agent_supplier_path(@supplier), alert: "La empresa tiene viajes asociados. Podés pausarla para ocultarlos del catálogo."
+        redirect_to agent_supplier_path(@supplier), alert: "El proveedor tiene viajes asociados. Podés pausarlo para ocultarlos del catálogo."
       end
     end
     private

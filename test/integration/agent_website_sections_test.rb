@@ -6,7 +6,6 @@ class AgentWebsiteSectionsTest < ActionDispatch::IntegrationTest
 
   test "existing sections are enabled and about is unchecked by default" do
     workspace = agent_workspace
-    assert workspace.show_presentation?
     assert workspace.show_catalog?
     assert_not workspace.show_about?
     login_website(workspace)
@@ -14,9 +13,11 @@ class AgentWebsiteSectionsTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "input[name='agent_workspace[show_about]'][type=checkbox]:not([checked])"
     assert_select "fieldset#agent-about-editor[hidden][disabled]"
+    assert_select "input[name='agent_workspace[show_presentation]'], textarea[name='agent_workspace[presentation]']", count: 0
     get agent_site_path(agent_slug: workspace.slug)
     assert_response :success
-    assert_select "#presentacion"
+    assert_select "#presentacion", count: 0
+    assert_select "a.agent-floating-whatsapp[href=?][target='_blank'][rel=noopener][aria-label='Consultar por WhatsApp']", "https://wa.me/#{workspace.whatsapp}", count: 1
     assert_select "#viajes"
     assert_select "#sobre-mi", count: 0
   end
@@ -64,6 +65,7 @@ class AgentWebsiteSectionsTest < ActionDispatch::IntegrationTest
       get path
       assert_response :success
       assert_select "#presentacion, #viajes, #sobre-mi", count: 0
+      assert_select "a.agent-floating-whatsapp[href=?]", "https://wa.me/#{workspace.whatsapp}", count: 1
       assert_select ".sidebar", count: 0 if path == preview_agent_website_path
       assert_not_includes response.body, "Mi historia personal"
     end

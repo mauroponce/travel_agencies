@@ -16,7 +16,7 @@ module Agent
       retain_cover(params.dig(:agent_trip_revision, :cover))
       @trip = SaveTrip.call(workspace: current_agent_workspace, attributes: trip_params, source_import: selected_import, publish: params[:commit_action] == "publish")
       redirect_to agent_trip_path(@trip), notice: "Viaje guardado."
-    rescue ActiveRecord::RecordInvalid, UploadValidator::Invalid, MoneyParser::InvalidAmount, ActiveRecord::RecordNotUnique => error
+    rescue ActiveRecord::RecordInvalid, UploadValidator::Invalid, ::MoneyParser::InvalidAmount, ActiveRecord::RecordNotUnique => error
       @trip ||= current_agent_workspace.agent_trips.new
       @revision = submitted_revision
       load_suppliers
@@ -34,7 +34,7 @@ module Agent
       SaveTrip.call(workspace: current_agent_workspace, attributes: trip_params, trip: @trip,
         publish: params[:commit_action] == "publish", expected_revision_id: params.require(:expected_revision_id))
       redirect_to agent_trip_path(@trip), notice: "Revisión guardada. La web muestra la última versión que publicaste."
-    rescue ActiveRecord::RecordInvalid, UploadValidator::Invalid, MoneyParser::InvalidAmount, ActiveRecord::RecordNotUnique, ActiveRecord::StaleObjectError => error
+    rescue ActiveRecord::RecordInvalid, UploadValidator::Invalid, ::MoneyParser::InvalidAmount, ActiveRecord::RecordNotUnique, ActiveRecord::StaleObjectError => error
       @trip.reload
       @revision = submitted_revision
       @form_error = form_error_message(error)

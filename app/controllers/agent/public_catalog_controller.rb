@@ -7,12 +7,11 @@ module Agent
     def index
       return unless current_agent_workspace.show_catalog?
       @owner_view = current_user.present? && current_user.id == current_agent_workspace.owner_id
-      @suppliers = if @owner_view
-        current_agent_workspace.agent_suppliers.order(:name, :id)
-      else
-        current_agent_workspace.agent_suppliers.active.where(id: current_agent_workspace.agent_trips.publicly_visible.joins(:published_revision).select("agent_trip_revisions.agent_supplier_id")).order(:name, :id)
-      end
-      @trips, @pagination = paginate(CatalogQuery.call(workspace: current_agent_workspace, filters: params.permit(*CatalogQuery::FILTERS), public_view: !@owner_view))
+      scope = CatalogQuery.call(workspace: current_agent_workspace, public_view: !@owner_view)
+      @destinations = scope.except(:includes, :order).distinct.order("agent_trip_revisions.destination").pluck("agent_trip_revisions.destination").reject(&:blank?)
+      scope = CatalogQuery.call(workspace: current_agent_workspace, filters: params.permit(*CatalogQuery::FILTERS).except(:destination), public_view: !@owner_view)
+      scope = scope.where(agent_trip_revisions: { destination: params[:destination].to_s }) if params[:destination].present?
+      @trips, @pagination = paginate(scope)
     end
     def search
       raise ActiveRecord::RecordNotFound unless current_agent_workspace.show_catalog?
@@ -43,7 +42,7 @@ module Agent
     end
     private
     def prepare_public_context
-      raise ActiveRecord::RecordNotFound unless AgentWorkspace.enabled? && current_agent_workspace&.active?
+      raise ActiveRecord::RecordNotFound unless AgentWorkspace.enabled? && Agent::Access.new(current_agent_workspace).public?
       @public_view = true
       Time.zone = current_agent_workspace.timezone
       response.headers["Cache-Control"] = "no-store"

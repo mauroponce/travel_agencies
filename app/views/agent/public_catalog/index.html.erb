@@ -3,14 +3,6 @@
 <% if current_agent_workspace.show_catalog? %>
   <%= render "agent/public_catalog/search" %>
 <% end %>
-<% if current_agent_workspace.show_presentation? %>
-<section class="agent-public-hero" id="presentacion"><span class="agent-eyebrow">TU PRÓXIMO DESTINO</span>
-  <h1><%= current_agent_workspace.business_name %></h1>
-  <p><%= current_agent_workspace.presentation %></p>
-  <span>Atención personal de <%= current_agent_workspace.public_name %></span>
-  <div class="agent-actions"><%= link_to "Consultar por WhatsApp", "https://wa.me/#{current_agent_workspace.whatsapp}", class: "btn btn-primary", rel: "noopener", target: "_blank" %><% if current_user && current_user.id == current_agent_workspace.owner_id %><%= link_to "Mi panel", agent_root_path, class: "btn" %><% else %><%= button_to "Acceso del agente", auth_start_path, class: "btn", data: {turbo: false} %><% end %></div>
-</section>
-<% end %>
 <% if current_agent_workspace.show_about? %>
   <section id="sobre-mi" class="agent-public-about" aria-labelledby="agent-about-title">
     <div class="agent-about-portrait">
@@ -32,15 +24,16 @@
 <% end %>
 <% if current_agent_workspace.show_catalog? %>
 <section id="viajes" aria-labelledby="agent-catalog-title">
-<% if @owner_view %><p class="agent-alert">Vista de agente: ves todos tus viajes, incluidos borradores, inactivos y pasados. Tus visitantes solo ven los publicados y vigentes de empresas activas.</p><% end %>
-<details class="agent-public-filters" <%= "open" if params.slice(*(Agent::CatalogQuery::FILTERS - %w[q sort])).values.any?(&:present?) %>>
-  <summary>Más filtros <span>Fechas, precio y tipo de viaje</span></summary>
-  <%= render "agent/trips/filters", filter_url: agent_public_catalog_filter_url, public_search: true %>
-</details>
+<% if @owner_view %><p class="agent-alert">Vista de agente: ves todos tus viajes, incluidos borradores, inactivos y pasados. Tus visitantes solo ven los publicados y vigentes de proveedores activos.</p><% end %>
 <div class="agent-heading">
-  <h2 id="agent-catalog-title">Viajes para descubrir</h2>
+  <h1 id="agent-catalog-title">Viajes para descubrir</h1>
   <span><%= @pagination.total_count %> propuestas</span></div>
 <%= render "agent/trips/cards", trips: @trips, public_view: !@owner_view %><%= render "agent/pagination", pagination: @pagination %>
 <p class="agent-public-note">Confirmá tarifas, condiciones y disponibilidad directamente antes de contratar.</p>
 </section>
+<% end %>
+<%= link_to "https://wa.me/#{current_agent_workspace.whatsapp}", class: "agent-floating-whatsapp", aria: { label: "Consultar por WhatsApp" }, title: "Consultar por WhatsApp", rel: "noopener", target: "_blank" do %>
+  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+    <path fill="currentColor" d="M20.5 3.5A11.9 11.9 0 0 0 12 0C5.4 0 0 5.4 0 12c0 2.1.5 4.1 1.6 6L0 24l6.2-1.6A12 12 0 0 0 12 24c6.6 0 12-5.4 12-12 0-3.2-1.2-6.2-3.5-8.5ZM12 22a10 10 0 0 1-5.1-1.4l-.4-.2-3.7 1 1-3.6-.3-.4A10 10 0 1 1 12 22Zm5.5-7.5c-.3-.1-1.8-.9-2.1-1-.3-.1-.5-.1-.7.2-.2.3-.8 1-1 1.2-.2.2-.4.2-.7.1-.3-.2-1.3-.5-2.4-1.5-.9-.8-1.5-1.7-1.7-2-.2-.3 0-.5.1-.6l.5-.6.3-.5c.1-.2 0-.4 0-.6l-1-2.2c-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.3 3.1c.1.2 2.1 3.3 5.1 4.6.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.8-.7 2.1-1.5.3-.7.3-1.4.2-1.5-.1-.1-.3-.2-.6-.3Z"/>
+  </svg>
 <% end %>

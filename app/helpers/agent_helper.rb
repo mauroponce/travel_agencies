@@ -1,10 +1,20 @@
 module AgentHelper
+  def agent_import_departure_date(item)
+    data = item.extracted
+    evidence = data["evidence"]
+    date_evidence = evidence["departs_on"] if evidence.is_a?(Hash)
+    Agent::DepartureDate.call(value: data["departs_on"], text: data["departure_text"].presence || date_evidence,
+      today: Time.current.in_time_zone(current_agent_workspace.timezone).to_date)
+  end
+
   def agent_ai_status(task)
     { "pending" => "Pendiente", "processing" => "Procesando", "completed" => "Completado", "error" => "Error" }.fetch(task.status)
   end
 
   def agent_ai_error(code)
     case code
+    when "plan_expired" then "Tu plan venció o el espacio está suspendido. Conservamos el archivo; revisá Mi plan."
+    when "monthly_limit" then "Agotaste el presupuesto mensual de IA. Se renueva el día 1. Podés continuar manualmente sin perder el archivo."
     when "daily_limit" then "Alcanzaste el límite diario de IA. Se renueva a medianoche de tu cuenta. Podés continuar manualmente sin perder el archivo."
     when "configuration" then "Falta configurar Gemini. Podés cargar el viaje manualmente."
     when "invalid_file" then "El archivo no pudo validarse. Probá con otra versión del documento."
@@ -20,7 +30,7 @@ module AgentHelper
   def agent_match_reasons(revision, filters)
     reasons = []
     reasons << "Destino registrado: #{revision.destination}" if filters["destination"].present?
-    reasons << "Salida dentro del período solicitado: #{revision.departs_on}" if filters["from"].present? || filters["to"].present?
+    reasons << "Salida dentro del período solicitado: #{argentine_date(revision.departs_on)}" if filters["from"].present? || filters["to"].present?
     reasons << "Precio compatible con el presupuesto: #{agent_money(revision)}" if filters["min_price"].present? || filters["max_price"].present?
     %w[region meal_plan transport departure_location].each do |field|
       reasons << "#{agent_filter_label(field)}: #{revision.public_send(field)}" if filters[field].present?
@@ -28,10 +38,13 @@ module AgentHelper
     reasons << "Duración registrada: #{revision.duration_days} días" if filters["min_days"].present? || filters["max_days"].present?
     reasons.presence || [ "Propuesta vigente de un proveedor activo." ]
   end
+  def agent_price_amount(revision)
+    return "Precio a confirmar" unless revision.price_cents
+    ActiveSupport::NumberHelper.number_to_currency(revision.price_cents / 100.0, unit: revision.currency.to_s + " ", separator: ",", delimiter: ".", precision: 2)
+  end
   def agent_money(revision)
     return "Precio a confirmar" unless revision.price_cents
-    amount = ActiveSupport::NumberHelper.number_to_currency(revision.price_cents / 100.0, unit: revision.currency.to_s + " ", separator: ",", delimiter: ".", precision: 2)
-    "#{amount} · #{AgentTripRevision::PRICE_UNITS[revision.price_unit] || 'Unidad a confirmar'}"
+    "#{agent_price_amount(revision)} · #{AgentTripRevision::PRICE_UNITS[revision.price_unit] || 'Unidad a confirmar'}"
   end
   def agent_whatsapp(revision)
     message = "Hola, quisiera consultar por #{revision.title} del #{revision.departs_on&.strftime('%d/%m/%Y')} que vi en tu página. #{agent_trip_public_url(revision.agent_trip)}"
@@ -58,10 +71,16 @@ module AgentHelper
   end
 
   def agent_about_photo_public_url
+    if request.host == current_agent_workspace.hostname
+      return PlatformHosts.url(host: request.host, path: agent_public_about_photo_path(blob_id: current_agent_workspace.about_photo.blob_id))
+    end
     current_agent_workspace.url(path: agent_site_about_photo_path(agent_slug: current_agent_workspace.slug, blob_id: current_agent_workspace.about_photo.blob_id))
   end
 
   def agent_image_public_url(trip, revision)
+    if request.host == current_agent_workspace.hostname
+      return PlatformHosts.url(host: request.host, path: agent_public_image_path(slug: trip.slug, revision_id: revision.id))
+    end
     current_agent_workspace.url(path: agent_site_image_path(agent_slug: current_agent_workspace.slug, slug: trip.slug, revision_id: revision.id))
   end
 
@@ -72,7 +91,7 @@ module AgentHelper
 
   def agent_status(trip)
     return "Vencido" if trip.expired?
-    return "Empresa pausada" if trip.status == "published" && trip.current_revision&.agent_supplier&.status == "paused"
+    return "Proveedor pausado" if trip.status == "published" && trip.current_revision&.agent_supplier&.status == "paused"
     { "draft" => "Borrador", "published" => "Publicado", "unpublished" => "Despublicado", "archived" => "Archivado" }.fetch(trip.status)
   end
 end

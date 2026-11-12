@@ -1,4 +1,33 @@
 module ApplicationHelper
+  def agent_access = Agent::Access.new(current_agent_workspace)
+  def argentine_date(value)
+    return if value.blank?
+    date = value.respond_to?(:strftime) ? value : Date.iso8601(value.to_s)
+    date.strftime("%d/%m/%Y")
+  rescue ArgumentError
+    nil
+  end
+
+  def argentine_date_field(form, method, datetime: false, **options)
+    value = options.key?(:value) ? options.delete(:value) : form.object&.public_send(method)
+    argentine_date_field_tag(form.field_name(method), value, datetime:, id: form.field_id(method), **options)
+  end
+
+  def argentine_date_field_tag(name, value = nil, datetime: false, **options)
+    id = options.delete(:id) || name.to_s.delete("]").tr("[", "_")
+    date = value.presence
+    if date.is_a?(String)
+      date = begin
+        datetime ? Time.iso8601(date) : Date.iso8601(date)
+      rescue ArgumentError
+        nil
+      end
+    end
+    render "shared/argentine_date_field", name:, id:, datetime:, options:,
+      iso_value: date&.strftime(datetime ? "%Y-%m-%dT%H:%M" : "%Y-%m-%d"),
+      display_value: date&.strftime(datetime ? "%d/%m/%Y %H:%M" : "%d/%m/%Y")
+  end
+
   def agent_signup_available?
     Current.host_scope == "platform" && AgentWorkspace.self_signup_enabled?
   end

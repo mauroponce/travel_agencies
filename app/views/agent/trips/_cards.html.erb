@@ -7,7 +7,7 @@
   <div class="agent-grid <%= 'agent-list' if params[:view] == 'list' %>"><% trips.each do |trip| %><% revision = public_view ? trip.published_revision : trip.current_revision; next unless revision %>
       <article class="agent-trip-card">
         <div class="agent-trip-visual"><% if revision.cover.attached? %><%= image_tag(public_view ? agent_image_public_url(trip, revision) : cover_agent_trip_path(trip, revision_id: revision.id), alt: revision.title, loading: "lazy") %><% else %><span aria-hidden="true">↝</span><% end %><% unless public_view %><span class="agent-badge"><%= agent_status(trip) %></span><% end %></div>
-        <div class="agent-trip-content"><span class="agent-eyebrow"><%= revision.agent_supplier.name %></span>
+        <div class="agent-trip-content"><span class="agent-eyebrow"><%= public_view ? current_agent_workspace.business_name : revision.agent_supplier.name %></span>
           <h2><%= link_to revision.title.presence || "Viaje sin título", public_view ? agent_trip_public_url(trip) : agent_trip_path(trip) %></h2>
           <p><%= revision.destination.presence || "Destino a confirmar" %> · <%= revision.departs_on&.strftime('%d/%m/%Y') || "Fecha a confirmar" %></p>
           <p><%= revision.hotel.presence || "Hotel a confirmar" %></p>

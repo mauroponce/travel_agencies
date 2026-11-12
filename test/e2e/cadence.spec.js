@@ -1,6 +1,6 @@
 const { test, expect } = require("@playwright/test")
 const port = process.env.E2E_PORT || "3100"
-const platform = `http://platform.lvh.me:${port}`
+const platform = `http://localhost:${port}`
 const agent = `http://agente.lvh.me:${port}`
 
 async function expectCadence(page) {

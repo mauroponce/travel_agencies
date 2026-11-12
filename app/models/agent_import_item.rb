@@ -1,4 +1,5 @@
 class AgentImportItem < ApplicationRecord
+  include AgentCommercialRecord
   belongs_to :agent_workspace
   belongs_to :agent_import
   belongs_to :agent_trip, optional: true

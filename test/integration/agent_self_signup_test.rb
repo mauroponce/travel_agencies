@@ -25,7 +25,7 @@ class AgentSelfSignupTest < ActionDispatch::IntegrationTest
   test "new Google agent registers a public slug and manually publishes a trip to anonymous visitors" do
     host! PlatformHosts.platform_host
     get root_path
-    assert_select "a[href=?]", agent_onboarding_path, text: "Crear mi web de agente"
+    assert_select "a[href=?]", agent_onboarding_path, text: "Crear mi web de asesor"
     assert_select "form[action=?][method=post]", auth_start_path(purpose: "agent_onboarding"), count: 2 do
       assert_select "button[data-turbo=false]", text: "Registrarme con Google"
     end
@@ -39,12 +39,14 @@ class AgentSelfSignupTest < ActionDispatch::IntegrationTest
     assert_empty user.memberships
     assert_not user.platform_operator?
 
-    assert_difference "AgentWorkspace.count", 1 do
+    assert_difference [ "AgentWorkspace.count", "AgentSubscription.count" ], 1 do
       post agent_onboarding_path, params: signup_params
       assert_redirected_to agent_root_path
     end
     workspace = user.reload.agent_workspace
     assert_equal "silvina-martinez", workspace.slug
+    assert_equal "trialing", workspace.agent_subscription.status
+    assert_equal 14.days, workspace.agent_subscription.trial_ends_at - workspace.agent_subscription.trial_starts_at
     assert_nil workspace.subdomain
     assert_nil workspace.hostname_registration
     assert_equal PlatformHosts.url(host: PlatformHosts.platform_host, path: "/silvina-martinez"), workspace.url
@@ -70,7 +72,7 @@ class AgentSelfSignupTest < ActionDispatch::IntegrationTest
     visitor.host! PlatformHosts.platform_host
     visitor.get agent_site_path(agent_slug: workspace.slug)
     visitor.assert_response :success
-    visitor.assert_select "h1", text: "Silvina Martínez Viajes"
+    visitor.assert_select "title", text: "Viajes · Silvina Martínez Viajes"
     visitor.assert_select "a[href=?]", workspace.url(path: agent_site_trip_path(agent_slug: workspace.slug, slug: trip.slug)), count: 0
 
     post publish_agent_trip_path(trip)
@@ -102,7 +104,7 @@ class AgentSelfSignupTest < ActionDispatch::IntegrationTest
       get agent_onboarding_path
       assert_response :success
       assert_select "input[name='agent_workspace[slug]']"
-      assert_difference "AgentWorkspace.count", 1 do
+      assert_difference [ "AgentWorkspace.count", "AgentSubscription.count" ], 1 do
         post agent_onboarding_path, params: signup_params(slug: "silvina-#{environment}")
         assert_redirected_to agent_root_path
       end
@@ -111,7 +113,7 @@ class AgentSelfSignupTest < ActionDispatch::IntegrationTest
       host! PlatformHosts.platform_host
       get agent_site_path(agent_slug: workspace.slug)
       assert_response :success
-      assert_select "h1", text: "Silvina Martínez Viajes"
+      assert_select "title", text: "Viajes · Silvina Martínez Viajes"
     end
   end
 
@@ -134,7 +136,7 @@ class AgentSelfSignupTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "a[href=?]", agent_onboarding_path, count: 0
     assert_select "form[action=?]", auth_start_path(purpose: "agent_onboarding"), count: 0
-    assert_select "form[action=?]", auth_start_path, count: 3
+    assert_select "form[action=?]", auth_start_path, count: 2
     get agent_onboarding_path
     assert_response :not_found
     assert_no_difference "AgentWorkspace.count" do

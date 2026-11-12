@@ -9,13 +9,95 @@
   <% if @revision.cover.attached? %><meta property="og:image" content="<%= agent_image_public_url(@trip, @revision) %>"><meta property="og:image:alt" content="<%= @revision.title %>"><% end %>
   <link rel="canonical" href="<%= agent_trip_public_url(@trip) %>">
 <% end %>
-<%= link_to "← Todos los viajes", agent_catalog_public_url, class: "agent-link" %>
-<div class="agent-heading">
-  <div><span class="agent-eyebrow"><%= current_agent_workspace.business_name %></span>
+<div class="travel-detail">
+  <header class="travel-site-header">
+    <%= link_to agent_catalog_public_url, class: "travel-agency" do %>
+      <span class="travel-agency-initial" aria-hidden="true"><%= current_agent_workspace.business_name.first.upcase %></span>
+      <span><strong><%= current_agent_workspace.business_name %></strong><small>Tu próximo viaje empieza acá</small></span>
+    <% end %>
+    <%= link_to "Explorar viajes ↗", agent_catalog_public_url, class: "travel-explore" %>
+  </header>
+
+  <nav class="travel-breadcrumb" aria-label="Recorrido">
+    <%= link_to "Todos los viajes", agent_catalog_public_url %>
+    <%= app_icon("chevron") %><span><%= @revision.destination %></span>
+  </nav>
+  <div class="travel-heading">
+    <span class="agent-eyebrow">UN NUEVO DESTINO TE ESPERA</span>
     <h1><%= @revision.title %></h1>
-    <p><%= @revision.agent_supplier.name %></p>
+    <p><%= app_icon("route") %><%= [@revision.destination, @revision.region].filter_map(&:presence).join(" · ") %></p>
   </div>
-  <%= link_to "Consultar por WhatsApp", agent_whatsapp(@revision), class: "btn btn-primary", target: "_blank", rel: "noopener" %></div>
-<section class="agent-panel"><% if @revision.cover.attached? %><%= image_tag agent_image_public_url(@trip, @revision), alt: @revision.title, class: "agent-public-cover" %><% end %><%= render "agent/trips/details", revision: @revision %>
-  <p>Tarifas y disponibilidad sujetas a confirmación con el organizador.</p>
-</section>
+
+  <div class="travel-layout">
+    <figure class="travel-visual">
+      <% if @revision.cover.attached? %>
+        <div class="travel-image-wrap"><%= image_tag agent_image_public_url(@trip, @revision), alt: @revision.title, class: "travel-flyer", fetchpriority: "high" %></div>
+        <figcaption><span><%= app_icon("file") %>Propuesta del organizador</span><%= link_to "Ver flyer completo ↗", agent_image_public_url(@trip, @revision), target: "_blank", rel: "noopener" %></figcaption>
+      <% else %>
+        <div class="travel-image-placeholder"><%= app_icon("route") %><span>TU PRÓXIMA ESCAPADA</span><strong><%= @revision.destination %></strong><p><%= @revision.region %></p></div>
+      <% end %>
+    </figure>
+
+    <aside class="travel-booking" aria-labelledby="travel-booking-title">
+      <span class="travel-price-label" id="travel-booking-title">Precio del viaje</span>
+      <strong class="travel-price"><%= agent_price_amount(@revision) %></strong>
+      <p class="travel-price-unit"><%= AgentTripRevision::PRICE_UNITS[@revision.price_unit] %></p>
+      <% if @revision.price_basis.present? %><span class="travel-price-basis"><%= @revision.price_basis %></span><% end %>
+      <dl class="travel-booking-summary">
+        <div><dt><%= app_icon("calendar") %>Salida</dt><dd><%= argentine_date(@revision.departs_on) %></dd></div>
+        <% if @revision.returns_on %><div><dt><%= app_icon("calendar") %>Regreso</dt><dd><%= argentine_date(@revision.returns_on) %></dd></div><% end %>
+        <% if @revision.duration_days || @revision.duration_nights %>
+          <div><dt><%= app_icon("clock") %>Duración</dt><dd><%= [(@revision.duration_days && pluralize(@revision.duration_days, "día", "días")), (@revision.duration_nights && pluralize(@revision.duration_nights, "noche", "noches"))].compact.join(" / ") %></dd></div>
+        <% end %>
+      </dl>
+      <%= link_to agent_whatsapp(@revision), class: "travel-whatsapp", target: "_blank", rel: "noopener" do %><%= app_icon("send") %>Consultar por WhatsApp<% end %>
+      <p class="travel-contact-note">Consultá disponibilidad y coordiná tu viaje con atención personalizada.</p>
+      <div class="travel-advisor"><span aria-hidden="true"><%= current_agent_workspace.public_name.first.upcase %></span><div><small>Te acompaña en tu próximo viaje</small><strong><%= current_agent_workspace.public_name %></strong></div></div>
+    </aside>
+
+    <div class="travel-information">
+      <div class="travel-highlights">
+        <% [["calendar", "Salida", argentine_date(@revision.departs_on)], ["clock", "Duración", (@revision.duration_days && pluralize(@revision.duration_days, "día", "días"))], ["bus", "Transporte", @revision.transport], ["briefcase", "Alojamiento", @revision.hotel]].each do |icon, label, value| %>
+          <% if value.present? %><div><span><%= app_icon(icon) %></span><small><%= label %></small><strong><%= value %></strong></div><% end %>
+        <% end %>
+      </div>
+
+      <% if @revision.description.present? %>
+        <section class="travel-section" aria-labelledby="travel-description-title">
+          <span class="agent-eyebrow">LA EXPERIENCIA</span><h2 id="travel-description-title">Conocé tu próximo viaje</h2>
+          <p class="travel-description"><%= @revision.description %></p>
+        </section>
+      <% end %>
+
+      <% if [@revision.hotel, @revision.meal_plan, @revision.transport, @revision.departure_location].any?(&:present?) %>
+        <section class="travel-section" aria-labelledby="travel-comfort-title">
+          <h2 id="travel-comfort-title">Los detalles que hacen tu viaje</h2>
+          <div class="travel-service-grid">
+            <% [["briefcase", "Alojamiento", @revision.hotel], ["layers", "Comidas", @revision.meal_plan], ["bus", "Transporte", @revision.transport], ["route", "Punto de salida", @revision.departure_location]].each do |icon, label, value| %>
+              <% if value.present? %><div><%= app_icon(icon) %><div><h3><%= label %></h3><p><%= value %></p></div></div><% end %>
+            <% end %>
+          </div>
+        </section>
+      <% end %>
+
+      <% if @revision.included_services.present? || @revision.excluded_services.present? %>
+        <section class="travel-section" aria-labelledby="travel-services-title">
+          <h2 id="travel-services-title">Qué incluye la propuesta</h2>
+          <div class="travel-inclusions">
+            <% [["Servicios incluidos", @revision.included_services, "plus"], ["Servicios no incluidos", @revision.excluded_services, "close"]].each do |label, value, icon| %>
+              <% if value.present? %><div><h3><%= label %></h3><ul><% value.lines.map(&:strip).reject(&:blank?).each do |line| %><li><%= app_icon(icon) %><span><%= line %></span></li><% end %></ul></div><% end %>
+            <% end %>
+          </div>
+        </section>
+      <% end %>
+
+      <section class="travel-section travel-conditions" aria-labelledby="travel-conditions-title">
+        <h2 id="travel-conditions-title">Antes de viajar</h2>
+        <% if @revision.conditions.present? %><p><%= @revision.conditions %></p><% end %>
+        <p>Tarifas y disponibilidad sujetas a confirmación con el organizador.</p>
+        <div class="travel-organizer"><%= app_icon("users") %><span>Te asesora <strong><%= current_agent_workspace.public_name %></strong></span></div>
+      </section>
+    </div>
+  </div>
+  <footer class="travel-footer"><strong><%= current_agent_workspace.business_name %></strong><span>Más destinos, nuevas historias.</span><%= link_to "Volver a todos los viajes ↗", agent_catalog_public_url %></footer>
+</div>

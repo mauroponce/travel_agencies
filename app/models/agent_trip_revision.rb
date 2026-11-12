@@ -1,4 +1,5 @@
 class AgentTripRevision < ApplicationRecord
+  include AgentCommercialRecord
   FIELDS = %w[agent_supplier_id title destination region departs_on returns_on duration_days duration_nights description price_cents currency price_unit price_basis hotel meal_plan transport departure_location included_services excluded_services conditions].freeze
   CURRENCIES = %w[ARS USD EUR BRL].freeze
   PRICE_UNITS = { "per_person" => "Por persona", "per_group" => "Por grupo", "per_room" => "Por habitación" }.freeze

@@ -12,7 +12,11 @@ module AgentGeminiFixture
     payload = JSON.parse(request.body)
     imported = payload["contents"].first["parts"].any? { |part| part.key?("inlineData") }
     data = if imported
-      { trips: [ trip("Córdoba desde un flyer", "Córdoba"), trip("Mendoza desde un flyer", "Mendoza") ] }
+      departures = [ 3, 10, 17, 24 ].map do |day|
+        date = 2.months.from_now.to_date.change(day:)
+        { "label" => date.strftime("%d/%m"), "departs_on" => nil, "returns_on" => nil }
+      end
+      { trips: [ trip("Córdoba desde un flyer", "Córdoba").merge("departs_on" => nil, "returns_on" => nil, "departures" => departures) ] }
     else
       { filters: Agent::AiContract.search_properties.keys.index_with { nil }.merge("destination" => "Córdoba", "max_price" => "600000", "currency" => "ARS", "price_unit" => "per_person"), interpretation: [ "Presupuesto por persona en ARS" ] }
     end

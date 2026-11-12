@@ -1,4 +1,12 @@
 class AgentWorkspace < ApplicationRecord
+  # Legacy plan is retained only for rollback compatibility; subscription owns entitlement.
+  self.ignored_columns += [ "plan" ]
+  has_many :agent_clients, dependent: :restrict_with_error
+  has_many :agent_client_notes, dependent: :restrict_with_error
+  has_one :agent_subscription, dependent: :restrict_with_error
+  after_create :start_pro_trial!
+  before_update :authorize_brand_changes!
+
   belongs_to :owner, class_name: "User", optional: true
   has_one :hostname_registration, dependent: :restrict_with_error
   has_many :agent_suppliers, dependent: :restrict_with_error
@@ -24,7 +32,6 @@ class AgentWorkspace < ApplicationRecord
   validates :whatsapp, format: { with: /\A[1-9]\d{7,14}\z/ }
   validates :subdomain, format: { with: /\A[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\z/ }, allow_blank: true
   validates :status, inclusion: { in: %w[active suspended] }
-  validates :plan, inclusion: { in: %w[agent_pilot] }
   validate do
     errors.add(:slug, "está reservado; elegí otro o usá la sugerencia") if self.class.reserved_slug?(slug)
     errors.add(:slug, "es permanente una vez creada tu web") if persisted? && will_save_change_to_slug?
@@ -95,6 +102,16 @@ class AgentWorkspace < ApplicationRecord
   def url(path: nil) = PlatformHosts.url(host: PlatformHosts.platform_host, path: path || "/#{slug}")
 
   private
+
+  def authorize_brand_changes!
+    commercial_fields = %w[business_name public_name whatsapp presentation show_presentation show_catalog show_about about_text]
+    Agent::Access.new(self).require_commercial! if (changes_to_save.keys & commercial_fields).any?
+  end
+
+  def start_pro_trial!
+    now = Time.current
+    create_agent_subscription!(price_cents: AgentSubscription.price_cents, trial_starts_at: now, trial_ends_at: now + AgentSubscription.trial_days.days)
+  end
 
   def assign_initial_slug
     self.slug = self.class.suggest_slug(subdomain.presence || name) if slug.nil?

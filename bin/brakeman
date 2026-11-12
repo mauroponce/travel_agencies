@@ -2,6 +2,10 @@
 require "rubygems"
 require "bundler/setup"
 
+# timeout 0.6 probes Ractor support with a rescued exception on Ruby 3.4.
+# Load it before Brakeman installs its dependency-loading exception trap.
+require "timeout"
+
 ARGV.unshift("--ensure-latest")
 
 load Gem.bin_path("brakeman", "brakeman")

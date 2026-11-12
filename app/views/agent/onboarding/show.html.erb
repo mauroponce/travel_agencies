@@ -1,9 +1,10 @@
-<% content_for :title, "Creá tu web de agente · Turistack" %>
+<% content_for :title, "Creá tu web de asesor · Turistack" %>
 <section class="agent-onboarding agent-panel">
   <%= render "shared/brand" %>
-  <span class="agent-eyebrow">TURISTACK AGENTE</span>
+  <span class="agent-eyebrow">TURISTACK PRO</span>
   <h1>Tu web para vender viajes</h1>
   <p>Registrate con Google, elegí el link de tu web y cargá tus viajes manualmente. Cuando los publiques, tus clientes podrán verlos en tu web y consultarte por WhatsApp.</p>
+  <p><%= AgentSubscription.trial_days %> días de prueba gratuita. Luego USD <%= money_input_value(AgentSubscription.price_cents) %> por mes, con activación y renovación manual. Sin débito automático.</p>
   <% unless current_user %>
     <%= button_to "Ingresar con Google", auth_start_path(purpose: "agent_onboarding"), data: { turbo: false }, class: "btn btn-primary" %>
   <% else %>

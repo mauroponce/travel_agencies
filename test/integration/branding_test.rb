@@ -7,14 +7,16 @@ class BrandingTest < ActionDispatch::IntegrationTest
     get root_path
 
     assert_response :success
-    assert_select "title", text: "Turistack · Plataforma turística"
+    assert_select "title", text: "Turistack Pro · Tu negocio de viajes"
     assert_includes response.body, "Turistack"
     assert_not_includes response.body, "NexoViajes"
     assert_select "body.turistack-landing"
-    assert_select "h1", text: /Cada viaje, cada venta,.*en un solo lugar\./
-    assert_select "form[action=?][method=post], form[action=?][method=post]", auth_start_path, auth_start_path(purpose: "agent_onboarding"), count: 3
-    assert_select "select[aria-label='Cambiar perfil de demostración'] option", count: 3
-    %w[features tour proof acompanamiento start].each do |section|
+    assert_select "h1", text: /Tu marca, tus viajes,.*tus clientes\./
+    assert_select "form[action=?][method=post], form[action=?][method=post]", auth_start_path, auth_start_path(purpose: "agent_onboarding"), count: 4
+    assert_select "select[aria-label='Cambiar perfil de demostración'] option", count: 0
+    assert_includes response.body, "Sin débito automático".downcase
+    assert_not_includes response.body, "cobros y rendiciones"
+    %w[features tour plan].each do |section|
       assert_select "section[id=?]", section
     end
   end

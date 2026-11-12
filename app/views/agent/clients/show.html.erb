@@ -1,0 +1,15 @@
+<div class="agent-heading"><div><span class="agent-eyebrow">CLIENTE PRIVADO</span><h1><%= @client.name %></h1><p><%= @client.phone %> · <%= @client.email %><%= " · Archivado" if @client.archived_at %></p></div><div class="agent-actions">
+  <% if @client.phone.present? %><%= link_to "Abrir WhatsApp", "https://wa.me/#{@client.phone}", class: "btn", target: "_blank", rel: "noopener" %><% end %>
+  <% if agent_access.commercial? %><%= link_to "Editar cliente", edit_agent_client_path(@client), class: "btn" %><% unless @client.archived_at %><%= button_to "Archivar cliente", archive_agent_client_path(@client), class: "btn" %><% end %><% end %>
+</div></div>
+<section class="agent-panel"><h2>Notas privadas</h2>
+  <% if agent_access.commercial? %>
+    <%= form_with url: agent_client_notes_path(@client), scope: :agent_client_note, class: "agent-form" do |f| %>
+      <%= f.label :body, "Nota privada" %><%= f.text_area :body, required: true, maxlength: 5000 %>
+      <%= f.label :agent_trip_id, "Viaje relacionado (opcional)" %><%= f.select :agent_trip_id, @trips.map { |trip| [trip.current_revision&.title || trip.slug, trip.id] }, include_blank: "Sin viaje" %>
+      <%= f.submit "Guardar nota", class: "btn btn-primary" %>
+    <% end %>
+  <% end %>
+  <% @notes.each do |note| %><article class="agent-row"><time datetime="<%= note.created_at.iso8601 %>"><%= note.created_at.in_time_zone(current_agent_workspace.timezone).strftime("%d/%m/%Y %H:%M") %></time><%= simple_format note.body %><% if note.agent_trip %><%= link_to note.agent_trip.current_revision&.title || "Ver viaje", agent_trip_path(note.agent_trip) %><% end %></article><% end %>
+</section>
+<%= render "agent/pagination", pagination: @pagination %>

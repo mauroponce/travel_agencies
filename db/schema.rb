@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_27_200000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_12_123000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -77,10 +77,38 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_27_200000) do
     t.jsonb "usage", default: {}, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "consumption_units", default: 1, null: false
     t.index ["agent_import_id"], name: "index_agent_ai_executions_on_agent_import_id"
     t.index ["agent_search_id"], name: "index_agent_ai_executions_on_agent_search_id"
+    t.index ["agent_workspace_id", "created_at"], name: "index_agent_ai_executions_on_agent_workspace_id_and_created_at"
     t.index ["agent_workspace_id"], name: "index_agent_ai_executions_on_agent_workspace_id"
     t.check_constraint "(agent_import_id IS NULL) <> (agent_search_id IS NULL)", name: "agent_ai_execution_source"
+    t.check_constraint "consumption_units > 0", name: "agent_ai_positive_units"
+  end
+
+  create_table "agent_client_notes", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "agent_workspace_id", null: false
+    t.uuid "agent_client_id", null: false
+    t.uuid "agent_trip_id"
+    t.text "body", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["agent_client_id"], name: "index_agent_client_notes_on_agent_client_id"
+    t.index ["agent_trip_id"], name: "index_agent_client_notes_on_agent_trip_id"
+    t.index ["agent_workspace_id"], name: "index_agent_client_notes_on_agent_workspace_id"
+  end
+
+  create_table "agent_clients", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "agent_workspace_id", null: false
+    t.string "name", null: false
+    t.string "phone"
+    t.string "email"
+    t.datetime "archived_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["agent_workspace_id", "archived_at", "name"], name: "idx_on_agent_workspace_id_archived_at_name_23862f635a"
+    t.index ["agent_workspace_id"], name: "index_agent_clients_on_agent_workspace_id"
+    t.index ["id", "agent_workspace_id"], name: "index_agent_clients_on_id_and_agent_workspace_id", unique: true
   end
 
   create_table "agent_import_items", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -116,7 +144,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_27_200000) do
     t.index ["agent_workspace_id"], name: "index_agent_imports_on_agent_workspace_id"
     t.index ["id", "agent_workspace_id"], name: "index_agent_imports_on_id_and_agent_workspace_id", unique: true
     t.index ["status", "started_at"], name: "index_agent_imports_on_status_and_started_at"
-    t.check_constraint "status::text = ANY (ARRAY['pending'::character varying, 'processing'::character varying, 'completed'::character varying, 'error'::character varying]::text[])", name: "agent_imports_status"
+    t.check_constraint "status::text = ANY (ARRAY['pending'::character varying::text, 'processing'::character varying::text, 'completed'::character varying::text, 'error'::character varying::text])", name: "agent_imports_status"
   end
 
   create_table "agent_searches", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -136,7 +164,29 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_27_200000) do
     t.index ["agent_workspace_id"], name: "index_agent_searches_on_agent_workspace_id"
     t.index ["id", "agent_workspace_id"], name: "index_agent_searches_on_id_and_agent_workspace_id", unique: true
     t.index ["status", "started_at"], name: "index_agent_searches_on_status_and_started_at"
-    t.check_constraint "status::text = ANY (ARRAY['pending'::character varying, 'processing'::character varying, 'completed'::character varying, 'error'::character varying]::text[])", name: "agent_searches_status"
+    t.check_constraint "status::text = ANY (ARRAY['pending'::character varying::text, 'processing'::character varying::text, 'completed'::character varying::text, 'error'::character varying::text])", name: "agent_searches_status"
+  end
+
+  create_table "agent_subscriptions", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "agent_workspace_id", null: false
+    t.string "status", default: "trialing", null: false
+    t.string "origin", default: "signup", null: false
+    t.integer "price_cents", default: 1900, null: false
+    t.string "currency", default: "USD", null: false
+    t.datetime "trial_starts_at", null: false
+    t.datetime "trial_ends_at", null: false
+    t.datetime "current_period_starts_at"
+    t.datetime "current_period_ends_at"
+    t.boolean "cancel_at_period_end", default: false, null: false
+    t.datetime "canceled_at"
+    t.datetime "activation_requested_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["agent_workspace_id"], name: "index_agent_subscriptions_on_agent_workspace_id", unique: true
+    t.check_constraint "current_period_starts_at IS NULL AND current_period_ends_at IS NULL OR current_period_starts_at IS NOT NULL AND current_period_ends_at > current_period_starts_at", name: "agent_subscription_period_dates"
+    t.check_constraint "price_cents >= 0 AND currency::text = 'USD'::text", name: "agent_subscription_price"
+    t.check_constraint "status::text = ANY (ARRAY['trialing'::character varying::text, 'active'::character varying::text, 'inactive'::character varying::text])", name: "agent_subscription_status"
+    t.check_constraint "trial_ends_at > trial_starts_at", name: "agent_subscription_trial_dates"
   end
 
   create_table "agent_suppliers", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -156,7 +206,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_27_200000) do
     t.index ["agent_workspace_id", "name"], name: "index_agent_suppliers_on_agent_workspace_id_and_name"
     t.index ["agent_workspace_id"], name: "index_agent_suppliers_on_agent_workspace_id"
     t.index ["id", "agent_workspace_id"], name: "index_agent_suppliers_on_id_and_agent_workspace_id", unique: true
-    t.check_constraint "status::text = ANY (ARRAY['active'::character varying, 'paused'::character varying]::text[])", name: "agent_supplier_status"
+    t.check_constraint "status::text = ANY (ARRAY['active'::character varying::text, 'paused'::character varying::text])", name: "agent_supplier_status"
   end
 
   create_table "agent_trip_revisions", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -193,7 +243,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_27_200000) do
     t.index ["agent_workspace_id"], name: "index_agent_trip_revisions_on_agent_workspace_id"
     t.index ["id", "agent_trip_id", "agent_workspace_id"], name: "uidx_agent_revision_trip_workspace", unique: true
     t.index ["id", "agent_workspace_id"], name: "index_agent_trip_revisions_on_id_and_agent_workspace_id", unique: true
-    t.check_constraint "currency IS NULL OR currency::text = ''::text OR (currency::text = ANY (ARRAY['ARS'::character varying, 'USD'::character varying, 'EUR'::character varying, 'BRL'::character varying]::text[]))", name: "agent_currency"
+    t.check_constraint "currency IS NULL OR currency::text = ''::text OR (currency::text = ANY (ARRAY['ARS'::character varying::text, 'USD'::character varying::text, 'EUR'::character varying::text, 'BRL'::character varying::text]))", name: "agent_currency"
     t.check_constraint "duration_days IS NULL OR duration_days > 0", name: "agent_days_positive"
     t.check_constraint "duration_nights IS NULL OR duration_nights >= 0", name: "agent_nights_nonnegative"
     t.check_constraint "price_cents IS NULL OR price_cents >= 0", name: "agent_price_nonnegative"
@@ -213,7 +263,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_27_200000) do
     t.index ["agent_workspace_id"], name: "index_agent_trips_on_agent_workspace_id"
     t.index ["id", "agent_workspace_id"], name: "index_agent_trips_on_id_and_agent_workspace_id", unique: true
     t.check_constraint "status::text <> 'published'::text OR published_revision_id IS NOT NULL", name: "agent_trip_published_revision"
-    t.check_constraint "status::text = ANY (ARRAY['draft'::character varying, 'published'::character varying, 'unpublished'::character varying, 'archived'::character varying]::text[])", name: "agent_trip_status"
+    t.check_constraint "status::text = ANY (ARRAY['draft'::character varying::text, 'published'::character varying::text, 'unpublished'::character varying::text, 'archived'::character varying::text])", name: "agent_trip_status"
   end
 
   create_table "agent_workspaces", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -239,7 +289,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_27_200000) do
     t.index ["slug"], name: "index_agent_workspaces_on_slug", unique: true
     t.index ["subdomain"], name: "index_agent_workspaces_on_subdomain", unique: true
     t.check_constraint "owner_id IS NOT NULL OR invited_email IS NOT NULL AND invited_email::text <> ''::text", name: "agent_workspace_identity"
-    t.check_constraint "status::text = ANY (ARRAY['active'::character varying, 'suspended'::character varying]::text[])", name: "agent_workspace_status"
+    t.check_constraint "status::text = ANY (ARRAY['active'::character varying::text, 'suspended'::character varying::text])", name: "agent_workspace_status"
   end
 
   create_table "audit_events", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -283,7 +333,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_27_200000) do
     t.index ["token_digest"], name: "index_authentication_codes_on_token_digest", unique: true
     t.index ["user_id"], name: "index_authentication_codes_on_user_id"
     t.check_constraint "company_id IS NULL AND membership_id IS NULL OR company_id IS NOT NULL AND membership_id IS NOT NULL", name: "authentication_codes_scope_consistent"
-    t.check_constraint "purpose IS NULL AND agent_workspace_id IS NULL OR purpose::text = 'company'::text AND company_id IS NOT NULL AND membership_id IS NOT NULL AND agent_workspace_id IS NULL OR purpose::text = 'agent'::text AND company_id IS NULL AND membership_id IS NULL AND agent_workspace_id IS NOT NULL OR (purpose::text = ANY (ARRAY['operator'::character varying, 'agent_onboarding'::character varying]::text[])) AND company_id IS NULL AND membership_id IS NULL AND agent_workspace_id IS NULL", name: "authentication_codes_purpose"
+    t.check_constraint "purpose IS NULL AND agent_workspace_id IS NULL OR purpose::text = 'company'::text AND company_id IS NOT NULL AND membership_id IS NOT NULL AND agent_workspace_id IS NULL OR purpose::text = 'agent'::text AND company_id IS NULL AND membership_id IS NULL AND agent_workspace_id IS NOT NULL OR (purpose::text = ANY (ARRAY['operator'::character varying, 'agent_onboarding'::character varying, 'identity'::character varying]::text[])) AND company_id IS NULL AND membership_id IS NULL AND agent_workspace_id IS NULL", name: "authentication_codes_purpose"
   end
 
   create_table "authentication_requests", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -306,7 +356,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_27_200000) do
     t.index ["id", "purpose"], name: "uidx_auth_request_purpose", unique: true
     t.index ["token_digest"], name: "index_authentication_requests_on_token_digest", unique: true
     t.check_constraint "company_id IS NULL AND company_domain_id IS NULL OR company_id IS NOT NULL AND company_domain_id IS NOT NULL", name: "authentication_requests_scope_consistent"
-    t.check_constraint "purpose IS NULL AND agent_workspace_id IS NULL OR purpose::text = 'company'::text AND company_id IS NOT NULL AND company_domain_id IS NOT NULL AND agent_workspace_id IS NULL OR purpose::text = 'agent'::text AND company_id IS NULL AND company_domain_id IS NULL AND agent_workspace_id IS NOT NULL OR (purpose::text = ANY (ARRAY['operator'::character varying, 'agent_onboarding'::character varying]::text[])) AND company_id IS NULL AND company_domain_id IS NULL AND agent_workspace_id IS NULL", name: "authentication_requests_purpose"
+    t.check_constraint "purpose IS NULL AND agent_workspace_id IS NULL OR purpose::text = 'company'::text AND company_id IS NOT NULL AND company_domain_id IS NOT NULL AND agent_workspace_id IS NULL OR purpose::text = 'agent'::text AND company_id IS NULL AND company_domain_id IS NULL AND agent_workspace_id IS NOT NULL OR (purpose::text = ANY (ARRAY['operator'::character varying, 'agent_onboarding'::character varying, 'identity'::character varying]::text[])) AND company_id IS NULL AND company_domain_id IS NULL AND agent_workspace_id IS NULL", name: "authentication_requests_purpose"
   end
 
   create_table "boarding_events", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -894,6 +944,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_27_200000) do
   add_foreign_key "agent_ai_executions", "agent_searches"
   add_foreign_key "agent_ai_executions", "agent_searches", column: ["agent_search_id", "agent_workspace_id"], primary_key: ["id", "agent_workspace_id"]
   add_foreign_key "agent_ai_executions", "agent_workspaces"
+  add_foreign_key "agent_client_notes", "agent_clients", column: ["agent_client_id", "agent_workspace_id"], primary_key: ["id", "agent_workspace_id"]
+  add_foreign_key "agent_client_notes", "agent_trips", column: ["agent_trip_id", "agent_workspace_id"], primary_key: ["id", "agent_workspace_id"]
+  add_foreign_key "agent_client_notes", "agent_workspaces"
+  add_foreign_key "agent_clients", "agent_workspaces"
   add_foreign_key "agent_import_items", "agent_imports"
   add_foreign_key "agent_import_items", "agent_imports", column: ["agent_import_id", "agent_workspace_id"], primary_key: ["id", "agent_workspace_id"]
   add_foreign_key "agent_import_items", "agent_trip_revisions"
@@ -903,6 +957,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_27_200000) do
   add_foreign_key "agent_import_items", "agent_workspaces"
   add_foreign_key "agent_imports", "agent_workspaces"
   add_foreign_key "agent_searches", "agent_workspaces"
+  add_foreign_key "agent_subscriptions", "agent_workspaces"
   add_foreign_key "agent_suppliers", "agent_workspaces"
   add_foreign_key "agent_trip_revisions", "agent_suppliers"
   add_foreign_key "agent_trip_revisions", "agent_suppliers", column: ["agent_supplier_id", "agent_workspace_id"], primary_key: ["id", "agent_workspace_id"]

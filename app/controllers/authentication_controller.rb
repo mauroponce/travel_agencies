@@ -50,6 +50,8 @@ class AuthenticationController < ApplicationController
         raise Pundit::NotAuthorizedError unless Current.host_scope == "agent" && code.agent_workspace_id == Current.agent_workspace.id && Current.agent_workspace.active? && Current.agent_workspace.owner_id == code.user_id
       elsif code.purpose == "agent_onboarding"
         raise Pundit::NotAuthorizedError unless Current.host_scope == "platform" && AgentWorkspace.enabled? && AgentWorkspace.self_signup_enabled?
+      elsif code.purpose == "identity"
+        raise Pundit::NotAuthorizedError unless Current.host_scope == "platform"
       else
         raise Pundit::NotAuthorizedError unless Current.host_scope == "platform" &&
           (code.user.platform_operator? || (AgentWorkspace.enabled? && code.user.agent_workspace&.active?))
@@ -69,8 +71,10 @@ class AuthenticationController < ApplicationController
       redirect_to agent_onboarding_path
     elsif !authenticated_user.platform_operator? && authenticated_user.agent_workspace&.active?
       redirect_to agent_root_path, notice: "Bienvenido."
-    else
+    elsif authenticated_user.platform_operator?
       redirect_to platform_companies_path, notice: "Bienvenido."
+    else
+      redirect_to context_path, notice: "Bienvenido."
     end
   end
 

@@ -1487,3 +1487,23 @@ body.turistack-landing .occupancy-label { font-size: 9px; color: var(--faint); }
 
 body.turistack-landing .brand .turistack-logo { width: 180px; }
 body.turistack-landing .app-brand .turistack-logo { width: 108px; }
+
+/* Personal Pro landing; company landing styles stay scoped separately. */
+body.turistack-pro-landing .btn-primary { color: #fff; background: var(--ink); }
+body.turistack-pro-landing .pro-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+body.turistack-pro-landing .pro-actions .button_to { margin: 0; }
+body.turistack-pro-landing .hero p { max-width: 680px; margin-top: 20px; line-height: 1.7; }
+body.turistack-pro-landing .section { padding-block: 52px; }
+body.turistack-pro-landing .section h2 { margin-bottom: 24px; }
+body.turistack-pro-landing .section p + p { margin-top: 12px; }
+body.turistack-pro-landing .section .button_to { margin-top: 24px; }
+body.turistack-pro-landing .pro-steps { list-style: decimal; padding-left: 24px; margin-bottom: 24px; }
+body.turistack-pro-landing .pro-steps li + li { margin-top: 12px; }
+@media (max-width: 600px) {
+  body.turistack-pro-landing .nav-inner { gap: 8px; padding-inline: 16px; }
+  body.turistack-pro-landing .brand .turistack-logo { width: 128px; }
+  body.turistack-pro-landing .nav-actions { gap: 4px; }
+  body.turistack-pro-landing .nav-actions .login-button { font-size: 11px; padding-inline: 10px; }
+  body.turistack-pro-landing .section { padding-block: 32px; }
+  body.turistack-pro-landing .section > .agent-panel { width: calc(100% - 32px); }
+}

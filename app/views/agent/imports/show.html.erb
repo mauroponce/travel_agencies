@@ -20,11 +20,11 @@
 <% else %>
   <section class="agent-panel">
     <h2>Revisá las fichas extraídas</h2>
-    <p>Confirmá cada dato antes de guardar o publicar.</p>
+    <p><%= pluralize(@import.items.size, "ficha extraída", "fichas extraídas") %>. Cada salida se revisa y se guarda por separado.</p>
     <% @import.items.each do |item| %>
       <div class="agent-row">
         <div><strong><%= item.extracted['title'].presence || "Viaje sin título" %></strong>
-          <p><%= item.extracted['destination'] %> · <%= item.extracted['departs_on'] || "Fecha pendiente" %></p>
+          <p><%= item.extracted['destination'] %> · <%= argentine_date(agent_import_departure_date(item)).presence || item.extracted['departure_text'].presence || "Fecha pendiente" %></p>
         </div>
         <% if item.agent_trip %><%= link_to "Ver viaje guardado", agent_trip_path(item.agent_trip), class: "btn" %><% else %><%= link_to "Revisar ficha", edit_agent_import_item_path(@import, item), class: "btn btn-primary" %><% end %></div>
     <% end %></section>

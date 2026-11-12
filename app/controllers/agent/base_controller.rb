@@ -1,13 +1,15 @@
 module Agent
   class BaseController < ApplicationController
     before_action :authorize_workspace
+    before_action :authorize_commercial_write
+    helper_method :agent_access
     layout "agent"
     rescue_from ActiveRecord::RecordInvalid, with: :invalid_record
-    rescue_from Agent::UploadValidator::Invalid, MoneyParser::InvalidAmount do |error|
+    rescue_from Agent::UploadValidator::Invalid, ::MoneyParser::InvalidAmount do |error|
       render_agent_error(error.message)
     end
     rescue_from ActiveRecord::RecordNotUnique do
-      render_agent_error("El nombre ya está registrado en tu cuenta. Usá la empresa existente o elegí otro nombre.")
+      render_agent_error("El nombre ya está registrado en tu cuenta. Usá el proveedor existente o elegí otro nombre.")
     end
     rescue_from ActiveRecord::StaleObjectError do
       render_agent_error("La ficha cambió en otra ventana. Revisá la versión actual antes de guardar.", status: :conflict)
@@ -18,6 +20,12 @@ module Agent
     def authorize_workspace
       authorize current_agent_workspace, :access?, policy_class: AgentWorkspacePolicy
       response.headers["Cache-Control"] = "private, no-store"
+    end
+
+    def agent_access = Agent::Access.new(current_agent_workspace)
+
+    def authorize_commercial_write
+      agent_access.require_commercial! unless controller_path == "agent/plans" || ((request.get? || request.head?) && !%w[new edit preview].include?(action_name))
     end
 
     def pundit_user = Current
@@ -34,7 +42,7 @@ module Agent
     def form_error_message(error)
       case error
       when ActiveRecord::RecordInvalid then error.record.errors.full_messages.to_sentence
-      when ActiveRecord::RecordNotUnique then "La empresa ya está registrada. Seleccionala en la lista o elegí otro nombre."
+      when ActiveRecord::RecordNotUnique then "El proveedor ya está registrado. Seleccionalo en la lista o elegí otro nombre."
       when ActiveRecord::StaleObjectError then "La ficha cambió en otra ventana. Tus datos siguen abajo; abrí la versión actual antes de volver a guardar."
       else error.message
       end

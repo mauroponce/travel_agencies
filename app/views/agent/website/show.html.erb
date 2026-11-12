@@ -17,15 +17,8 @@
       <%= f.text_field :name, required: true %>
       <%= f.label :whatsapp, "WhatsApp con código de país" %>
       <%= f.telephone_field :whatsapp, required: true %>
-      <%= f.label :presentation, "Presentación" %>
-      <%= f.text_area :presentation, placeholder: "Unas palabras para darles la bienvenida a tus próximos viajeros." %>
-
       <fieldset class="agent-section-options">
         <legend>Secciones de tu web</legend>
-        <label class="agent-section-option">
-          <%= f.check_box :show_presentation %>
-          <span><strong>Presentación</strong><small>Tu nombre, bienvenida y contacto.</small></span>
-        </label>
         <label class="agent-section-option">
           <%= f.check_box :show_catalog %>
           <span><strong>Viajes</strong><small>Tu catálogo de propuestas y sus filtros.</small></span>

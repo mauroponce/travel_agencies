@@ -29,8 +29,11 @@ module Agent
     def preview
       @public_view = true
       return render "agent/public_catalog/index" unless current_agent_workspace.show_catalog?
-      @suppliers = current_agent_workspace.agent_suppliers.active.order(:name, :id)
-      @trips, @pagination = paginate(CatalogQuery.call(workspace: current_agent_workspace, filters: params.permit(*CatalogQuery::FILTERS), public_view: true))
+      scope = CatalogQuery.call(workspace: current_agent_workspace, public_view: true)
+      @destinations = scope.except(:includes, :order).distinct.order("agent_trip_revisions.destination").pluck("agent_trip_revisions.destination").reject(&:blank?)
+      scope = CatalogQuery.call(workspace: current_agent_workspace, filters: params.permit(*CatalogQuery::FILTERS).except(:destination), public_view: true)
+      scope = scope.where(agent_trip_revisions: { destination: params[:destination].to_s }) if params[:destination].present?
+      @trips, @pagination = paginate(scope)
       render "agent/public_catalog/index"
     end
   end

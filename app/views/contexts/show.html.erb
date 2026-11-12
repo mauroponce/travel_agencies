@@ -1,0 +1,21 @@
+<section class="agent-panel agent-onboarding">
+  <%= render "shared/brand" %><h1>Elegí tu espacio</h1>
+  <p><%= current_user.name %> · Tus accesos empresariales son independientes de Turistack Pro.</p>
+  <h2>Mi espacio</h2>
+  <% if @workspace&.active? %>
+    <%= link_to "Ingresar a mi espacio", PlatformHosts.url(host: PlatformHosts.platform_host, path: agent_root_path), class: "btn btn-primary" %>
+  <% elsif @workspace %><p>Tu espacio personal está suspendido. Esto no cambia tus accesos empresariales.</p>
+  <% elsif AgentWorkspace.self_signup_enabled? %>
+    <%= link_to "Crear mi espacio de Turistack Pro", PlatformHosts.url(host: PlatformHosts.platform_host, path: agent_onboarding_path), class: "btn" %>
+    <p>Opcional: USD <%= money_input_value(AgentSubscription.price_cents) %> por mes después de <%= AgentSubscription.trial_days %> días de prueba. Sin débito automático.</p>
+  <% end %>
+  <h2>Empresas que me dan acceso</h2>
+  <% @memberships.each do |membership| %>
+    <article class="agent-row"><h3><%= membership.company.name %></h3><p><%= membership.roles.map { |role| role_label(role) }.join(", ") %></p>
+      <% if membership.company.primary_domain %><%= button_to "Ingresar a #{membership.company.name}", context_path, params: { membership_id: membership.id }, class: "btn", data: { turbo: false } %><% end %>
+    </article>
+  <% end %>
+  <% if @memberships.empty? %><p>No tenés accesos empresariales vigentes.</p><% end %>
+  <p>Si todavía no iniciaste sesión en la empresa elegida, ingresá con Google en su web. Cada empresa valida su propio acceso.</p>
+  <%= button_to "Cerrar sesión", session_path, method: :delete, class: "btn" %>
+</section>

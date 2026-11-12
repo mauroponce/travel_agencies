@@ -1,4 +1,5 @@
 class AgentSupplier < ApplicationRecord
+  include AgentCommercialRecord
   belongs_to :agent_workspace
   has_many :agent_trip_revisions, dependent: :restrict_with_error
   normalizes :name, with: ->(value) { value.to_s.strip.gsub(/\s+/, " ") }

@@ -7,9 +7,20 @@ Rails.application.routes.draw do
   get "/", to: "agent/public_catalog#index", as: :agent_public_catalog, constraints: agent_host
   get "/buscar-viajes", to: "agent/public_catalog#search", as: :agent_public_search, constraints: agent_host
   get "/viajes/:slug", to: "agent/public_catalog#show", as: :agent_public_trip, constraints: agent_host
+  get "/agente/sobre-mi/foto/:blob_id", to: "agent/public_catalog#about_photo", as: :agent_public_about_photo
   get "/agente/imagenes/:slug/:revision_id", to: "agent/public_catalog#image", as: :agent_public_image
   namespace :agent, path: "agente" do
     root "dashboard#show"
+    resource :plan, path: "mi-plan", only: :show do
+      post :request_activation
+      post :cancel
+    end
+    resource :export, only: :show
+    resources :clients, path: "clientes", except: :destroy do
+      collection { get :export }
+      member { post :archive }
+      resources :notes, only: :create, controller: "client_notes"
+    end
     resources :suppliers, path: "empresas"
     resources :trips, path: "viajes", except: :destroy do
       collection { get :compare }
@@ -58,6 +69,7 @@ Rails.application.routes.draw do
 
   resource :onboarding, only: :show
   post "/context", to: "contexts#update", as: :context
+  get "/context", to: "contexts#show"
   get "/dashboard", to: "dashboard#show", as: :dashboard
 
   resources :travel_packages, path: "paquetes"
@@ -101,7 +113,9 @@ Rails.application.routes.draw do
   resources :commissions, path: "comisiones", only: :index
 
   namespace :platform do
-    resources :agent_workspaces, only: %i[index new create update]
+    resources :agent_workspaces, only: %i[index new create update] do
+      resource :subscription, only: :create, controller: "agent_subscriptions"
+    end
     resources :companies, only: %i[index new create update]
     resources :companies, only: [] do
       resources :company_domains, only: :create do

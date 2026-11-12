@@ -1,6 +1,6 @@
 <div class="page-heading">
-  <div><div class="eyebrow">OPERACIÓN DE PLATAFORMA</div><h1 class="page-title">Cuentas Turistack Revendedor</h1><p class="subtitle">Administrá los espacios y las webs de los agentes.</p></div>
-  <%= link_to "Crear revendedor", new_platform_agent_workspace_path, class: "btn btn-primary" %>
+  <div><div class="eyebrow">OPERACIÓN DE PLATAFORMA</div><h1 class="page-title">Cuentas Turistack Pro</h1><p class="subtitle">Administrá los espacios y las webs de los asesores.</p></div>
+  <%= link_to "Crear asesor", new_platform_agent_workspace_path, class: "btn btn-primary" %>
 </div>
 <div class="space-y-5">
   <% @workspaces.each do |workspace| %>
@@ -11,6 +11,10 @@
         <div><%= f.label :status, "Estado de #{workspace.business_name}" %><%= f.select :status, [["Activo", "active"], ["Suspendido", "suspended"]] %></div>
         <%= f.submit "Actualizar estado", class: "btn" %>
       <% end %>
+      <p>Turistack Pro · <%= workspace.agent_subscription.label %> · USD <%= money_input_value(workspace.agent_subscription.price_cents) %> por mes · vence <%= argentine_date(workspace.agent_subscription.ends_at) %></p>
+      <% if workspace.agent_subscription.activation_requested_at %><p>Activación manual solicitada el <%= argentine_date(workspace.agent_subscription.activation_requested_at) %>.</p><% end %>
+      <p>Sin débito automático. Confirmá el acuerdo de pago por fuera de la plataforma antes de otorgar el período.</p>
+      <%= button_to "Activar / renovar un mes", platform_agent_workspace_subscription_path(workspace), class: "btn btn-primary" %>
     </section>
   <% end %>
 </div>

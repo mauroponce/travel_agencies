@@ -1,0 +1,7 @@
+<%= render "agent/errors", record: @client %>
+<%= form_with model: @client, url: @client.persisted? ? agent_client_path(@client) : agent_clients_path, class: "agent-form" do |f| %>
+  <%= f.label :name, "Nombre" %><%= f.text_field :name, required: true, maxlength: 200 %>
+  <%= f.label :phone, "Teléfono / WhatsApp con código de país" %><%= f.telephone_field :phone, placeholder: "5491155551234" %>
+  <%= f.label :email, "Email (opcional)" %><%= f.email_field :email %>
+  <%= f.submit "Guardar cliente", class: "btn btn-primary" %>
+<% end %>

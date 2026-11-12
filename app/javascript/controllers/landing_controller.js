@@ -36,7 +36,7 @@ export default class extends Controller {
     })
 
     this.revealContent()
-    this.paintRole(this.find("#demoRole").value)
+    if (this.find("#demoRole")) this.paintRole(this.find("#demoRole").value)
     this.layout()
     document.fonts?.ready.then(() => {
       if (this.element.isConnected) this.layout()
@@ -100,7 +100,7 @@ export default class extends Controller {
   updateScroll() {
     const scroll = window.scrollY
     this.find("#nav").classList.toggle("is-stuck", scroll > 12)
-    if (!this.reducedMotion) this.find("#heroStage").style.transform = `translate3d(0,${Math.min(scroll * 0.1, 130)}px,0)`
+    if (!this.reducedMotion && this.find("#heroStage")) this.find("#heroStage").style.transform = `translate3d(0,${Math.min(scroll * 0.1, 130)}px,0)`
 
     const links = this.findAll(".nav-links a")
     let active = 0
@@ -112,7 +112,7 @@ export default class extends Controller {
   }
 
   updateTour() {
-    if (this.stacked.matches) return
+    if (this.stacked.matches || !this.tour) return
     const bounds = this.tour.getBoundingClientRect()
     const distance = bounds.height - window.innerHeight
     if (distance <= 0) return

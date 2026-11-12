@@ -20,7 +20,7 @@
         <tr>
           <th><%= label %></th>
           <% @trips.each do |trip| %>
-            <td><%= trip.current_revision.public_send(field).presence || "A confirmar" %></td>
+            <td><%= (%i[departs_on returns_on].include?(field) ? argentine_date(trip.current_revision.public_send(field)) : trip.current_revision.public_send(field)).presence || "A confirmar" %></td>
           <% end %></tr>
       <% end %>
       <tr>

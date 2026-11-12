@@ -48,7 +48,7 @@ class DevelopmentTunnelTest < ActionDispatch::IntegrationTest
   test "one HTTPS tunnel serves the platform and completes Google signup without a public port" do
     get root_path
     assert_response :success
-    assert_select "a[href=?]", agent_onboarding_path, text: "Crear mi web de agente"
+    assert_select "a[href=?]", agent_onboarding_path, text: "Crear mi web de asesor"
 
     post auth_start_path, params: { purpose: "agent_onboarding" }
     assert_response :redirect
@@ -90,7 +90,7 @@ class DevelopmentTunnelTest < ActionDispatch::IntegrationTest
     assert_select "a[href=?]", "https://#{TUNNEL_HOST}/agente-del-tunel", text: "Ver mi web ↗"
     get agent_site_path(agent_slug: "agente-del-tunel")
     assert_response :success
-    assert_select "h1", text: "Agente del túnel"
+    assert_select "title", text: "Viajes · Agente del túnel"
     get agent_root_path
     assert_response :success
 

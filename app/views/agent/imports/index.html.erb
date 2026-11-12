@@ -1,3 +1,4 @@
+<div class="agent-import-page">
 <div class="agent-heading">
   <div><span class="agent-eyebrow">TU ASISTENTE INTERNO</span>
     <h1>Importar con IA</h1>
@@ -5,20 +6,58 @@
   </div>
 </div>
 <% if @form_error %><p class="agent-alert" role="alert"><%= @form_error %></p><% end %>
-<section class="agent-panel">
-  <div class="agent-import-steps"><span>1 · Subir archivo</span><span>2 · Procesar con IA</span><span>3 · Revisar y publicar</span></div>
-  <%= form_with url: agent_imports_path, multipart: true, class: "agent-upload" do |f| %><span class="agent-empty-icon" aria-hidden="true">↥</span>
-    <h2>Subí un flyer o documento de tu proveedor</h2>
-    <p>JPG, PNG, WebP o PDF · hasta 10 MB · PDF hasta 100 páginas</p>
-    <% if @retained_cover %><%= hidden_field_tag :retained_cover, retained_cover_token %><p>Conservamos tu archivo: <%= @retained_cover.filename %>.</p><%= link_to "Continuar manualmente con este flyer", new_agent_trip_path(retained_cover: retained_cover_token), class: "btn" %><% end %>
-    <%= f.file_field :source, required: !@retained_cover, accept: "image/jpeg,image/png,image/webp,application/pdf", aria: {label: "Archivo a importar"} %><%= f.hidden_field :idempotency_key, value: @idempotency_key %><%= f.submit "Procesar con IA", class: "btn btn-primary" %><% end %>
-  <p>Podés extraer varios viajes. Nada se publica automáticamente. Al publicar una ficha se mostrará la imagen del flyer o la primera página del PDF; el documento fuente se conserva.</p>
-</section>
-<section class="agent-panel">
-  <h2>Importaciones recientes</h2>
-  <% @imports.each do |item| %>
-    <div class="agent-row"><%= link_to item.source.filename.to_s, agent_import_path(item) %><span class="agent-badge"><%= agent_ai_status(item) %></span><time><%= item.created_at.strftime('%d/%m/%Y %H:%M') %></time></div>
-  <% end %><% if @imports.empty? %>
-    <p>Tus archivos importados aparecerán acá.</p>
-  <% end %></section>
-<%= render "agent/pagination", pagination: @pagination %>
+<div class="agent-import-layout">
+  <section class="agent-panel agent-import-workspace" aria-label="Subir y procesar archivo">
+    <ol class="agent-import-progress" aria-label="Pasos de la importación">
+      <li aria-current="step"><span>1</span>Subir archivo</li>
+      <li><span>2</span>Procesar con IA</li>
+      <li><span>3</span>Revisar y publicar</li>
+    </ol>
+    <%= form_with url: agent_imports_path, multipart: true, class: "agent-upload" do |f| %>
+      <span class="agent-empty-icon" aria-hidden="true"><%= app_icon("file") %></span>
+      <div class="agent-import-intro">
+        <h2>Subí un flyer o documento de tu proveedor</h2>
+        <p>Convertí un archivo en una o varias fichas de viaje.</p>
+      </div>
+      <% if @retained_cover %>
+        <%= hidden_field_tag :retained_cover, retained_cover_token %>
+        <p>Conservamos tu archivo: <%= @retained_cover.filename %>.</p>
+        <%= link_to "Continuar manualmente con este flyer", new_agent_trip_path(retained_cover: retained_cover_token), class: "btn" %>
+      <% end %>
+      <div class="agent-import-controls">
+        <%= f.file_field :source, required: !@retained_cover, accept: "image/jpeg,image/png,image/webp,application/pdf", aria: { label: "Archivo a importar", describedby: "agent-import-formats" } %>
+        <%= f.hidden_field :idempotency_key, value: @idempotency_key %>
+        <%= f.button "Procesar con IA", type: "submit", class: "btn btn-primary" %>
+      </div>
+      <p id="agent-import-formats">JPG, PNG, WebP o PDF · hasta 10 MB<br>PDF de hasta <%= Agent::UploadValidator.max_pdf_pages %> páginas</p>
+    <% end %>
+    <div class="agent-import-note">
+      <span aria-hidden="true"><%= app_icon("layers") %></span>
+      <div>
+        <h3>Vos revisás antes de publicar</h3>
+        <p>Nada se publica automáticamente. Cada ficha muestra el flyer o la primera página del PDF; el documento original siempre se conserva.</p>
+      </div>
+    </div>
+  </section>
+  <section class="agent-panel agent-import-history" aria-labelledby="agent-import-history-title">
+    <div class="agent-import-history-heading">
+      <%= app_icon("clock") %>
+      <h2 id="agent-import-history-title">Importaciones recientes</h2>
+    </div>
+    <% @imports.each do |item| %>
+      <div class="agent-import-history-item">
+        <%= link_to item.source.filename.to_s, agent_import_path(item) %>
+        <div><span class="agent-badge"><%= agent_ai_status(item) %></span><time datetime="<%= item.created_at.iso8601 %>"><%= item.created_at.strftime('%d/%m/%Y %H:%M') %></time></div>
+      </div>
+    <% end %>
+    <% if @imports.empty? %>
+      <div class="agent-import-history-empty">
+        <span aria-hidden="true"><%= app_icon("file") %></span>
+        <h3>Tu próxima ficha empieza acá</h3>
+        <p>Tus archivos importados aparecerán acá para que puedas seguir su estado y revisar los viajes extraídos.</p>
+      </div>
+    <% end %>
+    <%= render "agent/pagination", pagination: @pagination %>
+  </section>
+</div>
+</div>

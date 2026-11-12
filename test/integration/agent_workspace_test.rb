@@ -17,14 +17,14 @@ class AgentWorkspaceTest < ActionDispatch::IntegrationTest
     assert_redirected_to agent_root_path
     follow_redirect!
     assert_response :success
-    assert_includes response.body, "Piloto de lanzamiento"
+    assert_includes response.body, "Prueba gratuita"
     assert_empty user.memberships
     get agent_onboarding_path
     assert_redirected_to agent_root_path
     login_agent(user.reload.agent_workspace)
     get agent_root_path
     assert_response :success
-    assert_includes response.body, "Piloto de lanzamiento"
+    assert_includes response.body, "Prueba gratuita"
   end
 
   test "central OAuth supports onboarding and agent access without platform permissions" do

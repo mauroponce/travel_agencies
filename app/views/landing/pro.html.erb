@@ -1,0 +1,29 @@
+<% content_for :title, "Turistack Pro · Tu negocio de viajes" %>
+<% content_for :body_class, "turistack-landing turistack-pro-landing" %>
+<% content_for :stylesheets do %><%= stylesheet_link_tag "landing", "data-turbo-track": "reload" %><% end %>
+<% content_for :head do %><meta name="description" content="Organizá proveedores, viajes y clientes con tu propia marca. Turistack Pro para asesores de viajes independientes. USD 19 por mes, sin débito automático."><% end %>
+<div data-controller="landing">
+<%= render "icons" %>
+<a class="skip" href="#main">Saltar al contenido</a>
+<header class="nav" id="nav"><div class="nav-inner">
+  <a class="brand" href="#top" aria-label="Turistack Pro, ir al inicio"><%= image_tag "/brand/logo_turistack.png", alt: "Turistack Pro", width: 2172, height: 724, class: "turistack-logo" %></a>
+  <nav class="nav-links" aria-label="Navegación principal"><a href="#features">Producto</a><a href="#tour">Cómo funciona</a><a href="#plan">Mi plan</a></nav>
+  <div class="nav-actions"><% if agent_signup_available? %><%= link_to "Registrarme", agent_onboarding_path, class: "btn btn-ghost" %><% end %><%= button_to "Ingresar con Google", auth_start_path, data: { turbo: false }, class: "btn btn-line login-button" %><button type="button" data-action="landing#toggleMenu" class="mobile-menu-button" id="menuButton" aria-label="Abrir menú" aria-expanded="false" aria-controls="mobileMenu"><svg class="ic"><use href="#i-grid"></use></svg></button></div>
+  <nav id="mobileMenu" class="mobile-menu" aria-label="Navegación móvil"><a href="#features">Producto</a><a href="#tour">Cómo funciona</a><a href="#plan">Mi plan</a></nav>
+</div></header>
+<main id="main">
+  <section class="hero" id="top"><div class="wrap"><span class="eyebrow">TURISTACK PRO · ASESOR DE VIAJES INDEPENDIENTE</span><h1>Tu marca, tus viajes,<br>tus clientes.</h1><p>Organizá tus proveedores privados, revisá flyers y PDF, publicá tus propuestas y compartí tu web para recibir consultas por WhatsApp.</p>
+    <div class="pro-actions"><% if agent_signup_available? %><%= button_to "Registrarme con Google", auth_start_path(purpose: "agent_onboarding"), data: { turbo: false }, class: "btn btn-primary" %><%= link_to "Crear mi web de asesor", agent_onboarding_path, class: "btn btn-line" %><% end %></div>
+  </div></section>
+  <section id="features" class="section"><div class="wrap"><h2>Tu negocio en un solo lugar</h2><div class="agent-grid">
+    <article class="agent-panel"><h3>Proveedores privados</h3><p>Guardá contactos y condiciones de los proveedores con los que trabajás.</p></article>
+    <article class="agent-panel"><h3>Viajes y flyers</h3><p>Cargá manualmente o importá con IA dentro de tu cuota. Revisá cada dato antes de publicar.</p></article>
+    <article class="agent-panel"><h3>Tu web y tu WhatsApp</h3><p>Personalizá nombre, presentación y foto. Compartí el enlace de cada viaje; el visitante consulta sin registrarse.</p></article>
+    <article class="agent-panel"><h3>Clientes y notas privados</h3><p>Registrá contactos, agregá notas con fecha y exportá tu agenda cuando lo necesites.</p></article>
+  </div></div></section>
+  <section id="tour" class="section"><div class="wrap"><h2>Del proveedor a una consulta</h2><ol class="pro-steps"><li>Ingresá con Google y configurá tu marca y WhatsApp.</li><li>Agregá un proveedor e importá o creá un viaje.</li><li>Revisá los datos, publicá y compartí el enlace.</li><li>Recibí la consulta en tu WhatsApp y registrá al cliente manualmente.</li></ol><p>Vos confirmás precio y disponibilidad con tu proveedor antes de contratar.</p></div></section>
+  <section id="plan" class="section"><div class="wrap agent-panel"><h2>Turistack Pro · USD <%= money_input_value(AgentSubscription.price_cents) %> por mes</h2><p><%= AgentSubscription.trial_days %> días de prueba para nuevas altas, una sola vez. Activación y renovación manual, sin débito automático.</p><p>Incluye <%= AgentSubscription.monthly_units %> unidades mensuales de IA. Una imagen o búsqueda consume una unidad por intento; un PDF consume una por página y por intento, hasta <%= Agent::UploadValidator.max_pdf_pages %> páginas y 10 MB por archivo. Al agotar la cuota podés continuar manualmente con Pro vigente.</p><p>Al vencer conservás tus datos y podés leerlos y exportarlos en privado. Tu web se deshabilita hasta reactivar.</p>
+    <% if agent_signup_available? %><%= button_to "Registrarme con Google", auth_start_path(purpose: "agent_onboarding"), data: { turbo: false }, class: "btn btn-primary" %><% end %>
+  </div></section>
+  <section class="section"><div class="wrap"><h2>Empresas que te dan acceso</h2><p>Ingresá con Google para ver tus membresías. Estos accesos no requieren contratar Pro ni crear un espacio personal.</p><%= button_to "Ingresar con Google", auth_start_path, data: { turbo: false }, class: "btn btn-line" %></div></section>
+</main></div>

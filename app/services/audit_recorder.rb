@@ -1,5 +1,5 @@
 class AuditRecorder
-  SENSITIVE_KEYS = %w[document_number full_name notes phone commercial_phone google_sub token token_digest auth p256dh endpoint].freeze
+  SENSITIVE_KEYS = %w[document_number full_name body email name notes phone commercial_phone google_sub token token_digest auth p256dh endpoint].freeze
 
   def self.call(action:, auditable:, actor: Current.user, company: Current.company, changeset: {})
     workspace = auditable.is_a?(AgentWorkspace) ? auditable : (auditable.agent_workspace if auditable.respond_to?(:agent_workspace))

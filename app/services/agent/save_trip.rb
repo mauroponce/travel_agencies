@@ -3,7 +3,7 @@ module Agent
     def self.call(workspace:, attributes:, trip: nil, item: nil, publish: false, expected_revision_id: nil, source_import: nil)
       ApplicationRecord.transaction do
         workspace.lock!
-        raise Pundit::NotAuthorizedError unless workspace.active?
+        Agent::Access.new(workspace).require_commercial!
         raise ActiveRecord::RecordNotFound if item && item.agent_workspace_id != workspace.id
         source_import ||= item&.agent_import
         raise ActiveRecord::RecordNotFound if source_import && source_import.agent_workspace_id != workspace.id
@@ -21,7 +21,7 @@ module Agent
           workspace.agent_suppliers.find(attributes["agent_supplier_id"])
         else
           invalid = AgentTripRevision.new(attributes.slice(*AgentTripRevision::FIELDS))
-          invalid.errors.add(:agent_supplier, "seleccioná una empresa o completá el nombre de una nueva")
+          invalid.errors.add(:agent_supplier, "seleccioná un proveedor o completá el nombre de uno nuevo")
           raise ActiveRecord::RecordInvalid, invalid
         end
         fields = attributes.slice(*AgentTripRevision::FIELDS).except("agent_supplier_id")
