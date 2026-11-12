@@ -83,7 +83,7 @@ Conservar `AGENT_ENABLED`, `GEMINI_API_KEY`, `GEMINI_MODEL=gemini-3.5-flash-lite
 
 ## Actualización y reversión seguras
 
-Runtime único: Ruby **3.4.12**, fijado en `.ruby-version` (leído por `ruby/setup-ruby`), Docker y documentación. Rails 8.1 y las dependencias mantienen sus versiones. Reconstruir imágenes web/worker; no reutilizar imágenes con Ruby 3.4.1.
+Runtime único: Ruby **3.4.12**, fijado en `.ruby-version` (leído por `ruby/setup-ruby`), Docker y documentación. Rails **8.1.4.1**, Rack 3.2.8, Nokogiri 1.19.7, Addressable 2.9.2, Loofah 2.25.3 y rails-html-sanitizer 1.7.2 incorporan los parches de seguridad detectados por la auditoría actualizada; no se cambian versiones mayores. Reconstruir imágenes web/worker; no reutilizar imágenes con Ruby 3.4.1 ni el lockfile anterior.
 
 Esta entrega prepara una rama/PR; no despliega ni opera sobre datos productivos.
 
@@ -108,7 +108,7 @@ Playwright usa por defecto una base nueva `turistack_e2e_<timestamp>_test`, que 
 
 Referencia: `efe5be3b22d2a22cd95714100d16dcf57203a63b`, último `main` comprobado antes de crear `fix/pilot-stabilization-privacy`. La [CI anterior](https://github.com/mauroponce/travel_agencies/actions/runs/43154881424) fallaba realmente al instalar Ruby 3.4.1 en Ubuntu 26.04 y al exigir en staging el canonical antiguo. Se corrigieron ambos contratos sin retirar controles. El recorrido de Google en navegador detectó además un bloqueo de CSP en el regreso al origen: la página de autenticación ahora permite únicamente el destino de la solicitud validada, además de Google y el host de autenticación.
 
-Verificación local con Ruby 3.4.12, Rails 8.1.4 y PostgreSQL:
+Verificación local con Ruby 3.4.12 y PostgreSQL (repetir tras cualquier cambio del lockfile):
 
 | Control | Resultado real |
 | --- | --- |
@@ -122,6 +122,8 @@ Verificación local con Ruby 3.4.12, Rails 8.1.4 y PostgreSQL:
 | `RAILS_ENV=test bin/rails agent:audit` | OK, incluye cifrado y referencias privadas. |
 
 Las pruebas nuevas cubren ciphertext no determinista, búsqueda parcial por propietario/archivo, migración reanudable desde texto plano con plan vencido/suspendido y precio histórico, claves incompatibles sin sobrescritura, logs sin datos privados, exportaciones y cookies independientes por host. Las carreras de publicación y respuesta de Gemini comprueban acceso fresco y descarte tras vencimiento, conservando originales y consumo. Se mantienen las pruebas anteriores de cuotas simultáneas, reintentos, idempotencia, páginas PDF y operación empresarial.
+
+La primera ejecución local de Bundler Audit usó una base de avisos antigua. Al ejecutar el control en CI se detectaron avisos adicionales y se reprodujeron localmente tras actualizarla. El comando sin argumentos ahora ejecuta `check --update`, igualando la evidencia local a un runner nuevo; un fallo al actualizar no se presenta como auditoría correcta. Se corrigieron las dependencias mediante actualizaciones conservadoras de mantenimiento, sin exclusiones nuevas.
 
 `agent_pilot.spec.js` recorre Google simulado mediante el intercambio real de hosts, alta/prueba, proveedor, PDF con cuatro salidas, revisión de dos fichas, publicación, filtros destino/fechas, WhatsApp, cliente/nota/exportación, vencimiento, bloqueo, lectura, renovación mediante UI de operador y restitución exclusiva de la revisión publicada. Compara las dos membresías empresariales antes y después y rechaza otro asesor. Las fixtures solo existen en test con `AGENT_E2E_FIXTURES=true`; Playwright usa CSRF y deshabilita conexiones externas mediante WebMock.
 

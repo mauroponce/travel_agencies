@@ -2,5 +2,8 @@
 require_relative "../config/boot"
 require "bundler/audit/cli"
 
-ARGV.concat %w[ --config config/bundler-audit.yml ] if ARGV.empty? || ARGV.include?("check")
+# Match fresh CI machines: an old local advisory database must not report a
+# misleading success. Explicit subcommands retain the upstream CLI behavior.
+ARGV.concat %w[ check --update ] if ARGV.empty?
+ARGV.concat %w[ --config config/bundler-audit.yml ] if ARGV.include?("check")
 Bundler::Audit::CLI.start
