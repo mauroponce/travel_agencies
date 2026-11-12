@@ -108,7 +108,7 @@ Playwright usa por defecto una base nueva `turistack_e2e_<timestamp>_test`, que 
 
 Referencia: `efe5be3b22d2a22cd95714100d16dcf57203a63b`, último `main` comprobado antes de crear `fix/pilot-stabilization-privacy`. La [CI anterior](https://github.com/mauroponce/travel_agencies/actions/runs/43154881424) fallaba realmente al instalar Ruby 3.4.1 en Ubuntu 26.04 y al exigir en staging el canonical antiguo. Se corrigieron ambos contratos sin retirar controles. El recorrido de Google en navegador detectó además un bloqueo de CSP en el regreso al origen: la página de autenticación ahora permite únicamente el destino de la solicitud validada, además de Google y el host de autenticación.
 
-Verificación local con Ruby 3.4.12 y PostgreSQL (repetir tras cualquier cambio del lockfile):
+Verificación local con Ruby 3.4.12, Rails 8.1.4.1 y PostgreSQL, repetida después de actualizar el lockfile:
 
 | Control | Resultado real |
 | --- | --- |
@@ -120,6 +120,8 @@ Verificación local con Ruby 3.4.12 y PostgreSQL (repetir tras cualquier cambio 
 | `bin/importmap audit` | Sin paquetes vulnerables. |
 | `RAILS_ENV=test bin/rails tenant_integrity:audit` | OK. |
 | `RAILS_ENV=test bin/rails agent:audit` | OK, incluye cifrado y referencias privadas. |
+| `npm run test:e2e -- --workers=2` | 48 recorridos aprobados en escritorio y Pixel 7. |
+| `git diff --check` | Correcto; árbol de trabajo limpio tras publicar. |
 
 Las pruebas nuevas cubren ciphertext no determinista, búsqueda parcial por propietario/archivo, migración reanudable desde texto plano con plan vencido/suspendido y precio histórico, claves incompatibles sin sobrescritura, logs sin datos privados, exportaciones y cookies independientes por host. Las carreras de publicación y respuesta de Gemini comprueban acceso fresco y descarte tras vencimiento, conservando originales y consumo. Se mantienen las pruebas anteriores de cuotas simultáneas, reintentos, idempotencia, páginas PDF y operación empresarial.
 
@@ -129,6 +131,21 @@ La primera ejecución local de Bundler Audit usó una base de avisos antigua. Al
 
 `bin/smoke-staging` crea un proyecto Compose y credenciales sintéticas únicos: migra una base vacía y una base anterior con datos de agencias y contactos Pro en texto plano; arranca web/worker/PostgreSQL/Redis; valida HTTP anónimo canónico y antiguo, metadatos HTTPS, imágenes, originales privados y ausencia de fixtures de test; comprueba reinicio, despublicación y restauración consistente de DB/storage cifrado con la misma clave. No usa credenciales ni datos de un entorno existente.
 
-Los resultados definitivos de GitHub Actions se consultan en el PR de esta rama: `scan_ruby`, `scan_js`, `lint`, `test`, `Docker development boot` y `Required checks` deben finalizar en éxito en el último commit. Los logs locales quedan en `tmp/stabilization/` y las trazas de navegador en `test-results/`, fuera de Git.
+La [CI de `c264e21`](https://github.com/mauroponce/travel_agencies/actions/runs/43161420757) ejecutó y aprobó todos los controles, sin omitir jobs:
+
+| Job | Resultado |
+| --- | --- |
+| `scan_ruby` | SUCCESS: Brakeman y Bundler Audit actualizado. |
+| `scan_js` | SUCCESS: Importmap Audit. |
+| `lint` | SUCCESS: RuboCop. |
+| `test` | SUCCESS: 241 pruebas Rails/3017 aserciones, Zeitwerk, auditorías y 48 Playwright. |
+| `Docker development boot` | SUCCESS: Compose, Caddy y smoke completo con backup/restore. |
+| `Required checks` | SUCCESS: todos los jobs requeridos aprobaron. |
+
+El smoke de CI terminó con `Staging clean migrations, agency/reseller coexistence, worker, public PDF, persistence and backup/restore: OK`. Verificó el cifrado de contactos anteriores, notas y referencias después del reinicio y la restauración; preservó el precio histórico y el vencimiento.
+
+Límite del entorno local: las imágenes llegaron a exportarse, pero los clientes Docker quedaron retenidos; el daemon registró `extraction snapshot removal failed: calling snapshotter.Remove is forbidden`. Se interrumpieron los dos intentos propios y se limpiaron sus proyectos descartables; no se contabilizan como smoke/boot local aprobado. La evidencia completa de Docker corresponde a la ejecución real de CI indicada arriba. No se modificó el daemon ni los servicios ajenos al proyecto.
+
+La rama está publicada. La integración de GitHub devolvió `403 Resource not accessible by integration` al intentar crear el PR; necesita permisos de escritura sobre Pull Requests o apertura manual desde la comparación de la rama. No se afirma que el PR haya sido creado. Los logs locales y la descripción preparada quedan en `tmp/stabilization/` y las trazas de navegador en `test-results/`, fuera de Git. Antes de integrar, comprobar también los checks del último commit de documentación y realizar una revisión independiente del diff.
 
 Antes del piloto real siguen siendo necesarios DNS/TLS del dominio principal, autenticación y hosts históricos, OAuth Google con callbacks autorizados, Redis compartido, PostgreSQL y almacenamiento privado con backups restaurables, claves estables custodiadas, SMTP y una cuenta Gemini con límites y monitoreo. No se validaron credenciales, DNS ni servicios de cuentas reales ni envío nativo de WhatsApp en Android/iOS; Pixel 7 en Playwright no acredita ese envío. No se ejecutó despliegue ni se accedió a datos productivos. Revisar independientemente el PR y ejecutar el recorrido de staging real antes de admitir usuarios del piloto.
