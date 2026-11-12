@@ -4,6 +4,8 @@ const platform = `http://localhost:${port}`
 const agent = `http://agente.lvh.me:${port}`
 
 async function expectCadence(page) {
+  // The auth host has its own document/stylesheets after the OAuth redirect.
+  await expect(page.locator("html")).toHaveCSS("color-scheme", "light")
   const appearance = await page.evaluate(() => {
     const root = getComputedStyle(document.documentElement)
     return {

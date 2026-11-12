@@ -112,7 +112,7 @@ Verificación local con Ruby 3.4.12, Rails 8.1.4.1 y PostgreSQL, repetida despu�
 
 | Control | Resultado real |
 | --- | --- |
-| `PARALLEL_WORKERS=2 bin/rails test` | 241 pruebas, 3017 aserciones, sin fallos, errores ni omisiones. |
+| `PARALLEL_WORKERS=2 bin/rails test` | 241 pruebas, 3018 aserciones, sin fallos, errores ni omisiones. Incluye búsqueda vacía o solo espacios. |
 | `RAILS_ENV=test bin/rails zeitwerk:check` | Carga completa correcta. |
 | `bin/rubocop` | Sin infracciones. |
 | `bin/brakeman --no-pager` | 0 errores y 0 advertencias de seguridad. |
@@ -128,6 +128,8 @@ Las pruebas nuevas cubren ciphertext no determinista, búsqueda parcial por prop
 La primera ejecución local de Bundler Audit usó una base de avisos antigua. Al ejecutar el control en CI se detectaron avisos adicionales y se reprodujeron localmente tras actualizarla. El comando sin argumentos ahora ejecuta `check --update`, igualando la evidencia local a un runner nuevo; un fallo al actualizar no se presenta como auditoría correcta. Se corrigieron las dependencias mediante actualizaciones conservadoras de mantenimiento, sin exclusiones nuevas.
 
 `agent_pilot.spec.js` recorre Google simulado mediante el intercambio real de hosts, alta/prueba, proveedor, PDF con cuatro salidas, revisión de dos fichas, publicación, filtros destino/fechas, WhatsApp, cliente/nota/exportación, vencimiento, bloqueo, lectura, renovación mediante UI de operador y restitución exclusiva de la revisión publicada. Compara las dos membresías empresariales antes y después y rechaza otro asesor. Las fixtures solo existen en test con `AGENT_E2E_FIXTURES=true`; Playwright usa CSRF y deshabilita conexiones externas mediante WebMock.
+
+La repetición de CI detectó interferencia entre pruebas que compartían el asesor demo: ocultar Viajes durante la prueba de configuración podía dejar sin catálogo a los recorridos de importación y de compartir. La configuración de web usa ahora un espacio exclusivo por dispositivo y espera la confirmación del guardado. La validación visual espera que carguen los estilos al cambiar al host de autenticación antes de leer su apariencia. Se conservan todos los recorridos y aserciones; no se agregan reintentos ni se elevan timeouts para cubrir esas condiciones.
 
 `bin/smoke-staging` crea un proyecto Compose y credenciales sintéticas únicos: migra una base vacía y una base anterior con datos de agencias y contactos Pro en texto plano; arranca web/worker/PostgreSQL/Redis; valida HTTP anónimo canónico y antiguo, metadatos HTTPS, imágenes, originales privados y ausencia de fixtures de test; comprueba reinicio, despublicación y restauración consistente de DB/storage cifrado con la misma clave. No usa credenciales ni datos de un entorno existente.
 

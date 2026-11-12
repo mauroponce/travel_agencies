@@ -3,7 +3,7 @@ const path = require("path")
 const base = `http://localhost:${process.env.E2E_PORT || "3100"}`
 
 test("agent chooses public sections and publishes a personal introduction with a photo", async ({ page, browser }, testInfo) => {
-  const email = testInfo.project.name.startsWith("mobile") ? "agente-otro@turistack.local" : "agente@turistack.local"
+  const email = testInfo.project.name.startsWith("mobile") ? "agente-web-mobile@turistack.local" : "agente-web-desktop@turistack.local"
   await page.goto(`${base}/test/sign-in?email=${encodeURIComponent(email)}`)
   await page.goto(`${base}/agente/mi-web`)
   const aboutToggle = page.getByRole("checkbox", { name: /Sobre mí/ })
@@ -72,6 +72,9 @@ test("agent chooses public sections and publishes a personal introduction with a
     await visitorContext.close()
     await catalogToggle.check()
     await aboutToggle.uncheck()
-    await page.getByRole("button", { name: "Guardar cambios", exact: true }).click()
+    await Promise.all([
+      page.waitForResponse(response => ["POST", "PATCH"].includes(response.request().method()) && new URL(response.url()).pathname === "/agente/mi-web"),
+      page.getByRole("button", { name: "Guardar cambios", exact: true }).click()
+    ])
   }
 })

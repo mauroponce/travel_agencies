@@ -4,7 +4,7 @@ module Agent
     # owner's scoped directory, in batches; neither terms nor PII enter SQL.
     # Retain only sort keys/IDs, then paginate the scoped relation as usual.
     def self.call(scope:, query: nil)
-      term = query.to_s.first(200).downcase
+      term = query.presence.to_s.first(200).downcase
       matches = []
       scope.find_each(batch_size: 100) do |client|
         values = [ client.name, client.phone, client.email ].map { |value| value.to_s.downcase }

@@ -29,6 +29,7 @@ class AgentContactEncryptionTest < ActiveSupport::TestCase
     agent_workspace.agent_clients.create!(name: "Otro 100%_real", phone: first.phone)
     scope = workspace.agent_clients.active
     assert_equal [ second.id, first.id ], Agent::ClientDirectory.call(scope:).pluck(:id)
+    assert_equal [ second.id, first.id ], Agent::ClientDirectory.call(scope:, query: " \t ").pluck(:id)
     { "%_r" => first.id, "ZETA" => first.id, "51111" => first.id, "COND@EX" => second.id }.each do |query, id|
       assert_equal [ id ], Agent::ClientDirectory.call(scope:, query:).pluck(:id)
     end
