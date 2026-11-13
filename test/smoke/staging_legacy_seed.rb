@@ -14,4 +14,4 @@ connection.execute(<<~SQL)
   INSERT INTO destinations (company_id, name, province, created_at, updated_at)
   VALUES (#{connection.quote(company_id)}, 'Mendoza', 'Mendoza', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 SQL
-puts "Legacy agency and destination saved before Revendedor migrations"
+puts "Legacy agency and destination saved before Asesor migrations"

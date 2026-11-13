@@ -317,7 +317,7 @@ const DEMO_ROLES = {
     ]
   },
   "reseller": {
-    "crumb": "Revendedor",
+    "crumb": "Asesor",
     "title": "Mis ventas",
     "kpis": [
       [

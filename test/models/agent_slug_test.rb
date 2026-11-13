@@ -20,6 +20,11 @@ class AgentSlugTest < ActiveSupport::TestCase
     agent_workspace(slug: "jose-perez-2", status: "suspended")
     assert_equal "jose-perez-3", AgentWorkspace.suggest_slug("  José   Pérez  ")
     assert_equal "viajes-2", AgentWorkspace.suggest_slug("Viajes")
+    assert_equal "asesor-2", AgentWorkspace.suggest_slug("Asesor")
+    assert_not AgentWorkspace.slug_available?("asesor")
+    %w[autenticacion sesion alta contexto panel plataforma suscripciones-notificaciones].each do |slug|
+      assert_not AgentWorkspace.slug_available?(slug), slug
+    end
     assert AgentWorkspace.slug_available?(AgentWorkspace.suggest_slug("🌍"))
     long_name = "a" * 90
     agent_workspace(slug: "a" * 63)

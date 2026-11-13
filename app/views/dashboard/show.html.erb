@@ -27,7 +27,7 @@
 
   <section class="dashboard-finance-grid" aria-label="Resumen financiero">
     <%= render "finance_card", label: "Cobros registrados", value: money(@metrics[:registered_payments_cents]), note: "Registrados · no equivale a dinero verificado", icon: "credit-card", tone: "coral" %>
-    <%= render "finance_card", label: "Pendiente de rendir", value: money(@metrics[:pending_remittance_cents]), note: "Saldo no asignado de cobros de revendedores", icon: "send", tone: "violet" %>
+    <%= render "finance_card", label: "Pendiente de rendir", value: money(@metrics[:pending_remittance_cents]), note: "Saldo no asignado de cobros de asesores", icon: "send", tone: "violet" %>
     <%= render "finance_card", label: "Rendiciones por verificar", value: safe_join([@metrics[:pending_remittances].to_s, tag.span(" · #{money(@metrics[:pending_verification_cents])}")]), note: "Declaradas · recepción sin verificar", icon: "clock", tone: "orange" %>
   </section>
 

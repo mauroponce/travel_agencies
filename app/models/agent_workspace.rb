@@ -45,7 +45,8 @@ class AgentWorkspace < ApplicationRecord
   after_create { create_hostname_registration!(hostname:) if subdomain.present? }
 
   RESERVED_SLUGS = (PlatformHosts::RESERVED_SUBDOMAINS + %w[
-    agente auth up manifest service-worker session test onboarding context dashboard
+    asesor agente auth up manifest service-worker session test onboarding context dashboard
+    autenticacion sesion alta contexto panel plataforma suscripciones-notificaciones
     paquetes salidas ofertas reservas solicitudes pagos rendiciones notificaciones
     push_subscriptions catalogos equipo comisiones viajes formularios internal
     rails cable brand icon favicon robots

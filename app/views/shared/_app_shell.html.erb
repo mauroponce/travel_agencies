@@ -30,7 +30,7 @@
 
     <div class="sidebar-bottom">
       <%= link_to "Mi espacio · Empresas que me dan acceso", context_path, class: "nav-link" %>
-      <div class="tenant-note"><strong><%= workspace_name %></strong><span><%= operator ? "Gestión de empresas y revendedores." : "Tu espacio de trabajo." %></span></div>
+      <div class="tenant-note"><strong><%= workspace_name %></strong><span><%= operator ? "Gestión de empresas y asesores." : "Tu espacio de trabajo." %></span></div>
       <%= button_to session_path, method: :delete, class: "logout-button" do %><%= app_icon("log-out") %><span>Cerrar sesión</span><% end %>
     </div>
   </aside>

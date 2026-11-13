@@ -3,7 +3,12 @@ module Agent
     before_action :set_trip, only: %i[show edit update publish unpublish archive cover source]
     def index
       @suppliers = current_agent_workspace.agent_suppliers.order(:name, :id)
-      @trips, @pagination = paginate(CatalogQuery.call(workspace: current_agent_workspace, filters: params.permit(*CatalogQuery::FILTERS)))
+      @list = TripListQuery.new(workspace: current_agent_workspace, filters: params.permit(*TripListQuery::FILTERS), tab: params[:tab])
+      @tab_counts = @list.counts
+      @trips, @pagination = paginate(@list.trips, per_page: 20)
+      @list_params = @list.filters.merge("tab" => @list.tab)
+      @can_manage = agent_access.commercial?
+      @public_trip_ids = @can_manage ? current_agent_workspace.agent_trips.publicly_visible.where(id: @trips.map(&:id)).pluck(:id).to_set : Set.new
     end
     def new
       @trip = current_agent_workspace.agent_trips.new
@@ -44,19 +49,19 @@ module Agent
     def publish
       @trip.publish!
       audit("agent_trip.published", @trip)
-      redirect_to agent_trip_path(@trip), notice: "Viaje publicado."
+      redirect_after_trip_action(default: agent_trip_path(@trip), notice: "Viaje publicado.")
     rescue ActiveRecord::RecordInvalid => error
-      redirect_to edit_agent_trip_path(@trip), alert: form_error_message(error)
+      redirect_after_trip_action(default: edit_agent_trip_path(@trip), alert: form_error_message(error))
     end
     def unpublish
       @trip.update!(status: "unpublished")
       audit("agent_trip.unpublished", @trip)
-      redirect_to agent_trip_path(@trip), notice: "Viaje despublicado."
+      redirect_after_trip_action(default: agent_trip_path(@trip), notice: "Viaje despublicado.")
     end
     def archive
       @trip.update!(status: "archived")
       audit("agent_trip.archived", @trip)
-      redirect_to agent_trips_path, notice: "Viaje archivado."
+      redirect_after_trip_action(default: agent_trips_path, notice: "Viaje archivado.")
     end
     def cover
       revision = @trip.revisions.find(params[:revision_id].presence || @trip.current_revision_id)
@@ -74,6 +79,16 @@ module Agent
       @trips = current_agent_workspace.agent_trips.includes(current_revision: :agent_supplier).find(ids)
     end
     private
+    def redirect_after_trip_action(default:, **message)
+      list = params.permit(list: TripListQuery::FILTERS + %w[tab page])[:list]
+      destination = if list
+        agent_trips_path(list.to_h.merge("tab" => TripListQuery.normalize_tab(list[:tab])))
+      else
+        default
+      end
+      redirect_to destination, **message, status: :see_other
+    end
+
     def selected_import
       current_agent_workspace.agent_imports.find(params[:source_import_id]) if params[:source_import_id].present?
     end

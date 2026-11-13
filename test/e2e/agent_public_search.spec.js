@@ -7,7 +7,7 @@ test("destination selector filters available trips while only the owner sees ina
   await page.goto(`${base}/test/sign-in?email=${encodeURIComponent(email)}`)
   const publicUrl = await page.getByRole("link", { name: "Ver mi web ↗" }).getAttribute("href")
   const privateTitle = `Córdoba inactiva ${testInfo.project.name}`
-  await page.goto(`${base}/agente/viajes/new`)
+  await page.goto(`${base}/asesor/viajes/nuevo`)
   await page.getByLabel("Proveedor", { exact: true }).selectOption({ label: "Proveedor demo" })
   await page.getByLabel("Título del viaje").fill(privateTitle)
   await page.getByLabel("Destino", { exact: true }).fill("Destino privado")
@@ -17,7 +17,7 @@ test("destination selector filters available trips while only the owner sees ina
   await page.getByRole("button", { name: "Despublicar", exact: true }).click()
   await expect(page.locator(".agent-heading .agent-eyebrow")).toHaveText("Despublicado")
   const flyerTitle = `Córdoba con flyer ${testInfo.project.name}`
-  await page.goto(`${base}/agente/viajes/new`)
+  await page.goto(`${base}/asesor/viajes/nuevo`)
   await page.getByLabel("Proveedor", { exact: true }).selectOption({ label: "Proveedor demo" })
   await page.getByLabel("Título del viaje").fill(flyerTitle)
   await page.getByLabel("Destino", { exact: true }).fill("Córdoba")
@@ -29,7 +29,7 @@ test("destination selector filters available trips while only the owner sees ina
   await page.goto(publicUrl)
   await expect(page.getByRole("link", { name: privateTitle, exact: true })).toBeVisible()
   await expect(page.getByText("Despublicado", { exact: true })).toBeVisible()
-  await page.goto(`${base}/agente/mi-web/preview`)
+  await page.goto(`${base}/asesor/mi-web/vista-previa`)
   await expect(page.getByRole("link", { name: privateTitle, exact: true })).toHaveCount(0)
 
   const context = await browser.newContext({ viewport: page.viewportSize() })

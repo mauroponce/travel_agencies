@@ -44,7 +44,7 @@ class DepartureOffersController < ApplicationController
     raise ActiveRecord::RecordInvalid, @offer unless @offer.current_fare
     @offer.update!(status: "published", published_at: Time.current)
     NotificationDispatcher.offer_published(@offer)
-    redirect_to @offer, notice: "Oferta publicada y revendedores notificados."
+    redirect_to @offer, notice: "Oferta publicada y asesores notificados."
   end
 
   def unpublish

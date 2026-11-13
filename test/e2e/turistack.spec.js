@@ -22,7 +22,7 @@ test("admin dashboard is responsive and uses real navigation", async ({ page }, 
   await page.goto("/test/sign-in?email=demo%40turistack.local&company=sanzo-viajes&role=admin")
   await expect(page.getByRole("heading", { name: /Resumen general/ })).toBeVisible()
   await expect(page.getByText("Sanzó Viajes").first()).toBeVisible()
-  await expect(page.getByRole("link", { name: /Nueva oferta/ })).toHaveAttribute("href", "/ofertas/new")
+  await expect(page.getByRole("link", { name: /Nueva oferta/ })).toHaveAttribute("href", "/ofertas/nuevo")
   await expect(page.getByText("Ocupación de próximas salidas")).toBeVisible()
   await page.getByRole("combobox", { name: "Filtrar salidas" }).selectOption("month")
   await expect(page).toHaveURL(/departure_filter=month/)
@@ -46,7 +46,7 @@ test("admin dashboard is responsive and uses real navigation", async ({ page }, 
 test("coordinator keeps the authorized mobile operation flow", async ({ page }) => {
   await page.goto("/test/sign-in?email=demo%40turistack.local&company=sanzo-viajes&role=coordinator")
   await expect(page).toHaveURL(/salidas/)
-  await page.locator("a[href$='/operation']").first().click()
+  await page.locator("a[href$='/operacion']").first().click()
   await expect(page.getByRole("heading", { name: /MZA-/ })).toBeVisible()
 })
 
@@ -59,7 +59,7 @@ test("boarding queues a command offline without passenger data and syncs on reco
     Object.defineProperty(navigator, "onLine", { configurable: true, get: () => window.__testOnline })
   })
   let syncRequests = 0
-  await page.route("**/boarding_events/sync*", async route => {
+  await page.route("**/embarques/sincronizar*", async route => {
     syncRequests += 1
     const { commands } = JSON.parse(route.request().postData())
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({
@@ -67,7 +67,7 @@ test("boarding queues a command offline without passenger data and syncs on reco
     }) })
   })
   await page.goto("/test/sign-in?email=demo%40turistack.local&company=sanzo-viajes&role=coordinator")
-  await page.locator("a[href$='/operation']").first().click()
+  await page.locator("a[href$='/operacion']").first().click()
   await expect(page.getByRole("heading", { name: /MZA-/ })).toBeVisible()
 
   const migratedQueue = await page.evaluate(() => {

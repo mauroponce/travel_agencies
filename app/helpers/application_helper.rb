@@ -42,7 +42,7 @@ module ApplicationHelper
   end
 
   def role_label(role)
-    { "admin" => "Administrador", "reseller" => "Revendedor", "coordinator" => "Coordinador" }.fetch(role, role.titleize)
+    { "admin" => "Administrador", "reseller" => "Asesor", "coordinator" => "Coordinador" }.fetch(role, role.titleize)
   end
 
   def reservation_status_label(status)
@@ -54,7 +54,7 @@ module ApplicationHelper
   end
 
   def reservation_channel_label(channel)
-    { "direct" => "Directa", "reseller" => "Revendedor" }.fetch(channel, channel.humanize)
+    { "direct" => "Directa", "reseller" => "Asesor" }.fetch(channel, channel.humanize)
   end
 
   def departure_status_label(status)
@@ -82,10 +82,10 @@ module ApplicationHelper
     case current_role
     when "operator"
       { "Plataforma" => [ [ "Empresas y dominios", platform_companies_path, "layers" ],
-        [ "Revendedores", platform_agent_workspaces_path, "users" ] ] }
+        [ "Asesores", platform_agent_workspaces_path, "users" ] ] }
     when "admin"
       {
-        "General" => [ [ "Resumen", dashboard_path, "grid" ], [ "Viajes", departure_offers_path, "bus" ],
+        "General" => [ [ "Inicio", dashboard_path, "grid" ], [ "Viajes", departure_offers_path, "bus" ],
           [ "Paquetes", travel_packages_path, "briefcase" ], [ "Salidas", departures_path, "calendar" ],
           [ "Reservas", reservations_path, "ticket" ] ],
         "Finanzas" => [ [ "Pagos", customer_payments_path, "credit-card" ],

@@ -2,7 +2,7 @@
 abort "not a disposable staging stack" unless Rails.env.staging? && PlatformHosts.base_domain == "smoke.example.test" && ENV["GEMINI_MODEL"] == "local-disabled"
 company = Company.find_by!(slug: "agency")
 abort "legacy destination lost" unless company.destinations.find_by(name: "Mendoza")
-workspace = AgentWorkspace.create!(business_name: "Revendedor smoke", public_name: "Prueba", whatsapp: "5491155550101", invited_email: "pilot@example.invalid", subdomain: "reseller")
+workspace = AgentWorkspace.create!(business_name: "Asesor smoke", public_name: "Prueba", whatsapp: "5491155550101", invited_email: "pilot@example.invalid", subdomain: "reseller")
 supplier = workspace.agent_suppliers.create!(name: "Organizador smoke", notes: "PRIVATE SMOKE NOTES")
 task = workspace.agent_imports.create!(idempotency_key: "smoke-import")
 task.source.attach(io: File.open(Rails.root.join("test/fixtures/files/agent.pdf")), filename: "agent.pdf", content_type: "application/pdf")

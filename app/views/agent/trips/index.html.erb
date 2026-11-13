@@ -1,12 +1,60 @@
-<div class="agent-heading">
-  <div><span class="agent-eyebrow">CATÁLOGO CENTRALIZADO</span>
-    <h1>Mis viajes</h1>
-    <p>Las propuestas de todos tus proveedores, en un mismo lugar.</p>
+<% content_for :title, "Mis viajes · Turistack" %>
+<% content_for :stylesheets do %><%= stylesheet_link_tag "agent_trips", "data-turbo-track": "reload" %><% end %>
+<div class="agent-trips-page" data-controller="trip-list" data-trip-list-focus-value="<%= flash[:notice].present? || flash[:alert].present? %>">
+  <nav class="agent-trip-breadcrumb" aria-label="Ruta de navegación"><%= link_to "Mi espacio", agent_root_path %><%= app_icon("chevron") %><span>Viajes</span></nav>
+  <div class="agent-heading">
+    <div><span class="agent-eyebrow">CATÁLOGO CENTRALIZADO</span><h1 tabindex="-1" data-trip-list-target="heading">Mis viajes</h1><p>Las propuestas de todos tus proveedores, en un mismo lugar.</p></div>
+    <% if @can_manage %>
+      <div class="agent-actions">
+        <%= link_to agent_imports_path, class: "btn" do %><%= app_icon("spark") %>Importar con IA<% end %>
+        <%= link_to new_agent_trip_path, class: "btn btn-primary" do %><%= app_icon("plus") %>Nuevo viaje<% end %>
+      </div>
+    <% end %>
   </div>
-  <div class="agent-actions"><%= link_to "Nuevo viaje", new_agent_trip_path, class: "btn" %><%= link_to "Importar con IA", agent_imports_path, class: "btn btn-primary" %></div>
+  <section class="agent-trip-catalog" aria-label="Administración de viajes">
+    <nav class="agent-trip-tabs" role="tablist" aria-label="Estados de los viajes" data-action="keydown->trip-list#navigateTabs">
+      <% Agent::TripListQuery::TABS.each do |tab, config| %>
+        <%= link_to agent_trips_path(@list_params.merge("tab" => tab)), id: "trip-tab-#{tab}", role: "tab", class: "agent-trip-tab",
+          tabindex: @list.tab == tab ? 0 : -1, aria: { selected: @list.tab == tab, controls: "trip-list-panel" }, data: { tab: tab } do %>
+          <%= config.fetch(:label) %><span class="agent-trip-tab-count"><%= @tab_counts.fetch(tab) %></span>
+        <% end %>
+      <% end %>
+    </nav>
+    <div id="trip-list-panel" role="tabpanel" aria-labelledby="trip-tab-<%= @list.tab %>">
+      <%= render "list_filters" %>
+      <div class="agent-trip-result-bar">
+        <div><span><strong><%= @pagination.total_count %></strong> viajes en esta pestaña</span>
+          <% if @list.filters.any? %><%= link_to "Limpiar filtros", agent_trips_path(tab: @list.tab), class: "agent-trip-clear" %><% end %>
+        </div>
+        <span class="agent-trip-sort" title="Ordenados por fecha de carga, del más nuevo al más antiguo"><%= app_icon("clock") %>Más recientes primero</span>
+      </div>
+      <%= form_with url: compare_agent_trips_path, method: :get, id: "compare-form", class: "agent-trip-compare" do %>
+        <button type="submit" class="agent-trip-clear" disabled data-trip-list-target="compareButton">Comparar seleccionados (2–3)</button>
+      <% end %>
+      <% if @trips.any? %>
+        <div class="agent-trip-table-scroll" tabindex="0" role="region" aria-label="Tabla de viajes; desplazamiento horizontal en pantallas pequeñas">
+          <table class="agent-trip-table" aria-label="Viajes del asesor">
+            <thead><tr><th scope="col">Viaje / destino</th><th scope="col">Proveedor</th><th scope="col">Salida</th><th scope="col">Duración</th><th scope="col">Precio desde</th><th scope="col">Estado</th><th scope="col" aria-sort="descending">Agregado ↓</th><th scope="col"><span class="agent-trip-sr">Acciones</span></th></tr></thead>
+            <tbody><%= render partial: "list_row", collection: @trips, as: :trip %></tbody>
+          </table>
+        </div>
+      <% else %>
+        <div class="agent-trip-empty">
+          <span class="agent-trip-empty-icon"><%= app_icon(@list.filters.any? ? "search" : "bus") %></span>
+          <% if @list.filters.any? %>
+            <h2>No encontramos viajes</h2><p>Probá con otro destino o ajustá los filtros de esta pestaña.</p>
+            <%= link_to "Limpiar filtros", agent_trips_path(tab: @list.tab), class: "btn" %>
+          <% else %>
+            <h2><%= { "published" => "Todavía no tenés viajes publicados", "drafts" => "No tenés borradores", "archived" => "No tenés viajes archivados" }.fetch(@list.tab) %></h2>
+            <p><%= @list.tab == "published" ? "Publicá un borrador para mostrarlo en tu web." : "Los viajes de esta pestaña aparecerán acá." %></p>
+            <% if @list.tab == "published" && @tab_counts["drafts"].positive? %><%= link_to "Ver borradores", agent_trips_path(tab: "drafts"), class: "btn" %><% end %>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+    <%= render "list_pagination", pagination: @pagination %>
+  </section>
+  <div class="agent-trip-footnote"><span><%= app_icon("clock") %>Los cambios guardados se ven en tu web cuando los publicás.</span><span>Ordenado por fecha de carga ↓</span></div>
+  <p class="agent-trip-feedback" role="status" aria-live="polite" data-trip-list-target="status"></p>
+  <textarea class="agent-trip-copy-manual" hidden readonly aria-label="Texto para copiar manualmente" data-trip-list-target="manual"></textarea>
 </div>
-<%= render "filters", filter_url: agent_trips_path %>
-<div class="agent-heading"><span><%= @pagination.total_count %> viajes</span>
-  <div class="agent-actions"><%= link_to "Tarjetas", agent_trips_path(request.query_parameters.merge(view: "cards")), class: "btn" %><%= link_to "Lista", agent_trips_path(request.query_parameters.merge(view: "list")), class: "btn" %></div>
-</div>
-<%= form_with url: compare_agent_trips_path, method: :get, id: "compare-form" do |f| %><%= f.submit "Comparar seleccionados (2–3)", class: "btn" %><% end %><%= render "cards", trips: @trips, public_view: false, compare: true %><%= render "agent/pagination", pagination: @pagination %>

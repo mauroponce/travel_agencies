@@ -33,9 +33,9 @@ Dos ofertas pueden apuntar a una misma salida y consumir el mismo conjunto de `S
 ## Dinero
 
 - `CustomerPayment`: dinero que el pasajero declaró entregar.
-- `Remittance`: dinero que el revendedor declaró enviar.
+- `Remittance`: dinero que el asesor declaró enviar.
 - `RemittanceAllocation`: cuánto de una rendición corresponde a cada cobro.
-- `CommissionRule`: porcentaje o fijo vigente para un revendedor.
+- `CommissionRule`: porcentaje o fijo vigente para un asesor.
 - `CommissionEntry`: importe congelado de una reserva atribuida, con estados devengado/pagable/liquidado.
 
 Todos los importes son enteros en centavos ARS. Un comprobante nunca verifica dinero por sí solo.

@@ -126,7 +126,7 @@ class AgentSelfSignupTest < ActionDispatch::IntegrationTest
     mock_google_identity
     post "/auth/google_oauth2/callback"
     exchange_url = response.location
-    assert_includes exchange_url, "/auth/exchange?code="
+    assert_includes exchange_url, "/autenticacion/intercambiar?code="
 
     ENV["AGENT_ENABLED"] = "false"
     host! PlatformHosts.platform_host
@@ -269,7 +269,7 @@ class AgentSelfSignupTest < ActionDispatch::IntegrationTest
     assert_response :not_found
     get agent_root_path
     assert_response :success
-    assert_select ".topbar-actions strong", text: own.name
+    assert_select ".topbar-actions strong", text: own.owner.name
     other.update!(status: "suspended")
     get agent_site_path(agent_slug: other.slug)
     assert_response :not_found
@@ -317,7 +317,7 @@ class AgentSelfSignupTest < ActionDispatch::IntegrationTest
     post "/auth/google_oauth2/callback"
     assert_response :redirect
     exchange_url = response.location
-    assert_includes exchange_url, "/auth/exchange?code="
+    assert_includes exchange_url, "/autenticacion/intercambiar?code="
     host! hostname
     get URI(exchange_url).request_uri
     assert_redirected_to(purpose == "agent_onboarding" ? agent_onboarding_path : agent_root_path)

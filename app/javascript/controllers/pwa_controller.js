@@ -25,7 +25,7 @@ export default class extends Controller {
       const registration = await navigator.serviceWorker.ready
       const subscription = await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: this.decodeKey(key) })
       const payload = subscription.toJSON()
-      const response = await fetch("/push_subscriptions", {
+      const response = await fetch("/suscripciones-notificaciones", {
         method: "POST",
         headers: {"Content-Type": "application/json", "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]').content},
         body: JSON.stringify({push_subscription: {endpoint: payload.endpoint, p256dh: payload.keys.p256dh, auth: payload.keys.auth}})

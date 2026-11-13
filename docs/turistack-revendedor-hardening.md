@@ -1,4 +1,4 @@
-# Turistack Revendedor: hardening y evidencia para el piloto
+# Turistack Asesor: hardening y evidencia para el piloto
 
 Fecha: 25/10/2026 (Argentina). Base: `dbd0f0199032a65d3fcf583c0a3f35b40aebb6d7`. Rama: `fix/reseller-launch-hardening`.
 
@@ -34,7 +34,7 @@ Requiere `pdftoppm`. Guardar el resultado de las cinco comprobaciones y revisar 
 
 `bin/smoke-staging` construye la imagen de despliegue y crea un proyecto Compose con nombre aleatorio, base, volúmenes y credenciales sintéticas. No admite seleccionar un despliegue existente. Se ejecuta también en CI. Usa un modelo inválido deliberadamente para impedir llamadas a Gemini.
 
-Comprueba migraciones desde el historial anterior a Revendedor con una agencia/destino ya cargados, finalización de hosts, convivencia, worker real procesando un PDF, publicación manual con fallback, HTML público y canonical/og:image HTTPS, descarga anónima de JPEG, persistencia tras reiniciar web/worker y backup/restauración de BD/archivos. Al terminar elimina exclusivamente su proyecto y volúmenes descartables. No emite certificados ACME ni prueba OAuth/SMTP externos.
+Comprueba migraciones desde el historial anterior a Asesor con una agencia/destino ya cargados, finalización de hosts, convivencia, worker real procesando un PDF, publicación manual con fallback, HTML público y canonical/og:image HTTPS, descarga anónima de JPEG, persistencia tras reiniciar web/worker y backup/restauración de BD/archivos. Al terminar elimina exclusivamente su proyecto y volúmenes descartables. No emite certificados ACME ni prueba OAuth/SMTP externos.
 
 ```bash
 bin/smoke-staging
@@ -82,16 +82,16 @@ DEPLOY_ENVIRONMENT=staging BACKUP_ROOT=/srv/backups/turistack bin/backup-turista
 curl --fail --connect-timeout 5 --max-time 20 https://HOST_STAGING/up
 ```
 
-Instalación limpia: omitir el backup previo, no cargar seeds demo. Instalación de agencias: conservar BD, volúmenes, claves y datos; finalizar hosts solo después de retirar procesos anteriores. Ante un fallo, recoger `ps --all` y `logs --tail=150`; no seguir habilitando revendedores. `bin/deploy-hetzner` aplica esta secuencia para un stack en un host, además de construir/subir imagen.
+Instalación limpia: omitir el backup previo, no cargar seeds demo. Instalación de agencias: conservar BD, volúmenes, claves y datos; finalizar hosts solo después de retirar procesos anteriores. Ante un fallo, recoger `ps --all` y `logs --tail=150`; no seguir habilitando asesores. `bin/deploy-hetzner` aplica esta secuencia para un stack en un host, además de construir/subir imagen.
 
-Conservar tag previo y backup. No hacer `db:rollback` automático: no hay migraciones nuevas en este hardening, pero revertir migraciones originales del MVP elimina campos/tablas de Revendedor. Con datos reales, preferir corregir hacia adelante. Restaurar una copia anterior pierde datos posteriores a esa copia y requiere ventana y autorización explícitas.
+Conservar tag previo y backup. No hacer `db:rollback` automático: no hay migraciones nuevas en este hardening, pero revertir migraciones originales del MVP elimina campos/tablas de Asesor. Con datos reales, preferir corregir hacia adelante. Restaurar una copia anterior pierde datos posteriores a esa copia y requiere ventana y autorización explícitas.
 
 ## DNS, OAuth y previews externas
 
-- A/AAAA de plataforma/autenticación y wildcard de revendedores. `*.turistack.com` no cubre el apex; publicar AAAA solo si IPv6 llega al mismo proxy. Puertos 80/443 disponibles.
-- `CADDY_SITE_ADDRESSES` incluye plataforma, autenticación y hosts de agencias existentes. TLS bajo demanda para revendedores autoriza solo hosts registrados activos con secreto correcto. Bloquear `/internal/*` desde el proxy. Conservar `caddy_data` y salida ACME para emisión/renovación. Probar host desconocido y cuenta suspendida.
+- A/AAAA de plataforma/autenticación y wildcard de asesores. `*.turistack.com` no cubre el apex; publicar AAAA solo si IPv6 llega al mismo proxy. Puertos 80/443 disponibles.
+- `CADDY_SITE_ADDRESSES` incluye plataforma, autenticación y hosts de agencias existentes. TLS bajo demanda para asesores autoriza solo hosts registrados activos con secreto correcto. Bloquear `/internal/*` desde el proxy. Conservar `caddy_data` y salida ACME para emisión/renovación. Probar host desconocido y cuenta suspendida.
 - Callback Google exacto: `https://AUTH_HOST/auth/google_oauth2/callback`. Invitar una casilla real autorizada, comprobar correo verificado y regreso al subdominio. Probar cuenta ajena, identidad distinta con mismo email y callback repetido. Cookies Secure, HttpOnly, SameSite=Lax, sin Domain.
-- Catálogo/ficha sin sesión: título, precio, organizador, WhatsApp del revendedor, consulta con URL. Obtener `og:image` sin cookies y comprobar bytes. Solo la revisión publicada es accesible; antigua/privada devuelven 404 tras nueva publicación. Despublicar revoca ficha e imagen. Canonical HTTPS absoluto y sin notas privadas.
+- Catálogo/ficha sin sesión: título, precio, organizador, WhatsApp del asesor, consulta con URL. Obtener `og:image` sin cookies y comprobar bytes. Solo la revisión publicada es accesible; antigua/privada devuelven 404 tras nueva publicación. Despublicar revoca ficha e imagen. Canonical HTTPS absoluto y sin notas privadas.
 - WhatsApp puede retener previews ya descargadas. El servidor revoca rutas y emite `no-store`; no puede borrar copias de terceros. Registrar resultado real del crawler y de WhatsApp.
 
 ## Matriz manual WhatsApp
@@ -109,7 +109,7 @@ Pendiente en dispositivos reales. Registrar fecha, versiones de SO/navegador/Wha
 | Permisos/combinación rechazada | Pendiente | Pendiente | Error claro y alternativas disponibles |
 | Sin Web Share / contexto inseguro | Pendiente | Pendiente | Alternativas; nunca anunciar publicación |
 | Portapapeles bloqueado | Pendiente | Pendiente | Texto seleccionable para copiar |
-| Descarga y consulta pública | Pendiente | Pendiente | Imagen correcta; wa.me consulta al revendedor con URL |
+| Descarga y consulta pública | Pendiente | Pendiente | Imagen correcta; wa.me consulta al asesor con URL |
 | Preview tras revisión/despublicar | Pendiente | Pendiente | Solo revisión publicada; registrar caché del tercero |
 
 `wa.me` no adjunta archivos. El selector no confirma la publicación de un Estado. Las pruebas automatizadas simulan esas APIs y no sustituyen esta matriz.

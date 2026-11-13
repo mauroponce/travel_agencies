@@ -1,0 +1,27 @@
+<% title = revision.title.presence || "Viaje sin título"; list = @list_params.merge("page" => @pagination.number) %>
+<div class="agent-trip-actions" data-controller="trip-menu" data-action="trip-menu:close->trip-menu#closeAndFocus turbo:before-cache@document->trip-menu#dismiss">
+  <button type="button" class="agent-trip-menu-toggle" aria-label="Acciones de <%= title %>" aria-haspopup="menu" aria-expanded="false" aria-controls="trip-menu-<%= trip.id %>" data-trip-menu-target="trigger" data-action="click->trip-menu#toggle keydown->trip-menu#triggerKey"><span aria-hidden="true">•••</span></button>
+  <div id="trip-menu-<%= trip.id %>" class="agent-trip-menu" popover="auto" hidden role="menu" aria-label="Acciones de <%= title %>" data-trip-menu-target="menu" data-action="toggle->trip-menu#toggled keydown->trip-menu#menuKey click->trip-menu#select">
+    <span class="agent-trip-menu-heading"><%= title %></span>
+    <%= link_to "Ver detalle", agent_trip_path(trip), role: "menuitem", tabindex: -1 %>
+    <% if @can_manage %>
+      <%= link_to "Editar viaje", edit_agent_trip_path(trip), role: "menuitem", tabindex: -1 %>
+      <% if trip.status != "published" || trip.current_revision_id != trip.published_revision_id %>
+        <%= button_to trip.status == "published" ? "Publicar cambios" : "Publicar viaje", publish_agent_trip_path(trip), params: { list: list }, class: "agent-trip-publish", role: "menuitem", tabindex: -1 %>
+      <% end %>
+    <% end %>
+    <% if @public_trip_ids.include?(trip.id) %>
+      <%= link_to "Ver ficha pública", agent_trip_public_url(trip), target: "_blank", rel: "noopener", role: "menuitem", tabindex: -1 %>
+      <button type="button" role="menuitem" tabindex="-1" data-action="trip-list#copyLink" data-url="<%= agent_trip_public_url(trip) %>">Copiar enlace</button>
+    <% end %>
+    <% if @can_manage %>
+      <% if trip.status == "published" %>
+        <%= button_to "Despublicar", unpublish_agent_trip_path(trip), params: { list: list }, role: "menuitem", tabindex: -1, data: { turbo_confirm: "¿Despublicar este viaje? Dejará de verse en tu web y pasará a Borradores." } %>
+      <% end %>
+      <% unless trip.status == "archived" %>
+        <span class="agent-trip-menu-separator" role="separator"></span>
+        <%= button_to "Archivar viaje", archive_agent_trip_path(trip), params: { list: list }, class: "agent-trip-archive", role: "menuitem", tabindex: -1, data: { turbo_confirm: "¿Archivar este viaje? Dejará de verse en tu web. Conservarás su información en Archivados." } %>
+      <% end %>
+    <% end %>
+  </div>
+</div>

@@ -1,0 +1,16 @@
+<% first = pagination.total_count.zero? ? 0 : (pagination.number - 1) * pagination.per_page + 1
+   last = [pagination.number * pagination.per_page, pagination.total_count].min
+   visible_pages = ([1, pagination.total_pages] + ((pagination.number - 2)..(pagination.number + 2)).to_a).select { |page| page.between?(1, pagination.total_pages) }.uniq.sort %>
+<footer class="agent-trip-pagination">
+  <span class="agent-trip-page-summary">Mostrando <strong><%= first %>–<%= last %></strong> de <strong><%= pagination.total_count %></strong> viajes</span>
+  <span class="agent-trip-page-size">20 por página</span>
+  <nav aria-label="Paginación de viajes">
+    <% if pagination.previous %><%= link_to "‹", agent_trips_path(@list_params.merge("page" => pagination.previous)), aria: { label: "Página anterior" }, rel: "prev" %><% else %><button type="button" disabled aria-label="Página anterior">‹</button><% end %>
+    <% visible_pages.each_with_index do |page, index| %>
+      <% if index.positive? && page > visible_pages[index - 1] + 1 %><span>…</span><% end %>
+      <%= link_to page, agent_trips_path(@list_params.merge("page" => page)), aria: { current: ("page" if page == pagination.number), label: "Página #{page}" } %>
+    <% end %>
+    <% if pagination.next %><%= link_to "›", agent_trips_path(@list_params.merge("page" => pagination.next)), aria: { label: "Página siguiente" }, rel: "next" %><% else %><button type="button" disabled aria-label="Página siguiente">›</button><% end %>
+    <span class="agent-trip-sr">Página <%= pagination.number %> de <%= pagination.total_pages %></span>
+  </nav>
+</footer>

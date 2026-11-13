@@ -134,6 +134,9 @@ jobs:
       - name: Build and boot the development stack
         run: |
           cp .env.example .env
+          # The image runs as UID 1000; the checkout may belong to another CI UID.
+          chmod -R a+rwX app/assets/builds log tmp
+          chmod a+w db/schema.rb
           docker compose up -d --build --wait --wait-timeout 180 web worker
           curl --retry 5 --retry-delay 1 --retry-all-errors --retry-max-time 30 --connect-timeout 3 --max-time 5 --fail http://127.0.0.1:3000/up
           curl --retry 5 --retry-delay 1 --retry-all-errors --retry-max-time 30 --connect-timeout 3 --max-time 5 --fail --header 'Host: platform.lvh.me' http://127.0.0.1:3000/ > /dev/null

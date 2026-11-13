@@ -24,7 +24,7 @@ async function expectCadence(page) {
 }
 
 test("Google access and expired requests share the light Cadence design", async ({ page }, testInfo) => {
-  await page.goto(`${platform}/agente/alta`)
+  await page.goto(`${platform}/asesor/alta`)
   await expectCadence(page)
   await page.getByRole("button", { name: "Ingresar con Google", exact: true }).click()
   await expect(page.getByRole("heading", { name: "Continuar con Google" })).toBeVisible()
@@ -38,7 +38,7 @@ test("Google access and expired requests share the light Cadence design", async 
   await page.route("https://accounts.google.com/**", route => route.fulfill({ contentType: "text/html", body: "<title>Google OAuth test destination</title>" }))
   await button.click()
   await expect(page).toHaveURL(/^https:\/\/accounts\.google\.com\//)
-  await page.goto(`${auth}/auth/continue?request_token=expired`)
+  await page.goto(`${auth}/autenticacion/continuar?request_token=expired`)
   await expect(page.getByRole("heading", { name: "Volvé a iniciar sesión" })).toBeVisible()
   await expectCadence(page)
   await expect(page.getByRole("link", { name: "Volver a Turistack" })).toHaveAttribute("href", `${platform}/`)
@@ -46,24 +46,24 @@ test("Google access and expired requests share the light Cadence design", async 
 
 test("administrative screens and forms keep the same Cadence foundation", async ({ page }, testInfo) => {
   await page.goto("/test/sign-in?email=demo%40turistack.local&role=admin")
-  for (const path of ["/dashboard", "/ofertas", "/ofertas/new", "/paquetes", "/paquetes/new", "/salidas", "/salidas/new", "/reservas", "/pagos", "/rendiciones", "/comisiones", "/catalogos", "/equipo", "/notificaciones"]) {
+  for (const path of ["/panel", "/ofertas", "/ofertas/nuevo", "/paquetes", "/paquetes/nuevo", "/salidas", "/salidas/nuevo", "/reservas", "/pagos", "/rendiciones", "/comisiones", "/catalogos", "/equipo", "/notificaciones"]) {
     const response = await page.goto(path)
     expect(response.status(), path).toBe(200)
     await expectCadence(page)
     await expect(page.locator("#main-sidebar")).toHaveCSS("background-color", "rgb(255, 255, 255)")
   }
-  await page.goto("/ofertas/new")
+  await page.goto("/ofertas/nuevo")
   await page.screenshot({ path: testInfo.outputPath("cadence-admin-form.png"), fullPage: true })
 })
 
 test("agent workspace screens keep the same Cadence foundation", async ({ page }, testInfo) => {
   await page.goto(`${agent}/test/sign-in?email=agente%40turistack.local`)
-  for (const path of ["/agente", "/agente/empresas", "/agente/empresas/new", "/agente/viajes", "/agente/viajes/new", "/agente/importaciones", "/agente/mi-web", "/agente/buscador"]) {
+  for (const path of ["/asesor", "/asesor/empresas", "/asesor/empresas/nuevo", "/asesor/viajes", "/asesor/viajes/nuevo", "/asesor/importaciones", "/asesor/mi-web", "/asesor/buscador"]) {
     const response = await page.goto(`${agent}${path}`)
     expect(response.status(), path).toBe(200)
     await expectCadence(page)
   }
-  await page.goto(`${agent}/agente/viajes/new`)
+  await page.goto(`${agent}/asesor/viajes/nuevo`)
   await page.screenshot({ path: testInfo.outputPath("cadence-agent-form.png"), fullPage: true })
 })
 

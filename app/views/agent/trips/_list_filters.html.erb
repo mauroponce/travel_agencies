@@ -1,0 +1,32 @@
+<%= form_with url: agent_trips_path, method: :get, class: "agent-trip-filters" do |f| %>
+  <%= f.hidden_field :tab, value: @list.tab %>
+  <div class="agent-trip-filter-bar">
+    <label class="agent-trip-search"><%= app_icon("search") %><%= f.search_field :q, value: @list.filters["q"], placeholder: "Buscar por viaje, destino o proveedor…", aria: { label: "Buscar viajes" }, autocomplete: "off" %></label>
+    <%= f.select :supplier_id, @suppliers.map { |supplier| [supplier.name, supplier.id] }, { include_blank: "Todos los proveedores", selected: @list.filters["supplier_id"] }, aria: { label: "Filtrar por proveedor" } %>
+    <button class="btn" type="submit">Buscar</button>
+    <details class="agent-trip-extra-filters" <%= "open" if @list.filters.except("q", "supplier_id").any? %>>
+      <summary class="btn"><%= app_icon("layers") %>Filtros</summary>
+      <div class="agent-trip-filter-fields">
+        <div class="agent-trip-filter-field"><%= f.label :from, "Salida desde" %><%= argentine_date_field(f, :from, value: @list.filters["from"], aria: { label: "Salida desde" }) %></div>
+        <div class="agent-trip-filter-field"><%= f.label :to, "Salida hasta" %><%= argentine_date_field(f, :to, value: @list.filters["to"], aria: { label: "Salida hasta" }) %></div>
+        <div class="agent-trip-filter-field"><%= f.label :currency, "Moneda" %><%= f.select :currency, AgentTripRevision::CURRENCIES, { include_blank: "Todas las monedas", selected: @list.filters["currency"] } %></div>
+        <button type="submit" class="btn">Aplicar filtros</button>
+      </div>
+      <%# Keep interpreted search links editable without reintroducing a status or sort selector. %>
+      <details class="agent-trip-advanced-filters">
+        <summary>Otros criterios de búsqueda</summary>
+        <div class="agent-trip-filter-fields">
+          <% %w[destination region transport meal_plan departure_location].each do |field| %>
+            <div class="agent-trip-filter-field"><%= f.label field, agent_filter_label(field) %><%= f.text_field field, value: @list.filters[field] %></div>
+          <% end %>
+          <div class="agent-trip-filter-field"><%= f.label :price_unit, "Unidad del precio" %><%= f.select :price_unit, AgentTripRevision::PRICE_UNITS.map { |key, label| [label, key] }, { include_blank: "Todas las unidades", selected: @list.filters["price_unit"] } %></div>
+          <% %w[min_price max_price min_days max_days].each do |field| %>
+            <div class="agent-trip-filter-field"><%= f.label field, agent_filter_label(field) %><%= f.number_field field, value: @list.filters[field], min: 0, step: field.end_with?("price") ? "0.01" : "1" %></div>
+          <% end %>
+          <small>Para filtrar por precio, elegí moneda y unidad.</small>
+          <button type="submit" class="btn">Aplicar criterios</button>
+        </div>
+      </details>
+    </details>
+  </div>
+<% end %>

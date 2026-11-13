@@ -4,7 +4,7 @@ Estas definiciones requieren validación con empresas turísticas. El sistema ev
 
 - Penalidades, reintegros y efecto de una cancelación sobre cobros y comisiones.
 - Momento exacto en que una comisión pasa de devengada a pagable y de pagable a liquidada.
-- Límites monetarios o temporales de confianza por revendedor, además del permiso binario actual.
+- Límites monetarios o temporales de confianza por asesor, además del permiso binario actual.
 - Vencimiento de solicitudes/reservas incompletas y política de liberación automática.
 - Reemplazos extraordinarios de hotel, micro, ruta o parada una vez vendidos.
 - Reglas de cupo y composición de habitaciones; hoy la asignación es manual.

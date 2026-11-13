@@ -99,10 +99,10 @@ class DevelopmentTunnelTest < ActionDispatch::IntegrationTest
   end
 
   test "shared host only grants auth scope to central auth routes in development" do
-    %w[/ /agente/alta /auth/start /auth/exchange /platform/companies].each do |path|
+    %w[/ /asesor/alta /autenticacion/iniciar /autenticacion/intercambiar /plataforma/empresas].each do |path|
       assert_equal :platform, TenantResolver.call(TUNNEL_HOST, path:).scope
     end
-    %w[/auth/continue /auth/google_oauth2 /auth/google_oauth2/callback /auth/failure].each do |path|
+    %w[/autenticacion/continuar /auth/google_oauth2 /auth/google_oauth2/callback /auth/failure].each do |path|
       assert_equal :auth, TenantResolver.call(TUNNEL_HOST, path:).scope
     end
 

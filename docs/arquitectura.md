@@ -53,7 +53,7 @@ Web y worker son procesos separados sobre la misma imagen. `db:prepare` se ejecu
 
 La configuración y el procedimiento de alta de hosts están en `docs/despliegue-dominios.md`. Caddy recibe una lista explícita de hosts autorizados; no se habilita TLS on-demand irrestricto.
 
-## Turistack Revendedor
+## Turistack Asesor
 
 `AgentWorkspace` pertenece a un único `User`, independientemente de sus `Membership`; durante una invitación conserva el correo autorizado y asigna el propietario después de verificarlo con Google. `AgentSupplier` es privado y no crea empresas globales. No hay sincronización ni permisos implícitos hacia proveedores de Turistack Empresa.
 

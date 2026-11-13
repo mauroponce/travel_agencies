@@ -135,7 +135,7 @@ class DemoProvisioner
       description: "Una experiencia organizada para disfrutar #{destination.name} con comodidad y acompañamiento.",
       included_services: [ "Micro ida y vuelta", "Alojamiento", "Desayuno", "Coordinador permanente" ],
       excluded_services: [ "Excursiones opcionales" ],
-      faqs: [ { question: "¿Cómo reservo?", answer: "Contactá a la empresa o a tu revendedor." } ])
+      faqs: [ { question: "¿Cómo reservo?", answer: "Contactá a la empresa o a tu asesor." } ])
   end
 
   def create_offer(company, package, departure, hotel, slug, price, deposit, type, promotion)

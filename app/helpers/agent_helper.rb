@@ -1,4 +1,11 @@
 module AgentHelper
+  def agent_trip_list_duration(revision)
+    parts = []
+    parts << "#{revision.duration_days} #{revision.duration_days == 1 ? 'día' : 'días'}" if revision.duration_days
+    parts << "#{revision.duration_nights} #{revision.duration_nights == 1 ? 'noche' : 'noches'}" if revision.duration_nights
+    parts.presence&.join(" / ") || "Sin definir"
+  end
+
   def agent_import_departure_date(item)
     data = item.extracted
     evidence = data["evidence"]

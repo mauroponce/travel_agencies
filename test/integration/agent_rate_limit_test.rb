@@ -21,13 +21,13 @@ class AgentRateLimitTest < ActiveSupport::TestCase
 
   test "canonical trips search images and signup are actually throttled while assets are excluded" do
     {
-      "/asesor/viajes/viaje-canonico" => 120,
-      "/asesor/buscar-viajes" => 60,
-      "/asesor/imagenes/viaje/revision" => 120,
-      "/asesor/sobre-mi/foto/blob" => 120,
+      "/lucia-viajes/viajes/viaje-canonico" => 120,
+      "/lucia-viajes/buscar-viajes" => 60,
+      "/lucia-viajes/imagenes/viaje/revision" => 120,
+      "/lucia-viajes/sobre-mi/foto/blob" => 120,
       "/buscar-viajes" => 60,
-      "/agente/imagenes/viaje/revision" => 120,
-      "/agente/alta/suggestion" => 60
+      "/asesor/imagenes/viaje/revision" => 120,
+      "/asesor/alta/sugerencia" => 60
     }.each do |path, limit|
       Rack::Attack.reset!
       limit.times { assert_equal 200, request_status(path), path }
@@ -35,7 +35,28 @@ class AgentRateLimitTest < ActiveSupport::TestCase
     end
     Rack::Attack.reset!
     130.times { assert_equal 200, request_status("/assets/example.css") }
-    10.times { assert_equal 200, request_status("/agente/alta", method: "POST") }
-    assert_equal 429, request_status("/agente/alta", method: "POST")
+    10.times { assert_equal 200, request_status("/asesor/alta", method: "POST") }
+    assert_equal 429, request_status("/asesor/alta", method: "POST")
+  end
+
+  test "private files and AI requests keep their limits under asesor" do
+    %w[/asesor/viajes/viaje/portada /asesor/viajes/viaje/original /asesor/importaciones/importacion/original /asesor/importaciones/importacion/vista-previa].each do |path|
+      Rack::Attack.reset!
+      120.times { assert_equal 200, request_status(path), path }
+      assert_equal 429, request_status(path), path
+    end
+
+    %w[/asesor/importaciones /asesor/buscador].each do |path|
+      Rack::Attack.reset!
+      40.times { assert_equal 200, request_status(path, method: "POST"), path }
+      assert_equal 429, request_status(path, method: "POST"), path
+    end
+  end
+
+  test "translated authentication routes share the Google rate limit" do
+    10.times { assert_equal 200, request_status("/autenticacion/iniciar", method: "POST") }
+    10.times { assert_equal 200, request_status("/auth/google_oauth2", method: "POST") }
+    assert_equal 429, request_status("/autenticacion/continuar")
+    assert_equal 429, request_status("/autenticacion/intercambiar")
   end
 end

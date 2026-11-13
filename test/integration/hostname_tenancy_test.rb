@@ -221,7 +221,7 @@ class HostnameTenancyTest < ActionDispatch::IntegrationTest
 
   def oauth_exchange_url(company:, user:, hostname: company.platform_domain.hostname)
     location = oauth_callback_location(company:, user:, hostname:)
-    assert_match "/auth/exchange?code=", location
+    assert_match "/autenticacion/intercambiar?code=", location
     location
   end
 

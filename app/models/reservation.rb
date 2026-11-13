@@ -24,7 +24,7 @@ class Reservation < ApplicationRecord
   private
 
   def seller_matches_channel
-    errors.add(:seller_membership, "es obligatorio para ventas de revendedor") if channel == "reseller" && seller_membership.nil?
+    errors.add(:seller_membership, "es obligatorio para ventas de asesor") if channel == "reseller" && seller_membership.nil?
     errors.add(:seller_membership, "debe estar vacío para venta directa") if channel == "direct" && seller_membership.present?
   end
 

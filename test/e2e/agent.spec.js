@@ -8,6 +8,42 @@ async function signIn(page) {
   await expect(page.getByRole("heading", { name: "Todo listo para tu próximo viaje" })).toBeVisible()
 }
 
+test("el asesor cierra sesión desde el menú de su cuenta en la barra superior", async ({ page }, testInfo) => {
+  await signIn(page)
+  const sidebar = page.locator("#main-sidebar")
+  await expect(sidebar.locator(".sidebar-bottom")).toHaveCount(0)
+  await expect(sidebar.getByText("Mi espacio · Empresas que me dan acceso")).toHaveCount(0)
+  const account = page.getByRole("button", { name: /^Mi cuenta:/ })
+  const menu = page.getByRole("menu", { name: "Mi cuenta", exact: true })
+  await expect(account).toBeVisible()
+  await expect(menu).toBeHidden()
+
+  await account.focus()
+  await account.press("ArrowDown")
+  await expect(menu.getByRole("menuitem", { name: "Cerrar sesión" })).toBeFocused()
+  await page.keyboard.press("Escape")
+  await expect(menu).toBeHidden()
+  await expect(account).toBeFocused()
+
+  await account.click()
+  await expect(menu).toBeVisible()
+  const bounds = await menu.boundingBox()
+  expect(bounds.x).toBeGreaterThanOrEqual(0)
+  expect(bounds.x + bounds.width).toBeLessThanOrEqual(page.viewportSize().width)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+  await page.screenshot({ path: testInfo.outputPath("asesor-menu-cuenta.png") })
+  await expect(menu).toBeVisible()
+  await page.getByRole("heading", { name: "Todo listo para tu próximo viaje" }).click()
+  await expect(menu).toBeHidden()
+
+  await account.click()
+  await menu.getByRole("menuitem", { name: "Cerrar sesión" }).click()
+  await expect(page).toHaveURL(`${base}/`)
+  await page.goto(`${base}/asesor/viajes`)
+  await expect(page).toHaveURL(`${base}/`)
+  await expect(account).toHaveCount(0)
+})
+
 test("agent signs up with an editable name and public slug and publishes a manual trip on their own website", async ({ page, browser }, testInfo) => {
   const slug = `alta-${testInfo.project.name}-${Date.now()}`
   const platform = `http://localhost:${port}`
@@ -15,7 +51,7 @@ test("agent signs up with an editable name and public slug and publishes a manua
   await page.goto(platform)
   await page.getByRole("link", { name: "Crear mi web de asesor", exact: true }).click()
   await expect(page.getByRole("heading", { name: "Tu web para vender viajes" })).toBeVisible()
-  await expect(page.getByRole("button", { name: "Ingresar con Google" }).locator("..")).toHaveAttribute("action", "/auth/start?purpose=agent_onboarding")
+  await expect(page.getByRole("button", { name: "Ingresar con Google" }).locator("..")).toHaveAttribute("action", "/autenticacion/iniciar?purpose=agent_onboarding")
   await page.goto(`http://localhost:${port}/test/sign-in?email=agente-nuevo-${testInfo.project.name}%40turistack.local&purpose=agent_onboarding`)
   if (await page.getByRole("button", { name: "Crear mi espacio" }).isVisible()) {
     await expect(page.getByLabel("Nombre", { exact: true })).not.toBeEmpty()
@@ -35,15 +71,15 @@ test("agent signs up with an editable name and public slug and publishes a manua
     await page.getByLabel("WhatsApp con código de país").fill("5491155551234")
     await page.getByRole("button", { name: "Crear mi espacio" }).click()
   }
-  await expect(page).toHaveURL(`${platform}/agente`)
+  await expect(page).toHaveURL(`${platform}/asesor`)
   await expect(page.getByRole("heading", { name: "Todo listo para tu próximo viaje" })).toBeVisible()
   const website = await page.getByRole("link", { name: "Ver mi web ↗", exact: true }).getAttribute("href")
   expect(website).toBe(`${platform}/${slug}`)
-  await page.goto(`${platform}/agente/empresas/new`)
+  await page.goto(`${platform}/asesor/empresas/nuevo`)
   await page.getByLabel("Nombre del proveedor").fill(`Proveedor ${slug}`)
   await page.getByRole("button", { name: "Guardar proveedor" }).click()
   await expect(page.getByRole("heading", { name: `Proveedor ${slug}` })).toBeVisible()
-  await page.goto(`${platform}/agente/viajes/new`)
+  await page.goto(`${platform}/asesor/viajes/nuevo`)
   const title = `Bariloche de ${testInfo.project.name}`
   await page.getByLabel("Proveedor", { exact: true }).selectOption({ label: `Proveedor ${slug}` })
   await page.getByLabel("Título del viaje").fill(title)
@@ -71,7 +107,7 @@ test("agent signs up with an editable name and public slug and publishes a manua
     expect(whatsapp.searchParams.get("text")).toContain("10/08/2027")
     expect(whatsapp.searchParams.get("text")).toContain(visitor.url())
     const privateTripUrl = page.url()
-    await page.goto(`${platform}/agente/clientes/new`)
+    await page.goto(`${platform}/asesor/clientes/nuevo`)
     await page.getByLabel("Nombre", { exact: true }).fill(`Cliente ${slug}`)
     await page.getByLabel("Teléfono / WhatsApp con código de país").fill("+54 9 11 4444 3333")
     await page.getByRole("button", { name: "Guardar cliente" }).click()
@@ -82,7 +118,7 @@ test("agent signs up with an editable name and public slug and publishes a manua
     await expect(page.getByRole("link", { name: "Abrir WhatsApp" })).toHaveAttribute("href", "https://wa.me/5491144443333")
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
     await page.screenshot({ path: testInfo.outputPath("pro-client-note.png"), fullPage: true })
-    await page.goto(`${platform}/agente/mi-plan`)
+    await page.goto(`${platform}/asesor/mi-plan`)
     await expect(page.getByRole("heading", { name: "Mi plan", exact: true })).toBeVisible()
     await expect(page.getByText(/sin débito automático/)).toBeVisible()
     await page.goto(privateTripUrl)
@@ -104,7 +140,7 @@ test("agent provider management and manual catalog comparison work on every devi
     await expect(page.locator("#main-sidebar")).toHaveCSS("width", "80px")
     await page.getByRole("button", { name: "Expandir menú lateral" }).click()
   }
-  await page.goto(`${base}/agente/empresas/new`)
+  await page.goto(`${base}/asesor/empresas/nuevo`)
   const name = `Operador ${testInfo.project.name}`
   await page.getByLabel("Nombre del proveedor").fill(name)
   await page.getByLabel("Comisión acordada").fill("15% privado")
@@ -114,7 +150,7 @@ test("agent provider management and manual catalog comparison work on every devi
   await page.getByLabel("Estado", { exact: true }).selectOption("paused")
   await page.getByRole("button", { name: "Guardar proveedor" }).click()
   await expect(page.getByText("Pausado", { exact: true })).toBeVisible()
-  await page.goto(`${base}/agente/viajes/new`)
+  await page.goto(`${base}/asesor/viajes/nuevo`)
   await page.getByLabel("Proveedor", { exact: true }).selectOption({ label: "Proveedor demo" })
   await page.getByLabel("Título del viaje").fill(`Mendoza manual ${testInfo.project.name}`)
   await page.getByLabel("Destino", { exact: true }).fill("Mendoza")
@@ -124,7 +160,7 @@ test("agent provider management and manual catalog comparison work on every devi
   await page.getByLabel("Unidad del precio").selectOption("per_person")
   await page.getByRole("button", { name: "Guardar y publicar" }).click()
   await expect(page.getByRole("heading", { name: `Mendoza manual ${testInfo.project.name}` })).toBeVisible()
-  await page.goto(`${base}/agente/viajes`)
+  await page.goto(`${base}/asesor/viajes`)
   await page.getByRole("checkbox").nth(0).check()
   await page.getByRole("checkbox").nth(1).check()
   await page.getByRole("button", { name: "Comparar seleccionados" }).click()
@@ -141,7 +177,7 @@ test("agent provider management and manual catalog comparison work on every devi
 
 test("Gemini import review creates a supplier without losing corrections and publishes publicly", async ({ page, browser }, testInfo) => {
   await signIn(page)
-  await page.goto(`${base}/agente/importaciones`)
+  await page.goto(`${base}/asesor/importaciones`)
   await expect(page.getByRole("heading", { name: "Importar con IA", exact: true })).toBeVisible()
   const uploadPanel = await page.getByRole("region", { name: "Subir y procesar archivo" }).boundingBox()
   const historyPanel = await page.getByRole("region", { name: "Importaciones recientes" }).boundingBox()
@@ -193,10 +229,10 @@ test("Gemini import review creates a supplier without losing corrections and pub
   await expect(visitor.locator(".travel-booking-summary")).toContainText("03/02/2030")
   await expect(visitor.getByRole("link", { name: "Consultar por WhatsApp" })).toHaveAttribute("href", /^https:\/\/wa\.me\/5491155550303\?text=/)
   await publicContext.close()
-  await page.goto(`${base}/agente/mi-web`)
+  await page.goto(`${base}/asesor/mi-web`)
   await expect(page.frameLocator('iframe[title="Vista previa del catálogo"]').getByRole("heading", { name: "Viajes para descubrir" })).toBeVisible()
   await page.getByRole("button", { name: "Celular", exact: true }).click()
-  await page.goto(`${base}/agente/buscador`)
+  await page.goto(`${base}/asesor/buscador`)
   await page.getByLabel("¿Qué viaje necesita tu cliente?").fill("Córdoba por menos de $600000 por persona")
   await page.getByRole("button", { name: "Buscar viajes", exact: true }).click()
   await expect(page.getByRole("heading", { name: "Criterios interpretados" })).toBeVisible()

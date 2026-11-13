@@ -50,9 +50,9 @@ La tarea exige `RAILS_ENV=staging` y `ENABLE_STAGING_DATA=true`. Crea `Agencia U
 
 1. Entrar como operador en `PLATFORM_HOST`; crear manualmente una tercera agencia descartable para probar el alta y luego suspenderla.
 2. Confirmar la invitación del administrador de Agencia Uno iniciando sesión con Google.
-3. Invitar cuentas distintas como revendedor y coordinador; autenticar cada una.
+3. Invitar cuentas distintas como asesor y coordinador; autenticar cada una.
 4. Como admin, crear/publicar un viaje y anotar el cupo inicial.
-5. Como revendedor, confirmar una reserva; comprobar una reducción exacta del cupo y que una repetición no duplique la operación.
+5. Como asesor, confirmar una reserva; comprobar una reducción exacta del cupo y que una repetición no duplique la operación.
 6. Registrar un pago, declarar la rendición y verificarla como admin.
 7. Asignar el coordinador; abrir Operación, marcar embarque, probar modo offline y sincronización.
 8. Instalar la PWA, probar manifest/service worker y notificaciones con VAPID de staging.
@@ -170,12 +170,12 @@ Los hosts empresariales continúan explícitos en `CADDY_SITE_ADDRESSES`. El blo
 2. Esperar que **todos** los procesos web y worker usen esta versión. Ejecutar `bin/rails agent:finalize_hosts` mediante el contenedor del entorno. El comando completa el registro bajo bloqueo, agrega/valida la FK compuesta de hostname y empresa, rellena propósitos OAuth heredados y activa su restricción NOT NULL.
 3. Crear un secreto exclusivo de al menos 32 caracteres (`bin/rails secret`) para `CADDY_ASK_SECRET`, compartido entre web y Caddy. Guardarlo en el archivo privado del entorno. Configurar `GEMINI_API_KEY` y `GEMINI_MODEL=gemini-3.5-flash-lite` también para el worker. Nunca copiar la clave de desarrollo a documentación o Git.
 4. Configurar el DNS comodín y los hosts raíz/auth/www. Actualizar Compose/Caddy y verificar HTTPS y el callback Google. Habilitar `AGENT_ENABLED=true` y recrear web/worker/Caddy con el mismo tag. En staging/producción el producto no se habilita mientras falte la FK de hosts.
-5. Crear el revendedor desde el operador y verificar invitación y acceso con el correo Google indicado, subdominio, original privado, importación real, revisión, publicación, web anónima y WhatsApp. El alta autónoma se limita a development/test. Ejecutar `tenant_integrity:audit`, `company_domains:audit` y `agent:audit`. El primer acceso a un host nuevo puede demorar mientras Caddy emite el certificado.
+5. Crear el asesor desde el operador y verificar invitación y acceso con el correo Google indicado, subdominio, original privado, importación real, revisión, publicación, web anónima y WhatsApp. El alta autónoma se limita a development/test. Ejecutar `tenant_integrity:audit`, `company_domains:audit` y `agent:audit`. El primer acceso a un host nuevo puede demorar mientras Caddy emite el certificado.
 
 Para revertir, deshabilitar `AGENT_ENABLED` y conservar las tablas, las reservas de hostname y la versión que conoce el registro. No volver al código anterior a ese registro después de finalizar la FK. No ejecutar migraciones destructivas para deshabilitar el piloto. Un cambio global de dominio base incluye los hosts empresariales y de agentes, y rechaza autenticaciones en curso o colisiones.
 
 Los logs de Gemini contienen únicamente el identificador del trabajo y metadatos operativos. El endpoint interno filtra su token de los logs de Rails; el proxy nunca expone ese endpoint. No publicar la salida JSON completa de `caddy adapt` con secretos reales, porque incluye la URL interna de autorización.
 
-El MVP de Revendedor y su procedimiento completo (flyers originales, Poppler, variables, CI, rollback y matriz WhatsApp) están en [turistack-revendedor-lanzamiento.md](turistack-revendedor-lanzamiento.md).
+El MVP para asesores y su procedimiento completo (flyers originales, Poppler, variables, CI, rollback y matriz WhatsApp) están en la [guía de lanzamiento](turistack-revendedor-lanzamiento.md).
 
-La verificación posterior al hardening de Revendedor, sus comandos de staging y sus controles Go/No-Go están en [turistack-revendedor-hardening.md](turistack-revendedor-hardening.md).
+La verificación posterior al hardening para asesores, sus comandos de staging y sus controles Go/No-Go están en el [informe de hardening](turistack-revendedor-hardening.md).

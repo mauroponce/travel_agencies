@@ -2,7 +2,7 @@ const { test, expect } = require("@playwright/test")
 
 test("operational date and time fields display Argentine dates and submit ISO values", async ({ page }) => {
   await page.goto("/test/sign-in?email=demo%40turistack.local&company=sanzo-viajes&role=admin")
-  await page.goto("/salidas/new")
+  await page.goto("/salidas/nuevo")
   const departure = page.getByLabel("Salida", { exact: true })
   await expect(departure).toHaveAttribute("placeholder", "DD/MM/AAAA HH:mm")
   await departure.fill("03/02/2030 14:30")

@@ -19,6 +19,10 @@ x-app-environment: &app-environment
   SMTP_PORT: "1025"
   CONTAINERIZED: "true"
 
+x-app-volumes: &app-volumes
+  - .:/rails
+  - storage_data:/rails/storage
+
 services:
   db:
     image: postgres:17-alpine
@@ -53,18 +57,18 @@ services:
     env_file: ${ENV_FILE:-.env}
     environment: *app-environment
     restart: "no"
-    volumes:
-      - storage_data:/rails/storage
+    volumes: *app-volumes
     depends_on:
       db: {condition: service_healthy}
   web:
     build: *app-build
     env_file: ${ENV_FILE:-.env}
-    environment: *app-environment
+    environment:
+      <<: *app-environment
+      TAILWIND_WATCH: "true"
     ports:
       - "3000:3000"
-    volumes:
-      - storage_data:/rails/storage
+    volumes: *app-volumes
     healthcheck:
       test: ["CMD", "curl", "--fail", "--silent", "http://localhost:3000/up"]
       interval: 10s
@@ -79,8 +83,7 @@ services:
     command: bundle exec sidekiq -C config/sidekiq.yml
     env_file: ${ENV_FILE:-.env}
     environment: *app-environment
-    volumes:
-      - storage_data:/rails/storage
+    volumes: *app-volumes
     healthcheck:
       test: ["CMD", "bundle", "exec", "ruby", "bin/worker-healthcheck"]
       interval: 5s

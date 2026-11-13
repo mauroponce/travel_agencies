@@ -189,6 +189,19 @@
 }
 @media(max-width:600px){.agent-public-search{padding:24px 18px;border-radius:18px}.agent-body .agent-search-intro h2{font-size:23px}.agent-search-field{gap:8px;padding-left:12px;flex-wrap:wrap}.agent-search-field input[type=search]{flex-basis:calc(100% - 82px);font-size:14px}.agent-search-field .btn{width:100%}.agent-search-field input::placeholder{font-size:12px}.agent-search-dropdown{max-height:320px}.agent-public-filters>summary span{display:block;margin:4px 0 0 14px}}
 
+.agent-account{min-width:0}
+.agent-account-trigger{display:flex;align-items:center;gap:10px;min-height:40px;max-width:100%;padding:4px 6px;border:0;border-radius:10px;background:transparent;color:var(--cadence-ink);font:inherit;cursor:pointer}
+.agent-account-trigger:hover,.agent-account-trigger[aria-expanded=true]{background:#f6f0fc}
+.agent-account-trigger strong{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;font-weight:650}
+.agent-account-trigger>.cadence-icon{width:12px;height:12px;color:var(--cadence-muted);transform:rotate(90deg);flex-shrink:0}
+.agent-account-menu{position:fixed;inset:auto;margin:0;width:180px;max-width:calc(100vw - 16px);z-index:100;padding:6px;border:1px solid var(--cadence-line);border-radius:12px;background:#fff;color:var(--cadence-ink-secondary);box-shadow:0 8px 35px #251b3c24}
+.agent-account-menu[hidden]{display:none}
+.agent-account-menu form{margin:0}
+.agent-account-menu [role=menuitem]{display:flex;align-items:center;gap:9px;width:100%;padding:10px;border:0;border-radius:7px;background:transparent;color:inherit;text-align:left;font:inherit;font-size:12px;cursor:pointer}
+.agent-account-menu [role=menuitem]:hover,.agent-account-menu [role=menuitem]:focus-visible{background:#f6f0fc;outline:2px solid #c9b5e1;outline-offset:-2px}
+.agent-account-menu .cadence-icon{width:16px;height:16px;flex-shrink:0}
+@media(max-width:760px){.agent-shell .topbar-brand{display:none}.agent-shell .topbar-actions{margin-left:auto}.agent-account-trigger{gap:7px}.agent-account-trigger strong{max-width:120px}}
+
 .agent-floating-whatsapp{position:fixed;right:calc(24px + env(safe-area-inset-right,0px));bottom:calc(24px + env(safe-area-inset-bottom,0px));z-index:40;display:grid;place-items:center;width:58px;height:58px;border-radius:50%;background:#128c4a;color:#fff;box-shadow:0 5px 20px #075e5440;transition:background .15s,box-shadow .15s}
 .agent-floating-whatsapp svg{width:30px;height:30px}
 .agent-floating-whatsapp:hover{background:#075e36;box-shadow:0 6px 24px #075e5459}

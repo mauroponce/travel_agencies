@@ -15,7 +15,7 @@ El cambio respecto del stack preferido Laravel/Vue responde a la decisión tomad
 ## Hitos
 
 1. **Fundación:** proyecto, OAuth Google, tenants, roles, diseño responsive, seeders y seguridad base.
-2. **Comercial:** catálogos, paquetes, salidas, ofertas, historial de tarifa, ficha pública y referencia del revendedor.
+2. **Comercial:** catálogos, paquetes, salidas, ofertas, historial de tarifa, ficha pública y referencia del asesor.
 3. **Reservas y pagos:** confirmación transaccional, cupos, formularios privados, pagos, rendiciones y comisiones congeladas.
 4. **Operación:** hoja de ruta, coordinadores, embarque idempotente/offline y manifiestos CSV/PDF.
 5. **PWA y cierre:** manifest, service worker, Push/email, auditoría, Docker, CI, pruebas y documentación.

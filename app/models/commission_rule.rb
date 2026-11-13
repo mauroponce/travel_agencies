@@ -14,6 +14,6 @@ class CommissionRule < ApplicationRecord
   private
 
   def membership_is_reseller
-    errors.add(:reseller_membership, "debe tener perfil revendedor") if reseller_membership && !reseller_membership.role?("reseller")
+    errors.add(:reseller_membership, "debe tener perfil asesor") if reseller_membership && !reseller_membership.role?("reseller")
   end
 end

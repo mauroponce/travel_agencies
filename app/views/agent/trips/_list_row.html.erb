@@ -1,0 +1,17 @@
+<% revision = trip.current_revision %>
+<tr data-trip-id="<%= trip.id %>">
+  <td><div class="agent-trip-name-cell">
+    <%= check_box_tag "ids[]", trip.id, false, form: "compare-form", aria: { label: "Comparar #{revision.title.presence || 'viaje sin título'}" }, data: { trip_list_target: "selection", action: "trip-list#updateComparison" } %>
+    <span class="agent-trip-thumb"><% if revision.cover.attached? %><%= image_tag cover_agent_trip_path(trip, revision_id: revision.id), alt: "", loading: "lazy" %><% else %><%= app_icon("bus") %><% end %></span>
+    <div class="agent-trip-name"><%= link_to revision.title.presence || "Viaje sin título", agent_trip_path(trip), class: "agent-trip-title", title: revision.title %><span class="agent-trip-secondary"><%= revision.destination.presence || "Sin definir" %></span></div>
+  </div></td>
+  <td><span class="agent-trip-supplier" title="<%= revision.agent_supplier.name %>"><%= revision.agent_supplier.name %></span></td>
+  <td><%= revision.departs_on ? argentine_date(revision.departs_on) : "Sin definir" %></td>
+  <td><%= agent_trip_list_duration(revision) %></td>
+  <td><strong class="agent-trip-price"><%= revision.price_cents && revision.currency.present? ? agent_price_amount(revision) : "Sin definir" %></strong><span class="agent-trip-secondary"><%= AgentTripRevision::PRICE_UNITS[revision.price_unit] || "Unidad sin definir" %></span></td>
+  <td><span class="agent-trip-state agent-trip-state-<%= trip.status == 'unpublished' ? 'draft' : trip.status %>"><%= { "published" => "Publicado", "draft" => "Borrador", "unpublished" => "Borrador", "archived" => "Archivado" }.fetch(trip.status) %></span>
+    <% if trip.status == "published" && trip.current_revision_id != trip.published_revision_id %><span class="agent-trip-pending">Cambios sin publicar</span><% end %>
+  </td>
+  <td><time datetime="<%= trip.created_at.iso8601 %>"><%= argentine_date(trip.created_at.in_time_zone(current_agent_workspace.timezone)) %></time></td>
+  <td><%= render "list_actions", trip: trip, revision: revision %></td>
+</tr>

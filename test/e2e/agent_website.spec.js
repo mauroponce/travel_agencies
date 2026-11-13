@@ -5,7 +5,7 @@ const base = `http://localhost:${process.env.E2E_PORT || "3100"}`
 test("agent chooses public sections and publishes a personal introduction with a photo", async ({ page, browser }, testInfo) => {
   const email = testInfo.project.name.startsWith("mobile") ? "agente-web-mobile@turistack.local" : "agente-web-desktop@turistack.local"
   await page.goto(`${base}/test/sign-in?email=${encodeURIComponent(email)}`)
-  await page.goto(`${base}/agente/mi-web`)
+  await page.goto(`${base}/asesor/mi-web`)
   const aboutToggle = page.getByRole("checkbox", { name: /Sobre mí/ })
   const catalogToggle = page.getByRole("checkbox", { name: /^Viajes/ })
   const text = "Soy Lucía. Me encanta ayudarte a descubrir nuevos destinos.\nTe acompaño antes, durante y después de tu viaje."
@@ -59,7 +59,7 @@ test("agent chooses public sections and publishes a personal introduction with a
     await catalogToggle.uncheck()
     await expect(page.getByLabel("Texto sobre mí")).toBeHidden()
     await Promise.all([
-      page.waitForResponse(response => ["POST", "PATCH"].includes(response.request().method()) && new URL(response.url()).pathname === "/agente/mi-web"),
+      page.waitForResponse(response => ["POST", "PATCH"].includes(response.request().method()) && new URL(response.url()).pathname === "/asesor/mi-web"),
       page.getByRole("button", { name: "Guardar cambios", exact: true }).click()
     ])
     await visitor.reload()
@@ -73,7 +73,7 @@ test("agent chooses public sections and publishes a personal introduction with a
     await catalogToggle.check()
     await aboutToggle.uncheck()
     await Promise.all([
-      page.waitForResponse(response => ["POST", "PATCH"].includes(response.request().method()) && new URL(response.url()).pathname === "/agente/mi-web"),
+      page.waitForResponse(response => ["POST", "PATCH"].includes(response.request().method()) && new URL(response.url()).pathname === "/asesor/mi-web"),
       page.getByRole("button", { name: "Guardar cambios", exact: true }).click()
     ])
   }

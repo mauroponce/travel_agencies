@@ -18,8 +18,8 @@ self.addEventListener("fetch", event => {
 })
 self.addEventListener("push", event => {
   const message = event.data?.json() || {}
-  const target = new URL(message.url || "/dashboard", location.origin)
-  const safeUrl = target.origin === location.origin ? target.href : new URL("/dashboard", location.origin).href
+  const target = new URL(message.url || <%= raw dashboard_path.to_json %>, location.origin)
+  const safeUrl = target.origin === location.origin ? target.href : new URL(<%= raw dashboard_path.to_json %>, location.origin).href
   event.waitUntil(self.registration.showNotification(message.title || <%= raw @pwa_name.to_json %>, { body: message.body, icon: "/icon.png", data: { url: safeUrl } }))
 })
 self.addEventListener("notificationclick", event => { event.notification.close(); event.waitUntil(clients.openWindow(event.notification.data.url)) })

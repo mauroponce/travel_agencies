@@ -3,12 +3,12 @@
   <div class="wrap hero-head">
     <a class="pill" href="#acompanamiento" data-reveal><span class="pill-badge"><svg class="ic"><use href="#i-spark"></use></svg>Nuevo</span><span>Tu agencia, <b>conectada</b></span><svg class="ic pill-arrow"><use href="#i-arrow"></use></svg></a>
     <h1 data-reveal style="--d:60ms">Cada viaje, cada venta,<br><em>en un solo lugar.</em></h1>
-    <p class="lede" data-reveal style="--d:120ms">Salidas, cupos, reservas, pasajeros, cobros y rendiciones en una sola plataforma. Conectá a tu agencia con revendedores y coordinadores, sin depender de planillas interminables.</p>
+    <p class="lede" data-reveal style="--d:120ms">Salidas, cupos, reservas, pasajeros, cobros y rendiciones en una sola plataforma. Conectá a tu agencia con asesores y coordinadores, sin depender de planillas interminables.</p>
     <div class="cta-row" data-reveal style="--d:180ms"><a class="btn btn-lg btn-white" href="#tour">Ver cómo funciona</a><%= button_to(agent_signup_available? ? auth_start_path(purpose: "agent_onboarding") : auth_start_path, method: :post, data: { turbo: false }, class: "btn btn-lg btn-dark") do %><%= agent_signup_available? ? "Registrarme con Google" : "Ingresar con Google" %><svg class="ic" aria-hidden="true"><use href="#i-arrow"></use></svg><% end %></div>
     <% if agent_signup_available? %>
       <div class="cta-row" data-reveal style="--d:210ms"><%= link_to "Crear mi web de agente", agent_onboarding_path, class: "btn btn-lg btn-white" %></div>
     <% end %>
-    <div class="trust" data-reveal style="--d:240ms"><span class="faces" aria-hidden="true"><i class="face f1"><svg class="av-alt"><use href="#av-1"></use></svg></i><i class="face f2"><svg class="av-alt"><use href="#av-2"></use></svg></i><i class="face f3"><svg class="av-alt"><use href="#av-3"></use></svg></i></span><span><b>Administrador, revendedor y coordinador</b> trabajando conectados.</span></div>
+    <div class="trust" data-reveal style="--d:240ms"><span class="faces" aria-hidden="true"><i class="face f1"><svg class="av-alt"><use href="#av-1"></use></svg></i><i class="face f2"><svg class="av-alt"><use href="#av-2"></use></svg></i><i class="face f3"><svg class="av-alt"><use href="#av-3"></use></svg></i></span><span><b>Administrador, asesor y coordinador</b> trabajando conectados.</span></div>
   </div>
   <div class="hero-stage" id="heroStage"><div class="wrap"><div class="shot-fit"><div class="shot hero-shot" data-shot="1080x682" role="group" aria-label="Panel demostrativo de Turistack con selector de perfiles">
 <div class="app" id="demoApp">
@@ -42,7 +42,7 @@
       <div class="app-user">
         <span class="app-bell"><svg class="ic"><use href="#i-bell"></use></svg><i></i></span>
         <span class="face lg f2"><svg class="av-alt"><use href="#av-3"></use></svg></span>
-        <span class="app-who"><b>Agencia Demo</b><select data-action="change->landing#changeRole" id="demoRole" class="app-role-select" aria-label="Cambiar perfil de demostración"><option value="admin">Administrador ▾</option><option value="reseller">Revendedor ▾</option><option value="coordinator">Coordinador ▾</option></select></span>
+        <span class="app-who"><b>Agencia Demo</b><select data-action="change->landing#changeRole" id="demoRole" class="app-role-select" aria-label="Cambiar perfil de demostración"><option value="admin">Administrador ▾</option><option value="reseller">Asesor ▾</option><option value="coordinator">Coordinador ▾</option></select></span>
       </div>
     </div>
     <div class="app-body">

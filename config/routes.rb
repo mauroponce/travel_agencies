@@ -1,25 +1,36 @@
 Rails.application.routes.draw do
+  resources_path_names(
+    new: "nuevo", edit: "editar", suggestion: "sugerencia",
+    request_activation: "solicitar-activacion", cancel: "cancelar",
+    export: "exportar", archive: "archivar", compare: "comparar",
+    publish: "publicar", unpublish: "despublicar", cover: "portada", source: "original",
+    preview: "vista-previa", about_photo: "foto-sobre-mi", operation: "operacion",
+    sync: "sincronizar", confirm: "confirmar", convert: "convertir",
+    verify: "verificar", proof: "comprobante", read_all: "leer-todas", open: "abrir",
+    activate: "activar", make_primary: "establecer-principal", disable: "desactivar"
+  )
+
   get "/internal/tls/authorize", to: "internal_tls#show"
-  resource :agent_onboarding, path: "agente/alta", controller: "agent/onboarding", only: %i[show create] do
+  resource :agent_onboarding, path: "asesor/alta", controller: "agent/onboarding", only: %i[show create] do
     get :suggestion
   end
   agent_host = ->(request) { AgentWorkspace.enabled? && HostnameRegistration.where(company_id: nil).exists?(hostname: PlatformHosts.normalize(request.host)) }
   get "/", to: "agent/public_catalog#index", as: :agent_public_catalog, constraints: agent_host
   get "/buscar-viajes", to: "agent/public_catalog#search", as: :agent_public_search, constraints: agent_host
   get "/viajes/:slug", to: "agent/public_catalog#show", as: :agent_public_trip, constraints: agent_host
-  get "/agente/sobre-mi/foto/:blob_id", to: "agent/public_catalog#about_photo", as: :agent_public_about_photo
-  get "/agente/imagenes/:slug/:revision_id", to: "agent/public_catalog#image", as: :agent_public_image
-  namespace :agent, path: "agente" do
+  get "/asesor/sobre-mi/foto/:blob_id", to: "agent/public_catalog#about_photo", as: :agent_public_about_photo
+  get "/asesor/imagenes/:slug/:revision_id", to: "agent/public_catalog#image", as: :agent_public_image
+  namespace :agent, path: "asesor" do
     root "dashboard#show"
     resource :plan, path: "mi-plan", only: :show do
       post :request_activation
       post :cancel
     end
-    resource :export, only: :show
+    resource :export, path: "exportar", only: :show
     resources :clients, path: "clientes", except: :destroy do
       collection { get :export }
       member { post :archive }
-      resources :notes, only: :create, controller: "client_notes"
+      resources :notes, path: "notas", only: :create, controller: "client_notes"
     end
     resources :suppliers, path: "empresas"
     resources :trips, path: "viajes", except: :destroy do
@@ -34,11 +45,11 @@ Rails.application.routes.draw do
     end
     resources :imports, path: "importaciones", only: %i[index create show] do
       member do
-        post "retry", action: :retry_processing, as: :retry
+        post "reintentar", action: :retry_processing, as: :retry
         get :source
         get :preview
       end
-      resources :items, controller: "import_items", only: %i[edit update]
+      resources :items, path: "elementos", controller: "import_items", only: %i[edit update]
     end
     resources :searches, path: "buscador", only: %i[index create show]
     resource :website, path: "mi-web", controller: "website", only: %i[show update] do
@@ -58,13 +69,14 @@ Rails.application.routes.draw do
   end
 
   root "landing#show"
-  post "/auth/start", to: "authentication#start", as: :auth_start
-  get "/auth/continue", to: "authentication#continue", as: :auth_continue
-  get "/auth/exchange", to: "authentication#exchange", as: :auth_exchange
+  post "/autenticacion/iniciar", to: "authentication#start", as: :auth_start
+  get "/autenticacion/continuar", to: "authentication#continue", as: :auth_continue
+  get "/autenticacion/intercambiar", to: "authentication#exchange", as: :auth_exchange
+  # Google and infrastructure endpoints retain their configured technical paths.
   post "/auth/google_oauth2/callback", to: "sessions#create"
   get "/auth/google_oauth2/callback", to: "sessions#create"
   get "/auth/failure", to: "sessions#failure"
-  delete "/session", to: "sessions#destroy", as: :session
+  delete "/sesion", to: "sessions#destroy", as: :session
   get "/test/sign-in", to: "sessions#test_sign_in" if Rails.env.test?
   if Rails.env.test? && ENV["AGENT_E2E_FIXTURES"] == "true"
     get "/test/pro-lifecycle/prepare", to: "e2e_pro_lifecycle#prepare"
@@ -72,16 +84,16 @@ Rails.application.routes.draw do
     post "/test/pro-lifecycle/expire", to: "e2e_pro_lifecycle#expire"
   end
 
-  resource :onboarding, only: :show
-  post "/context", to: "contexts#update", as: :context
-  get "/context", to: "contexts#show"
-  get "/dashboard", to: "dashboard#show", as: :dashboard
+  resource :onboarding, path: "alta", only: :show
+  post "/contexto", to: "contexts#update", as: :context
+  get "/contexto", to: "contexts#show"
+  get "/panel", to: "dashboard#show", as: :dashboard
 
   resources :travel_packages, path: "paquetes"
   resources :departures, path: "salidas" do
     member { get :operation }
-    resource :manifest, only: :show
-    resources :boarding_events, only: :create do
+    resource :manifest, path: "lista-de-pasajeros", only: :show
+    resources :boarding_events, path: "embarques", only: :create do
       collection { post :sync }
     end
   end
@@ -112,18 +124,18 @@ Rails.application.routes.draw do
     collection { post :read_all }
     member { get :open }
   end
-  resources :push_subscriptions, only: %i[create destroy]
+  resources :push_subscriptions, path: "suscripciones-notificaciones", only: %i[create destroy]
   resource :catalog, path: "catalogos", only: %i[show create destroy]
   resources :team_members, path: "equipo", only: %i[index create update]
   resources :commissions, path: "comisiones", only: :index
 
-  namespace :platform do
-    resources :agent_workspaces, only: %i[index new create update] do
-      resource :subscription, only: :create, controller: "agent_subscriptions"
+  namespace :platform, path: "plataforma" do
+    resources :agent_workspaces, path: "asesores", only: %i[index new create update] do
+      resource :subscription, path: "suscripcion", only: :create, controller: "agent_subscriptions"
     end
-    resources :companies, only: %i[index new create update]
-    resources :companies, only: [] do
-      resources :company_domains, only: :create do
+    resources :companies, path: "empresas", only: %i[index new create update]
+    resources :companies, path: "empresas", only: [] do
+      resources :company_domains, path: "dominios", only: :create do
         member do
           post :verify
           post :activate
@@ -135,8 +147,8 @@ Rails.application.routes.draw do
   end
 
   get "/viajes/:offer_slug", to: "public_trips#show", as: :public_trip
-  get "/viajes/:offer_slug/status", to: "public_trips#status", as: :public_trip_status
-  get "/viajes/:company_slug/:offer_slug/status", to: "public_trips#legacy_status", as: :legacy_public_trip_status
+  get "/viajes/:offer_slug/estado", to: "public_trips#status", as: :public_trip_status
+  get "/viajes/:company_slug/:offer_slug/estado", to: "public_trips#legacy_status", as: :legacy_public_trip_status
   get "/viajes/:company_slug/:offer_slug", to: "public_trips#legacy", as: :legacy_public_trip
   get "/formularios/:token", to: "public_passenger_forms#show", as: :public_passenger_form
   post "/formularios/:token", to: "public_passenger_forms#create"

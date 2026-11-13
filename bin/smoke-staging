@@ -47,7 +47,7 @@ TURISTACK_IMAGE=$TURISTACK_IMAGE
 EOF
 "${compose[@]}" config --quiet
 docker build -t "$TURISTACK_IMAGE" .
-# Upgrade a pre-Revendedor agency database, then start the complete current stack.
+# Upgrade a pre-Asesor agency database, then start the complete current stack.
 "${compose[@]}" up -d --wait --wait-timeout 120 db redis
 # Run every migration on a genuinely empty database as well as the upgrade below.
 "${compose[@]}" exec -T db createdb -U smoke turistack_fresh_staging

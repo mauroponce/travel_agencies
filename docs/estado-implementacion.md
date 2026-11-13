@@ -12,7 +12,7 @@ Actualizado: 20 de octubre de 2026.
 ## Operativo y probado
 
 - Google OAuth central, alta exclusivamente global, invitaciones y selector de perfil dentro del tenant resuelto por hostname.
-- Aislamiento multiempresa y alcance privado por revendedor/coordinador.
+- Aislamiento multiempresa y alcance privado por asesor/coordinador.
 - Catálogos base, paquetes, salidas, ofertas, publicación y ficha pública dinámica.
 - Versionado de precios, Super Sale, contacto oficial/personalizado y disponibilidad compartida.
 - Reserva multi-pasajero transaccional, pago mínimo, idempotencia, cancelación y cupos.

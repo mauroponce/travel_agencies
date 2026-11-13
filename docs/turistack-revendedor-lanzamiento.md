@@ -4,11 +4,11 @@ Esta guía describe el comportamiento actual de Pro. El nombre de archivo se con
 
 ## Producto y acceso
 
-USD 19 al mes, activación y renovación manual, sin débito automático. Google es el único login. Desde el dominio principal se puede ingresar a membresías empresariales sin contratar Pro ni crear un negocio personal. `/context` muestra Mi espacio y Empresas que me dan acceso. El cambio valida una membresía activa de esa identidad y un dominio autorizado; el host elegido revalida sesión y permisos. Si no hay sesión en ese host, se usa su botón Google y el intercambio efímero existente, sin compartir cookies entre subdominios.
+USD 19 al mes, activación y renovación manual, sin débito automático. Google es el único login. Desde el dominio principal se puede ingresar a membresías empresariales sin contratar Pro ni crear un negocio personal. `/contexto` muestra Mi espacio y Empresas que me dan acceso. El cambio valida una membresía activa de esa identidad y un dominio autorizado; el host elegido revalida sesión y permisos. Si no hay sesión en ese host, se usa su botón Google y el intercambio efímero existente, sin compartir cookies entre subdominios.
 
 Alta autónoma: Google → nombre/marca, slug y WhatsApp → proveedor → importar o crear viaje → revisar → publicar → compartir → consulta → registro manual de cliente y nota. Disponible donde `AGENT_ENABLED` esté habilitado y la integridad de hosts finalizada. Una identidad solo tiene un espacio personal; reintentos no crean otra prueba.
 
-El panel vive en `/agente`. La web canónica es `/:agent_slug` y la ficha `/:agent_slug/viajes/:slug`, en `PLATFORM_HOST`. Los hosts existentes se conservan. No configurar subdominios nuevos como requisito de alta. Las landings empresariales mantienen su contenido anterior; la landing de plataforma anuncia únicamente Pro.
+El panel vive en `/asesor`. La web canónica es `/:agent_slug` y la ficha `/:agent_slug/viajes/:slug`, en `PLATFORM_HOST`. Los hosts existentes se conservan. No configurar subdominios nuevos como requisito de alta. Las landings empresariales mantienen su contenido anterior; la landing de plataforma anuncia únicamente Pro.
 
 La URL del asesor es una decisión de producto independiente del aislamiento empresarial por subdominios. En staging/producción los metadatos canónicos y `og:url` usan HTTPS y el dominio principal; `og:image` se sirve en el mismo origen de la página, también para hosts históricos. No cambiar la estrategia para acomodar pruebas antiguas.
 
@@ -25,7 +25,7 @@ Al vencer se conservan todas las filas y archivos. El propietario mantiene lectu
 Activación manual:
 
 1. El asesor abre **Mi plan → Solicitar activación o renovación manual**. No introduce datos de tarjetas ni paga en Turistack.
-2. Un operador cuyo correo Google esté autorizado en `PLATFORM_ADMIN_GOOGLE_EMAILS` ingresa al dominio principal y abre `/platform/agent_workspaces`.
+2. Un operador cuyo correo Google esté autorizado en `PLATFORM_ADMIN_GOOGLE_EMAILS` ingresa al dominio principal y abre `/plataforma/asesores`.
 3. Revisa la solicitud y coordina el pago por fuera del producto. Pulsa **Activar / renovar un mes** una sola vez por período acordado. Cada pulsación agrega un mes calendario desde el fin futuro vigente o desde ahora si está vencido. No hay un webhook ni conciliación automática.
 4. Comprueba estado, fin del período, auditoría `agent_subscription.month_granted` y web pública. La acción no levanta suspensiones administrativas. Se guarda actor, identificadores y cambios de estado/fechas/precio, sin contenido de clientes ni notas.
 
@@ -53,7 +53,7 @@ El job reserva `AgentAiExecution.consumption_units` bajo el mismo lock del espac
 
 Archivos de hasta 10 MB. PDF inicialmente hasta 10 páginas, configurable hasta un máximo duro de 20; se valida cada página antes de enviar el documento completo, con timeout de parseo. Hasta 50 fichas por extracción y salida de proveedor acotada a 16000 tokens. Poppler convierte solo la primera página para vista previa, con límites de CPU, memoria, tiempo y tamaño. El original se conserva privado; una ficha puede necesitar un flyer propio si el PDF contiene varias propuestas.
 
-La agenda requiere nombre y teléfono normalizado con código de país; email opcional. Los nombres/contactos del directorio de proveedores no se publican como datos estructurados; las fichas identifican al asesor. Las notas son privadas, fechadas, con referencia opcional a un viaje del mismo espacio. Archivar no borra notas. No hay creación automática por clic en WhatsApp ni lectura de conversaciones. Las exportaciones CSV de contactos y notas neutralizan fórmulas; `/agente/export.json` exporta datos del negocio autenticado. Los originales se descargan por las rutas privadas de importaciones/viajes; el JSON no empaqueta los archivos binarios. Lecturas y exportaciones usan `private, no-store`. Parámetros de contactos/notas se filtran de logs y las auditorías contienen identificadores, sin texto privado.
+La agenda requiere nombre y teléfono normalizado con código de país; email opcional. Los nombres/contactos del directorio de proveedores no se publican como datos estructurados; las fichas identifican al asesor. Las notas son privadas, fechadas, con referencia opcional a un viaje del mismo espacio. Archivar no borra notas. No hay creación automática por clic en WhatsApp ni lectura de conversaciones. Las exportaciones CSV de contactos y notas neutralizan fórmulas; `/asesor/exportar.json` exporta datos del negocio autenticado. Los originales se descargan por las rutas privadas de importaciones/viajes; el JSON no empaqueta los archivos binarios. Lecturas y exportaciones usan `private, no-store`. Parámetros de contactos/notas se filtran de logs y las auditorías contienen identificadores, sin texto privado.
 
 `AgentClient.name`, `phone`, `email` y `AgentClientNote.body` usan Active Record Encryption no determinista con las mismas claves estables de pasajeros. PostgreSQL/backups nuevos contienen ciphertext; IDs, relaciones de viajes y fechas siguen visibles para mantener integridad. La aplicación descifra solo para el propietario autorizado, incluidos CSV/JSON, que contienen información privada legible y deben guardarse con acceso restringido. El cifrado de aplicación no reemplaza TLS, permisos de base/storage ni protección de claves/backups.
 

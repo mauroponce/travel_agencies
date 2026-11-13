@@ -7,24 +7,26 @@ class AgentWorkspaceTest < ActionDispatch::IntegrationTest
   test "Google identity can onboard without a company membership" do
     user = create_user
     host! PlatformHosts.platform_host
-    get agent_onboarding_path
+    get "/asesor/alta"
     assert_response :success
     get "/test/sign-in", params: { email: user.email, purpose: "agent_onboarding" }
     assert_redirected_to agent_onboarding_path
     assert_difference "AgentWorkspace.count", 1 do
       post agent_onboarding_path, params: { agent_workspace: { name: "Mi agencia independiente", whatsapp: "+54 9 11 5555 1234", slug: "lucia-#{SecureRandom.hex(3)}" } }
     end
-    assert_redirected_to agent_root_path
+    assert_redirected_to "/asesor"
     follow_redirect!
     assert_response :success
-    assert_includes response.body, "Prueba gratuita"
+    assert_select "a[href='/asesor/viajes']"
+    assert_equal "trialing", user.reload.agent_workspace.agent_subscription.status
+    assert_select "#main-sidebar .sidebar-bottom", count: 0
     assert_empty user.memberships
     get agent_onboarding_path
     assert_redirected_to agent_root_path
     login_agent(user.reload.agent_workspace)
     get agent_root_path
     assert_response :success
-    assert_includes response.body, "Prueba gratuita"
+    assert_select ".topbar-actions strong", text: user.name
   end
 
   test "central OAuth supports onboarding and agent access without platform permissions" do
@@ -43,7 +45,7 @@ class AgentWorkspaceTest < ActionDispatch::IntegrationTest
       post "/auth/google_oauth2/callback"
       assert_response :redirect
       exchange_url = response.location
-      assert_includes exchange_url, "/auth/exchange?code="
+      assert_includes exchange_url, "/autenticacion/intercambiar?code="
       host! hostname
       get URI(exchange_url).request_uri
       assert_redirected_to(kind == :onboarding ? agent_onboarding_path : agent_root_path)
