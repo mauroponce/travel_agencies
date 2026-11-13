@@ -2,7 +2,7 @@
 
 MVP para el asesor de viajes independiente, USD 19/mes, activación/renovación manual sin débito automático. Una identidad Google puede tener un negocio personal y varias membresías empresariales. Las membresías no requieren Pro y nunca se cancelan por vencimiento del espacio personal.
 
-Incluye proveedores privados; flyers/PDF con extracción Gemini dentro de cuota y revisión humana; catálogo versionado; web personal en `/:agent_slug` y `/:agent_slug/viajes/:slug`; compartir enlace/flyer y consulta WhatsApp sin registro del visitante; agenda manual de clientes y notas privadas/exportables. Navegación: Resumen, Mis viajes, Importar, Mis proveedores, Mis clientes, Mi web y Mi plan. El buscador IA existente es una herramienta secundaria.
+Incluye proveedores privados; flyers/PDF con extracción Gemini dentro de cuota y revisión humana; catálogo versionado; web personal en `/:agent_slug` y `/:agent_slug/viajes/:slug`; compartir enlace/flyer y consulta WhatsApp sin registro del visitante; agenda manual de clientes y notas privadas/exportables. Navegación: Inicio, Viajes, Empresas, Clientes, Mi web y Mi plan. El buscador IA existente es una herramienta secundaria.
 
 Nueva alta: una prueba de 14 días, no reiniciable por login/onboarding. Pilotos: transición explícita de 30 días al migrar, sin conversión automática a clientes pagos. Vencimiento: lectura/exportación privada y reactivación; datos intactos, sin escrituras, IA ni publicación pública. Suspensión administrativa separada. Reactivar no publica borradores. Configuración y operación exactas en la [guía de lanzamiento](turistack-revendedor-lanzamiento.md).
 

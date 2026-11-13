@@ -1,0 +1,25 @@
+<% revision = @owner_view ? trip.current_revision : trip.published_revision
+   detail = @owner_view ? agent_trip_path(trip) : agent_trip_public_url(trip) %>
+<article class="trip agent-trip-card">
+  <div class="trip-photo">
+    <%= link_to detail, aria: { label: "Ver viaje #{revision.title.presence || 'sin título'}" } do %>
+      <% if revision.cover.attached? %><%= image_tag(@owner_view ? cover_agent_trip_path(trip, revision_id: revision.id) : agent_image_public_url(trip, revision), alt: revision.title, loading: "lazy") %>
+      <% else %><%= render "agent/public_catalog/scenery", trip: trip %><% end %>
+    <% end %>
+    <span class="trip-badge <%= 'agent-badge' if @owner_view %>"><%= @owner_view ? agent_status(trip) : "Próxima salida" %></span>
+    <button type="button" class="heart" aria-label="Agregar a favoritos: <%= revision.title %>" aria-pressed="false" data-public-site-target="favorite" data-trip-id="<%= trip.id %>" data-title="<%= revision.title %>" data-action="public-site#favorite"><%= app_icon("heart") %></button>
+  </div>
+  <div class="trip-body">
+    <span class="trip-region"><%= revision.destination.presence || "Destino a confirmar" %></span>
+    <h2 class="trip-title"><%= link_to revision.title.presence || "Viaje sin título", detail %></h2>
+    <div class="trip-meta">
+      <span><%= app_icon("calendar") %><%= revision.departs_on ? l(revision.departs_on, format: "%d %b %Y") : "Fecha a confirmar" %></span>
+      <span><%= app_icon("clock") %><%= revision.duration_days ? "#{revision.duration_days} #{revision.duration_days == 1 ? 'día' : 'días'}" : "Duración a confirmar" %></span>
+      <% if revision.transport.present? %><span><%= app_icon("pin") %><%= revision.transport %></span><% end %>
+    </div>
+    <hr class="trip-divider">
+    <div class="trip-end"><div><span class="price-sub">Precio desde</span><strong class="price"><%= agent_price_amount(revision) %><small><%= agent_public_price_unit(revision) %></small></strong></div>
+      <% if @owner_view %><%= link_to "Ver ficha", detail, class: "trip-cta" %><% else %><%= link_to agent_whatsapp(revision), class: "trip-cta", target: "_blank", rel: "noopener", aria: { label: "Consultar por #{revision.title}" } do %>Consultar <%= app_icon("arrow") %><% end %><% end %>
+    </div>
+  </div>
+</article>

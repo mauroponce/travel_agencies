@@ -6,7 +6,7 @@
 .agent-trips-page .agent-eyebrow{font-size:9px;letter-spacing:.17em;margin-bottom:9px}
 .agent-trips-page .agent-heading p{font-size:11px}
 .agent-trips-page .btn .cadence-icon{width:14px;height:14px}
-.agent-trip-catalog{border:1px solid var(--trip-line);border-radius:16px;background:#fff;min-width:0;overflow:hidden}
+.agent-trip-catalog{border:1px solid var(--trip-line);border-radius:16px;background:#fff;min-width:0}
 .agent-trip-tabs{display:flex;gap:26px;padding:0 20px;border-bottom:1px solid var(--trip-line);overflow-x:auto}
 .agent-trip-tab{position:relative;display:inline-flex;align-items:center;gap:7px;flex-shrink:0;padding:16px 0 13px;color:var(--trip-muted);font-size:11px}
 .agent-trip-tab[aria-selected=true]{color:var(--cadence-ink);font-weight:650}
@@ -15,10 +15,18 @@
 .agent-trip-tab[aria-selected=true] .agent-trip-tab-count{background:#f0e8fb;color:#9670c0}
 .agent-trip-filters{padding:18px 18px 12px}
 .agent-trip-filter-bar{display:flex;flex-wrap:wrap;align-items:center;gap:9px;min-width:0}
-.agent-trip-search{display:flex;align-items:center;gap:10px;flex:1 1 250px;border:1px solid var(--trip-line);border-radius:9px;padding:0 12px;min-width:0}
+.agent-trip-destination{position:relative;flex:1 1 250px;min-width:0}
+.agent-trip-search{display:flex;align-items:center;gap:10px;border:1px solid var(--trip-line);border-radius:9px;padding:0 12px;min-width:0}
 .agent-trip-search .cadence-icon{width:16px;height:16px;flex-shrink:0;color:#8e809e}
 .agent-trip-search input{padding:10px 0;min-width:0;width:100%;border:0;background:transparent;font-size:11px;color:var(--cadence-ink)}
+.agent-trip-search input:focus{outline:none;box-shadow:none}
 .agent-trip-search input::placeholder{color:#a59ab0}
+.agent-trip-suggestions{position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:15;max-height:min(260px,40svh);overflow-y:auto;padding:6px;border:1px solid var(--trip-line);border-radius:11px;background:#fff;box-shadow:0 10px 30px #251b3c1a}
+.agent-trip-suggestions[hidden]{display:none}
+.agent-trip-suggestions [role=option]{display:block;width:100%;padding:10px;border:0;border-radius:7px;background:transparent;text-align:left;color:#65556f;font:inherit;font-size:12px;cursor:pointer}
+.agent-trip-suggestions [role=option]:hover,.agent-trip-suggestions [aria-selected=true]{background:#f6f0fc;color:#7359ac}
+.agent-trip-suggestion-status{padding:6px 10px;color:var(--trip-muted);font-size:11px}
+.agent-trip-suggestion-status:empty{display:none}
 .agent-trip-filter-bar>select{width:205px;min-width:0;max-width:100%;padding:10px;border:1px solid var(--trip-line);border-radius:9px;background:#fff;color:#70647e;font-size:11px}
 .agent-trips-page .agent-trip-filter-bar .btn{border-radius:9px;padding:9px 13px;font-size:11px;min-height:37px}
 .agent-trip-extra-filters>summary{list-style:none;cursor:pointer}
@@ -100,4 +108,4 @@
 .agent-trips-page .agent-trip-empty h2{font-size:17px;color:#74617f;margin-bottom:7px}
 .agent-trips-page .agent-trip-empty p{font-size:12px;margin-bottom:17px}
 .agent-trip-sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
-@media(max-width:760px){.agent-trips-page .agent-heading{gap:17px;align-items:flex-start}.agent-trips-page .agent-heading h1{font-size:28px}.agent-trips-page .agent-heading .agent-actions{width:100%}.agent-trips-page .agent-heading .agent-actions .btn{flex:1}.agent-trip-breadcrumb{margin-bottom:17px}.agent-trip-tabs{padding:0 14px;gap:20px}.agent-trip-filters{padding:13px}.agent-trip-search{flex-basis:100%}.agent-trip-filter-bar>select{flex:1;width:120px}.agent-trip-extra-filters{flex-basis:100%}.agent-trip-extra-filters>summary{width:fit-content}.agent-trip-filter-fields{padding:12px}.agent-trip-filter-field{max-width:none;flex-basis:100%}.agent-trip-table-scroll{max-height:520px}.agent-trip-result-bar{padding-inline:14px;align-items:flex-start;gap:7px}.agent-trip-sort{font-size:9px}.agent-trip-pagination{padding:12px;gap:10px}.agent-trip-page-summary{flex-basis:100%}.agent-trip-page-size{margin-left:0}.agent-trip-pagination nav{margin-left:auto}.agent-trip-footnote>span:last-child{display:none}.agent-trip-footnote{line-height:1.6}}
+@media(max-width:760px){.agent-trips-page .agent-heading{gap:17px;align-items:flex-start}.agent-trips-page .agent-heading h1{font-size:28px}.agent-trips-page .agent-heading .agent-actions{width:100%}.agent-trips-page .agent-heading .agent-actions .btn{flex:1}.agent-trip-breadcrumb{margin-bottom:17px}.agent-trip-tabs{padding:0 14px;gap:20px}.agent-trip-filters{padding:13px}.agent-trip-destination{flex-basis:100%}.agent-trip-filter-bar>select{flex:1;width:120px}.agent-trip-extra-filters{flex-basis:100%}.agent-trip-extra-filters>summary{width:fit-content}.agent-trip-filter-fields{padding:12px}.agent-trip-filter-field{max-width:none;flex-basis:100%}.agent-trip-table-scroll{max-height:520px}.agent-trip-result-bar{padding-inline:14px;align-items:flex-start;gap:7px}.agent-trip-sort{font-size:9px}.agent-trip-pagination{padding:12px;gap:10px}.agent-trip-page-summary{flex-basis:100%}.agent-trip-page-size{margin-left:0}.agent-trip-pagination nav{margin-left:auto}.agent-trip-footnote>span:last-child{display:none}.agent-trip-footnote{line-height:1.6}}

@@ -25,6 +25,13 @@ module Agent
           raise ActiveRecord::RecordInvalid, invalid
         end
         fields = attributes.slice(*AgentTripRevision::FIELDS).except("agent_supplier_id")
+        fare_input = attributes["fares"]
+        if !attributes.key?("fares") && trip.current_revision&.fares.present?
+          fare_input = trip.current_revision.fares.deep_dup
+          main = TripFares.primary(fare_input)
+          main.merge!(fields.slice(*TripFares::PRICE_FIELDS))
+        end
+        TripFares.apply!(fields, TripFares.normalize(fare_input, defaults: fields))
         fields["title"] = fields["destination"] if fields["title"].blank? && fields["destination"].present?
         revision = trip.revisions.new(fields.merge(agent_workspace: workspace, agent_supplier: supplier))
         revision.warnings = item.extracted.fetch("warnings", []) if item

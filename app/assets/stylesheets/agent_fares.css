@@ -1,0 +1,17 @@
+.agent-fares{margin:16px 0;min-width:0;border:1px solid #e7dfed;border-radius:12px;background:#fff;overflow:hidden}
+.agent-fares>h3{margin:0;padding:13px 15px;color:#745c83;font-size:12px;font-weight:650}
+.agent-fare-tabs{display:flex;gap:4px;padding:0 10px;border-bottom:1px solid #e7dfed;overflow-x:auto}
+.agent-fare-tabs [role=tab]{position:relative;padding:10px;border:0;border-radius:6px 6px 0 0;background:transparent;color:#a18bb0;font:inherit;font-size:11px;white-space:nowrap;cursor:pointer}
+.agent-fare-tabs [aria-selected=true]{color:#795494;background:#f8f3fd;font-weight:650}
+.agent-fare-tabs [aria-selected=true]::after{content:"";position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#ffb37a,#a280cf)}
+.agent-fare-tabs [role=tab]:focus-visible{outline:2px solid #ad90eb;outline-offset:-2px}
+.agent-fare-panel{padding:14px;min-width:0}
+.agent-fare-panel[hidden]{display:none!important}
+.agent-fares .agent-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.agent-fares .agent-field{min-width:0}
+.agent-fares .agent-field :is(input,textarea,select){width:100%;min-width:0}
+.agent-fare-panel .agent-details{margin:0;font-size:11px}
+.travel-booking .agent-fares{margin-block:15px;background:#fff;box-shadow:none}
+.travel-booking .agent-fares>h3{font-size:11px}
+.travel-booking .agent-fare-tabs [role=tab]{font-size:10px}
+@media(max-width:680px){.agent-fares .agent-form-grid{grid-template-columns:1fr}.agent-fares .agent-wide{grid-column:1}}

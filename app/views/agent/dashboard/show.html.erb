@@ -3,7 +3,7 @@
     <h1>Todo listo para tu próximo viaje</h1>
     <p>Organizá tus propuestas y seguí atendiendo personalmente a tus clientes.</p>
   </div>
-  <div class="agent-actions"><%= link_to "Agregar viaje", new_agent_trip_path, class: "btn" %><%= link_to "Importar con IA", agent_imports_path, class: "btn btn-primary" %></div></div>
+  <div class="agent-actions"><%= link_to "Agregar viaje", new_agent_trip_path, class: "btn" %><%= link_to "Importar con IA", agent_trips_path(import: true), class: "btn btn-primary" %></div></div>
 <div class="agent-metrics"><% @metrics.each do |label, value| %>
     <section class="agent-panel agent-metric"><span><%= label %></span><strong><%= value %></strong></section>
   <% end %></div>

@@ -1,45 +1,36 @@
-<section class="agent-public-search" aria-labelledby="agent-search-title">
-  <div class="agent-search-intro">
-    <span class="agent-eyebrow">ENCONTRÁ TU PRÓXIMA ESCAPADA</span>
-    <h2 id="agent-search-title">¿A dónde querés viajar?</h2>
-    <p>Elegí un destino y descubrí tu próximo viaje.</p>
-  </div>
-  <%= form_with url: agent_public_catalog_filter_url, method: :get, class: "agent-search-form destination-picker", html: { role: "search" }, data: { controller: "destination-picker", action: "click@window->destination-picker#dismiss focusout->destination-picker#blur turbo:before-cache@document->destination-picker#reset" } do |f| %>
-    <%= f.hidden_field :destination, value: params[:destination], data: { destination_picker_target: "value" } %>
-    <div class="agent-search-field">
-      <span class="agent-search-icon" aria-hidden="true"><%= app_icon("search") %></span>
-      <input type="text" id="agent-catalog-destination" role="combobox" aria-label="Destino" aria-autocomplete="list" aria-expanded="false" aria-controls="destination-options" autocomplete="off" spellcheck="false" placeholder="Buscá o elegí un destino" value="<%= params[:destination].presence || 'Todos los destinos' %>" data-destination-picker-target="input" data-action="focus->destination-picker#open input->destination-picker#filter keydown->destination-picker#navigate">
-      <button type="button" class="destination-toggle" aria-label="Mostrar destinos" data-action="destination-picker#toggle"><%= app_icon("chevron-down") %></button>
-    </div>
-    <div class="destination-menu" data-destination-picker-target="menu" hidden>
-      <div class="destination-menu-heading"><span>EXPLORÁ LOS DESTINOS</span><small>Elegí uno para ver sus viajes</small></div>
-      <div id="destination-options" class="destination-options" role="listbox" aria-label="Destinos disponibles">
-        <% [["Todos los destinos", ""]].concat(@destinations.map { |destination| [destination, destination] }).each_with_index do |(label, value), index| %>
-          <button type="button" id="destination-option-<%= index %>" class="destination-option" role="option" tabindex="-1" aria-selected="<%= params[:destination].to_s == value %>" data-destination-picker-target="option" data-value="<%= value %>" data-label="<%= label %>" data-action="click->destination-picker#choose">
-            <span class="destination-option-icon" aria-hidden="true"><%= app_icon(value.blank? ? "grid" : "route") %></span>
-            <span class="destination-option-label"><%= label %></span>
-            <span class="destination-option-check" aria-hidden="true">✓</span>
-          </button>
-        <% end %>
+<section class="search-hero agent-public-search" aria-labelledby="agent-search-title">
+  <div class="hero-top"><div><span class="eyebrow">Encontrá tu próxima escapada</span><h1 id="agent-search-title">¿A dónde querés viajar?</h1><p class="subheading">Elegí un destino y descubrí tu próximo viaje.</p></div><div class="hero-aside"><span class="hero-aside-icon"><%= app_icon("spark") %></span>Tu próxima experiencia puede estar a un destino de distancia.</div></div>
+  <%= form_with url: agent_public_catalog_filter_url, method: :get, id: "public-catalog-filters", class: "agent-search-form", html: { role: "search" }, data: { controller: "destination-picker", turbo_frame: "public-catalog-results", turbo_action: "replace", action: "click@window->destination-picker#dismiss focusout->destination-picker#blur submit->destination-picker#submitting turbo:before-cache@document->destination-picker#cache" } do |f| %>
+    <%= f.hidden_field :destination, value: @catalog.filters["destination"], data: { destination_picker_target: "value" } %>
+    <% @catalog.filters.except("destination", "destination_query", "month", "transport", "duration", "currency", "price_unit", "max_price").each do |key, value| %><%= f.hidden_field key, value: value %><% end %>
+    <div class="search-line">
+      <div class="search-box" data-destination-picker-target="field">
+        <span class="search-icon" aria-hidden="true"><%= app_icon("search") %></span>
+        <%= f.text_field :destination_query, value: @catalog.filters["destination_query"] || @catalog.filters["destination"], id: "agent-catalog-destination", role: "combobox", placeholder: "Todos los destinos", autocomplete: "off", spellcheck: false, aria: { label: "Destino", autocomplete: "list", expanded: false, controls: "destination-options" }, data: { destination_picker_target: "input", action: "focus->destination-picker#open input->destination-picker#filter compositionend->destination-picker#filter keydown->destination-picker#navigate" } %>
+        <button type="button" class="search-clear" aria-label="Limpiar búsqueda" data-destination-picker-target="clear" data-action="destination-picker#clear"><%= app_icon("close") %></button>
+        <button type="button" class="search-arrow" aria-label="Mostrar destinos" aria-expanded="false" data-destination-picker-target="toggle" data-action="destination-picker#toggle"><%= app_icon("chevron-down") %></button>
+        <div class="suggestions" hidden data-destination-picker-target="menu">
+          <div class="suggestion-label">Destinos disponibles</div>
+          <div id="destination-options" role="listbox" aria-label="Destinos disponibles">
+            <% [["Todos los destinos", ""]].concat(@destinations.map { |destination| [destination, destination] }).each_with_index do |(label, value), index| %>
+              <button type="button" id="destination-option-<%= index %>" class="suggestion destination-option" role="option" tabindex="-1" aria-selected="<%= @catalog.filters['destination'].to_s == value %>" data-destination-picker-target="option" data-value="<%= value %>" data-label="<%= label %>" data-action="click->destination-picker#choose"><%= app_icon(value.blank? ? "grid" : "pin") %><span class="destination-option-label"><%= label %></span></button>
+            <% end %>
+          </div>
+          <p class="suggestion-status" role="status" aria-live="polite" data-destination-picker-target="status"></p>
+        </div>
       </div>
-      <p class="destination-status" role="status" aria-live="polite" data-destination-picker-target="status"></p>
+      <button type="button" class="filter-trigger" aria-controls="public-extra-filters" aria-expanded="false" data-destination-picker-target="filterToggle" data-action="destination-picker#toggleFilters"><%= app_icon("sliders") %>Más filtros <span class="filter-counter" hidden data-destination-picker-target="counter"></span></button>
+    </div>
+    <div id="public-extra-filters" class="filters" hidden data-destination-picker-target="filters">
+      <div class="filter-field"><%= f.label :month, "Mes de salida" %><%= f.select :month, @catalog.months.map { |month| [l(month, format: "%B %Y").capitalize, month.strftime("%Y-%m")] }, { include_blank: "Todos los meses", selected: @catalog.filters["month"] }, data: { action: "change->destination-picker#apply" } %></div>
+      <div class="filter-field"><%= f.label :transport, "Transporte" %><%= f.select :transport, @catalog.transports, { include_blank: "Todos", selected: @catalog.filters["transport"] }, data: { action: "change->destination-picker#apply" } %></div>
+      <div class="filter-field"><%= f.label :duration, "Duración" %><%= f.select :duration, [["Hasta 4 días", "4"], ["Hasta 6 días", "6"], ["7 días o más", "7"]], { include_blank: "Cualquier duración", selected: @catalog.filters["duration"] }, data: { action: "change->destination-picker#apply" } %></div>
+      <button type="button" class="reset-btn" data-action="destination-picker#clearFilters">Limpiar filtros</button>
+      <details class="filters-extra"><summary>Moneda y precio</summary><div>
+        <div class="filter-field"><%= f.label :currency, "Moneda" %><%= f.select :currency, AgentTripRevision::CURRENCY_LABELS.map { |code, label| [label, code] }, { include_blank: "Todas las monedas", selected: @catalog.filters["currency"] }, data: { action: "change->destination-picker#apply" } %></div>
+        <div class="filter-field"><%= f.label :price_unit, "Unidad del precio" %><%= f.select :price_unit, AgentTripRevision::PRICE_UNITS.map { |key, label| [label, key] }, { include_blank: "Todas las unidades", selected: @catalog.filters["price_unit"] }, data: { action: "change->destination-picker#apply" } %></div>
+        <div class="filter-field"><%= f.label :max_price, "Precio máximo" %><%= f.number_field :max_price, value: @catalog.filters["max_price"], min: 0, step: "0.01", data: { action: "change->destination-picker#apply" } %></div>
+      </div></details>
     </div>
   <% end %>
 </section>
-
-<details class="agent-panel agent-catalog-filters"><summary>Más filtros de viajes</summary>
-  <%= form_with url: agent_public_catalog_filter_url, method: :get, class: "agent-filters" do |f| %>
-    <%= f.hidden_field :destination, value: params[:destination] %>
-    <%= f.search_field :q, value: params[:q], placeholder: "Buscar viajes", aria: { label: "Buscar viajes" } %>
-    <%= argentine_date_field(f, :from, value: params[:from], aria: { label: "Desde" }) %>
-    <%= argentine_date_field(f, :to, value: params[:to], aria: { label: "Hasta" }) %>
-    <%= f.select :currency, AgentTripRevision::CURRENCIES, { include_blank: "Moneda", selected: params[:currency] }, aria: { label: "Moneda" } %>
-    <%= f.select :price_unit, AgentTripRevision::PRICE_UNITS.map { |key, label| [label, key] }, { include_blank: "Unidad del precio", selected: params[:price_unit] }, aria: { label: "Unidad del precio" } %>
-    <%= f.number_field :max_price, value: params[:max_price], min: 0, step: "0.01", placeholder: "Precio máximo", aria: { label: "Precio máximo" } %>
-    <%= f.text_field :meal_plan, value: params[:meal_plan], placeholder: "Comidas", aria: { label: "Comidas" } %>
-    <%= f.text_field :transport, value: params[:transport], placeholder: "Transporte", aria: { label: "Transporte" } %>
-    <%= f.select :sort, [["Fecha de salida", "date"], ["Menor precio", "price_asc"], ["Mayor precio", "price_desc"]], { selected: params[:sort] }, aria: { label: "Ordenar" } %>
-    <%= f.submit "Filtrar", class: "btn btn-primary" %><%= link_to "Limpiar", agent_public_catalog_filter_url, class: "btn" %>
-    <small>Para comparar precios elegí moneda y unidad.</small>
-  <% end %>
-</details>

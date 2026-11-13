@@ -25,7 +25,7 @@ module Agent
     def agent_access = Agent::Access.new(current_agent_workspace)
 
     def authorize_commercial_write
-      agent_access.require_commercial! unless controller_path == "agent/plans" || ((request.get? || request.head?) && !%w[new edit preview].include?(action_name))
+      agent_access.require_commercial! unless (request.get? || request.head?) && !%w[new edit preview].include?(action_name)
     end
 
     def pundit_user = Current

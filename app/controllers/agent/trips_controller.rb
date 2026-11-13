@@ -2,8 +2,10 @@ module Agent
   class TripsController < BaseController
     before_action :set_trip, only: %i[show edit update publish unpublish archive cover source]
     def index
-      @suppliers = current_agent_workspace.agent_suppliers.order(:name, :id)
       @list = TripListQuery.new(workspace: current_agent_workspace, filters: params.permit(*TripListQuery::FILTERS), tab: params[:tab])
+      return render json: { destinations: @list.destinations } if request.format.json?
+
+      @suppliers = current_agent_workspace.agent_suppliers.order(:name, :id)
       @tab_counts = @list.counts
       @trips, @pagination = paginate(@list.trips, per_page: 20)
       @list_params = @list.filters.merge("tab" => @list.tab)
@@ -95,14 +97,14 @@ module Agent
     def set_trip = @trip = current_agent_workspace.agent_trips.find(params[:id])
     def load_suppliers = @suppliers = current_agent_workspace.agent_suppliers.order(:name, :id)
     def trip_params
-      attributes = params.expect(agent_trip_revision: AgentTripRevision::FIELDS + [ "price", "cover", "new_supplier_name" ]).to_h
+      attributes = params.expect(agent_trip_revision: AgentTripRevision::FIELDS + [ "price", "cover", "new_supplier_name", { fares: [ TripFares::REVIEW_FIELDS ] } ]).to_h
       attributes["cover"] = @retained_cover if @retained_cover
       attributes["price_cents"] = attributes["price"].present? ? MoneyParser.call(attributes.delete("price")) : nil
       attributes.except("price")
     end
 
     def submitted_revision
-      AgentTripRevision.new(params.expect(agent_trip_revision: AgentTripRevision::FIELDS).to_h)
+      AgentTripRevision.new(params.expect(agent_trip_revision: AgentTripRevision::FIELDS + [ { fares: [ TripFares::REVIEW_FIELDS ] } ]).to_h)
     end
   end
 end

@@ -21,11 +21,11 @@ async function tripFactory(page) {
   const supplier = await page.getByLabel("Proveedor", { exact: true }).locator('option:not([value=""])').first().getAttribute("value")
   const token = await page.locator('meta[name="csrf-token"]').getAttribute("content")
   const headers = { "X-CSRF-Token": token }
-  return async (title, status = "published", incomplete = false) => {
+  return async (title, status = "published", incomplete = false, destination = "Río Negro") => {
     const form = { "agent_trip_revision[agent_supplier_id]": supplier, commit_action: status === "published" || status === "unpublished" ? "publish" : "draft" }
     if (!incomplete) Object.assign(form, {
       "agent_trip_revision[title]": title,
-      "agent_trip_revision[destination]": "Río Negro",
+      "agent_trip_revision[destination]": destination,
       "agent_trip_revision[departs_on]": "2030-11-20",
       "agent_trip_revision[duration_days]": "8",
       "agent_trip_revision[duration_nights]": "0",
@@ -53,7 +53,7 @@ test("three real tabs paginate filtered rows and remain usable on desktop and mo
   await create(`${prefix} borrador`, "draft")
   await create(`${prefix} despublicado`, "unpublished")
   await create(`${prefix} archivado`, "archived")
-  await page.goto(`${base}/asesor/viajes?q=${encodeURIComponent(prefix)}`)
+  await page.goto(`${base}/asesor/viajes?destination=${encodeURIComponent("Río Negro")}`)
   await expect(page.getByRole("tab")).toHaveCount(3)
   await expect(page.getByRole("tab", { name: "Publicados 21" })).toHaveAttribute("aria-selected", "true")
   await expect(page.getByRole("tab", { name: "Borradores 2" })).toBeVisible()
@@ -73,7 +73,7 @@ test("three real tabs paginate filtered rows and remain usable on desktop and mo
   await expect(page).toHaveURL(/page=2/)
   await expect(page.locator("tbody tr")).toHaveCount(1)
   const params = new URL(page.url()).searchParams
-  expect(params.get("q")).toBe(prefix)
+  expect(params.get("destination")).toBe("Río Negro")
   expect(params.get("currency")).toBe("USD")
   expect(params.get("from")).toBe("2030-11-01")
   expect(params.get("page")).toBe("2")
@@ -82,10 +82,10 @@ test("three real tabs paginate filtered rows and remain usable on desktop and mo
   expect(new URL(page.url()).searchParams.has("page")).toBe(false)
   await expect(page.locator("tbody .agent-trip-state")).toHaveText(["Borrador", "Borrador"])
   await page.locator(".agent-trip-result-bar").getByRole("link", { name: "Limpiar filtros" }).click()
-  await expect(page).toHaveURL(url => url.searchParams.get("tab") === "drafts" && !url.searchParams.has("q"))
+  await expect(page).toHaveURL(url => url.searchParams.get("tab") === "drafts" && !url.searchParams.has("destination"))
   expect(new URL(page.url()).searchParams.get("tab")).toBe("drafts")
-  expect(new URL(page.url()).searchParams.has("q")).toBe(false)
-  await page.goto(`${base}/asesor/viajes?q=${encodeURIComponent(prefix)}`)
+  expect(new URL(page.url()).searchParams.has("destination")).toBe(false)
+  await page.goto(`${base}/asesor/viajes?destination=${encodeURIComponent("Río Negro")}`)
   const toggle = page.locator("tbody tr").last().getByRole("button", { name: /^Acciones de/ })
   await toggle.click()
   const menu = page.getByRole("menu").filter({ visible: true })
@@ -112,6 +112,52 @@ test("three real tabs paginate filtered rows and remain usable on desktop and mo
   await page.screenshot({ path: testInfo.outputPath("mis-viajes-listado.png"), fullPage: true })
 })
 
+test("destination autocomplete updates results without losing focus and companies start inside collapsed filters", async ({ page }, testInfo) => {
+  const create = await tripFactory(page)
+  await create("Escapada mediterránea", "published", false, "Córdoba")
+  await create("Córdoba en el título solamente", "published", false, "Mendoza")
+  await create("Revisión mediterránea", "draft", false, "Córdoba")
+  await page.goto(`${base}/asesor/viajes`)
+  const search = page.getByRole("combobox", { name: "Buscar por destino", exact: true })
+  const filters = page.locator(".agent-trip-extra-filters")
+  await expect(filters).not.toHaveAttribute("open")
+  await expect(page.getByLabel("Empresa", { exact: true })).not.toBeVisible()
+  await expect(page.getByRole("button", { name: "Buscar", exact: true })).toHaveCount(0)
+  await search.fill("cord")
+  await expect(page.getByRole("option", { name: "Córdoba", exact: true })).toBeVisible()
+  await expect(page).toHaveURL(/destination=cord/)
+  await expect(page.locator("tbody tr")).toHaveCount(1)
+  await expect(page.locator("tbody tr")).toContainText("Escapada mediterránea")
+  await expect(page.getByRole("tab", { name: "Publicados 1" })).toBeVisible()
+  await expect(page.getByRole("tab", { name: "Borradores 1" })).toBeVisible()
+  await expect(search).toBeFocused()
+  await search.press("ArrowDown")
+  await search.press("Enter")
+  await expect(search).toHaveValue("Córdoba")
+  await expect(search).toBeFocused()
+  await expect(page).toHaveURL(url => url.searchParams.get("destination") === "Córdoba")
+  await expect(search).toHaveAttribute("aria-expanded", "false")
+  await search.fill("sin resultados")
+  await expect(page.getByRole("heading", { name: "No encontramos viajes", exact: true })).toBeVisible()
+  await expect(search).toBeFocused()
+  await search.fill("")
+  await expect(page.locator("tbody tr")).toHaveCount(2)
+  await filters.locator("summary").first().click()
+  const company = page.getByLabel("Empresa", { exact: true })
+  await expect(company.locator('option[value=""]')).toHaveText("Todas las empresas")
+  await expect(company).toHaveCSS("appearance", "none")
+  await expect(company).toHaveCSS("padding-right", "36px")
+  await company.selectOption({ label: "Proveedor de la tabla" })
+  await page.getByRole("button", { name: "Aplicar filtros", exact: true }).click()
+  await expect(page).toHaveURL(/supplier_id=/)
+  await expect(filters).toHaveAttribute("open", "")
+  await page.screenshot({ path: testInfo.outputPath("mis-viajes-filtros.png"), fullPage: true })
+  await page.getByRole("tab", { name: "Borradores 1" }).click()
+  await expect(filters).not.toHaveAttribute("open")
+  await expect(company).toHaveValue(await company.locator('option:not([value=""])').first().getAttribute("value"))
+  await expect(page.locator("tbody tr")).toContainText("Revisión mediterránea")
+})
+
 test("context actions copy real links validate publication and move records between tabs", async ({ page }, testInfo) => {
   await page.addInitScript(() => {
     Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: async text => { window.copiedTripUrl = text } } })
@@ -120,7 +166,7 @@ test("context actions copy real links validate publication and move records betw
   const prefix = `Acciones ${testInfo.project.name} ${Date.now()}`
   await create(`${prefix} publicado`)
   await create(`${prefix} incompleto`, "draft", true)
-  await page.goto(`${base}/asesor/viajes?q=${encodeURIComponent(prefix)}`)
+  await page.goto(`${base}/asesor/viajes`)
   const row = page.locator("tbody tr").filter({ hasText: `${prefix} publicado` })
   await row.getByRole("button", { name: /^Acciones de/ }).click()
   const publicUrl = await page.getByRole("menuitem", { name: "Ver ficha pública", exact: true }).filter({ visible: true }).getAttribute("href")

@@ -77,9 +77,13 @@ class AgentContextsTest < ActionDispatch::IntegrationTest
     workspace.agent_subscription.update!(trial_starts_at: 20.days.ago, trial_ends_at: 1.day.ago)
     google_login(PlatformHosts.platform_host)
     assert_redirected_to agent_root_path
+    get root_path
+    assert_redirected_to agent_root_path
     get context_path
+    assert_redirected_to agent_root_path
+    follow_redirect!
     assert_response :success
-    assert_includes response.body, "Empresas que me dan acceso"
+    assert_select "h1", text: "Todo listo para tu próximo viaje"
     get platform_agent_workspaces_path
     assert_redirected_to root_path
     google_login(@companies.first.platform_domain.hostname)
@@ -88,5 +92,37 @@ class AgentContextsTest < ActionDispatch::IntegrationTest
     post context_path, params: { role: "admin" }
     assert_response :forbidden
     assert_not @memberships.first.role?("admin")
+  end
+
+  test "a personal workspace goes straight home from Google login and the platform root" do
+    workspace = agent_workspace(owner: @user, subdomain: nil)
+    assert_no_difference [ "AgentWorkspace.count", "AgentSubscription.count" ] do
+      google_login(PlatformHosts.platform_host)
+      assert_redirected_to agent_root_path
+      get root_path
+      assert_redirected_to agent_root_path
+      get context_path
+      assert_redirected_to agent_root_path
+    end
+    assert_equal workspace.id, @user.reload.agent_workspace.id
+    assert_equal 2, @user.memberships.active.count
+  end
+
+  test "users without a personal workspace keep company selection and operators keep their dashboard" do
+    google_login(PlatformHosts.platform_host)
+    get root_path
+    assert_redirected_to context_path
+    workspace = agent_workspace(owner: @user, subdomain: nil)
+    workspace.update!(status: "suspended")
+    get root_path
+    assert_redirected_to context_path
+    get context_path
+    assert_response :success
+    assert_includes response.body, "Tu espacio personal está suspendido"
+    operator = create_platform_operator
+    get "/test/sign-in", params: { email: operator.email }
+    assert_redirected_to platform_companies_path
+    get root_path
+    assert_redirected_to platform_companies_path
   end
 end

@@ -1,0 +1,23 @@
+<section id="sobre-mi" class="container profile-view" data-public-site-target="profile" <%= "hidden" if workspace.show_catalog? %>>
+  <% if workspace.show_catalog? %><%= link_to "#viajes", class: "back-link", data: { turbo: false } do %><%= app_icon("arrow") %>Volver a los viajes<% end %><% end %>
+  <div class="profile-hero">
+    <div>
+      <span class="eyebrow">Detrás de cada viaje, una persona</span>
+      <h2>Sobre mí</h2>
+      <h1 class="profile-name">Hola, soy<br><%= workspace.public_name %>.</h1>
+      <p class="profile-lead agent-about-text"><%= workspace.about_text.presence || "Escribime y te ayudo a encontrar tu próximo viaje." %></p>
+      <div class="profile-actions">
+        <%= link_to contact, class: "dark-button", target: "_blank", rel: "noopener" do %><%= app_icon("whatsapp") %>Conversemos sobre tu viaje<% end %>
+        <% if workspace.show_catalog? %><%= link_to "Explorar viajes", "#viajes", class: "outline-button", data: { turbo: false } %><% end %>
+      </div>
+    </div>
+    <div class="profile-art">
+      <div class="profile-circle"><% if workspace.about_photo.attached? %><%= image_tag agent_about_photo_public_url, alt: "Foto de #{workspace.public_name}", loading: "lazy" %><% else %><span aria-hidden="true"><%= workspace.public_name.split.filter_map(&:first).first(2).join.upcase %></span><% end %></div>
+      <span class="profile-caption">Tu próximo viaje empieza con una charla</span>
+    </div>
+  </div>
+  <div class="profile-lower">
+    <article class="profile-panel"><h2>Un viaje empieza con una conversación</h2><p>¿Tenés una fecha en mente, querés comparar destinos o necesitás una recomendación? Podés escribirme y lo vemos juntos.</p><%= link_to contact, target: "_blank", rel: "noopener" do %>Escribirme por WhatsApp <%= app_icon("arrow") %><% end %></article>
+    <% if workspace.show_catalog? %><article class="profile-panel"><h2>Descubrí tus próximas vacaciones</h2><p>Encontrá escapadas y viajes, revisá las próximas fechas y consultá directamente por la opción que más te interese.</p><%= link_to "#viajes", data: { turbo: false } do %>Ver catálogo de viajes <%= app_icon("arrow") %><% end %></article><% end %>
+  </div>
+</section>

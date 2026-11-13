@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_12_124000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_13_020000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -185,7 +185,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_124000) do
     t.index ["agent_workspace_id"], name: "index_agent_subscriptions_on_agent_workspace_id", unique: true
     t.check_constraint "current_period_starts_at IS NULL AND current_period_ends_at IS NULL OR current_period_starts_at IS NOT NULL AND current_period_ends_at > current_period_starts_at", name: "agent_subscription_period_dates"
     t.check_constraint "price_cents >= 0 AND currency::text = 'USD'::text", name: "agent_subscription_price"
-    t.check_constraint "status::text = ANY (ARRAY['trialing'::character varying::text, 'active'::character varying::text, 'inactive'::character varying::text])", name: "agent_subscription_status"
+    t.check_constraint "status::text = ANY (ARRAY['trialing'::character varying, 'active'::character varying, 'inactive'::character varying]::text[])", name: "agent_subscription_status"
     t.check_constraint "trial_ends_at > trial_starts_at", name: "agent_subscription_trial_dates"
   end
 
@@ -236,6 +236,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_124000) do
     t.datetime "updated_at", null: false
     t.text "description"
     t.integer "duration_nights"
+    t.jsonb "fares", default: [], null: false
     t.index ["agent_supplier_id"], name: "index_agent_trip_revisions_on_agent_supplier_id"
     t.index ["agent_trip_id"], name: "index_agent_trip_revisions_on_agent_trip_id"
     t.index ["agent_workspace_id", "currency", "price_unit", "price_cents"], name: "idx_agent_revision_price"

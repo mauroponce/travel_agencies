@@ -3,17 +3,15 @@
   <% if @source_import %><%= hidden_field_tag :source_import_id, @source_import.id %><p class="agent-wide">Se conservará el flyer de la importación.</p><% end %>
   <div class="agent-field"><%= f.label :agent_supplier_id, "Proveedor" %><%= f.select :agent_supplier_id, @suppliers.map { |s| [s.name + (s.active? ? "" : " (pausada)"),s.id] }, {include_blank: "Seleccionar proveedor"} %></div>
   <div class="agent-field"><%= f.label :new_supplier_name, "O crear un proveedor nuevo" %><%= f.text_field :new_supplier_name, value: params.dig(:agent_trip_revision, :new_supplier_name) %><small>Si completás este nombre, se crea y selecciona al guardar el viaje.</small></div>
-  <% {title: "Título del viaje", destination: "Destino", region: "Provincia o región", price_basis: "Base del precio (ej. base doble)", hotel: "Hotel", meal_plan: "Régimen de comidas", transport: "Transporte", departure_location: "Lugar de salida"}.each do |key,label| %>
+  <% {title: "Título del viaje", destination: "Destino", hotel: "Hotel", meal_plan: "Régimen de comidas", transport: "Transporte", departure_location: "Lugar de salida"}.each do |key,label| %>
     <div class="agent-field"><%= f.label key, label %><%= f.text_field key %></div>
   <% end %>
   <div class="agent-field"><%= f.label :departs_on, "Fecha de salida" %><%= argentine_date_field(f, :departs_on) %></div>
   <div class="agent-field"><%= f.label :returns_on, "Fecha de regreso" %><%= argentine_date_field(f, :returns_on) %></div>
   <div class="agent-field"><%= f.label :duration_days, "Duración en días" %><%= f.number_field :duration_days, min: 1 %></div>
   <div class="agent-field"><%= f.label :duration_nights, "Cantidad de noches" %><%= f.number_field :duration_nights, min: 0 %></div>
-  <div class="agent-field"><%= f.label :price, "Precio final del proveedor" %><%= f.text_field :price, value: params.dig(:agent_trip_revision, :price) || (@revision.price_cents && money_input_value(@revision.price_cents)), inputmode: "decimal" %></div>
-  <div class="agent-field"><%= f.label :currency, "Moneda" %><%= f.select :currency, AgentTripRevision::CURRENCIES, include_blank: "A confirmar" %></div>
-  <div class="agent-field"><%= f.label :price_unit, "Unidad del precio" %><%= f.select :price_unit, AgentTripRevision::PRICE_UNITS.map { |key,label| [label,key] }, include_blank: "A confirmar" %></div>
-  <% {description: "Descripción comercial", included_services: "Servicios incluidos", excluded_services: "Servicios excluidos", conditions: "Promociones, condiciones y aclaraciones públicas"}.each do |key,label| %>
+  <%= render "agent/trips/fares", revision: @revision %>
+  <% {included_services: "Servicios incluidos", excluded_services: "Servicios excluidos", conditions: "Promociones, condiciones y aclaraciones públicas"}.each do |key,label| %>
     <div class="agent-field agent-wide"><%= f.label key, label %><%= f.text_area key %></div>
   <% end %>
   <div class="agent-field agent-wide"><%= f.label :cover, "Flyer original (opcional, JPG/PNG/WebP/PDF hasta 10 MB)" %><%= f.file_field :cover, accept: "image/jpeg,image/png,image/webp,application/pdf" %><small>La imagen se comparte sin modificaciones. Para PDF se comparte la primera página y se conserva el documento original.</small></div>

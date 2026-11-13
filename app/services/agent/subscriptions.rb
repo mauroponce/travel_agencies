@@ -13,15 +13,6 @@ module Agent
       end
     end
 
-    def self.request_activation!(workspace:)
-      workspace.with_lock do
-        subscription = workspace.agent_subscription
-        return if subscription.activation_requested_at
-        subscription.update!(activation_requested_at: Time.current)
-        AuditRecorder.call(action: "agent_subscription.activation_requested", auditable: subscription, company: nil)
-      end
-    end
-
     def self.cancel!(workspace:)
       workspace.with_lock do
         subscription = workspace.agent_subscription

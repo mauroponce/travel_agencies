@@ -40,13 +40,13 @@ class AgentRateLimitTest < ActiveSupport::TestCase
   end
 
   test "private files and AI requests keep their limits under asesor" do
-    %w[/asesor/viajes/viaje/portada /asesor/viajes/viaje/original /asesor/importaciones/importacion/original /asesor/importaciones/importacion/vista-previa].each do |path|
+    %w[/asesor/viajes/viaje/portada /asesor/viajes/viaje/original /asesor/viajes/importaciones/importacion/original /asesor/viajes/importaciones/importacion/vista-previa].each do |path|
       Rack::Attack.reset!
       120.times { assert_equal 200, request_status(path), path }
       assert_equal 429, request_status(path), path
     end
 
-    %w[/asesor/importaciones /asesor/buscador].each do |path|
+    %w[/asesor/viajes/importaciones /asesor/buscador].each do |path|
       Rack::Attack.reset!
       40.times { assert_equal 200, request_status(path, method: "POST"), path }
       assert_equal 429, request_status(path, method: "POST"), path

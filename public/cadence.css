@@ -23,6 +23,20 @@
 .cadence-ui { margin: 0; min-height: 100svh; background: var(--cadence-bg); color: var(--cadence-ink); font-family: var(--cadence-font); font-size: 13px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
 .cadence-ui *, .cadence-ui *::before, .cadence-ui *::after { box-sizing: border-box; }
 .cadence-ui :focus-visible { outline: 2px solid var(--cadence-violet); outline-offset: 3px; }
+.cadence-ui select:not([multiple]):not([size]) {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%238a7b99' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--select-arrow-inset, 12px) center;
+  background-size: 12px;
+  padding-right: var(--select-right-padding, 36px);
+  cursor: pointer;
+}
+.cadence-ui .profile-switcher select { --select-arrow-inset: 5px; --select-right-padding: 22px; }
+@media (forced-colors: active) {
+  .cadence-ui select:not([multiple]):not([size]) { appearance: auto; background-image: none; }
+}
 .cadence-ui .font-black { font-weight: 700; }
 .cadence-brand { display: flex; align-items: center; gap: 9px; color: var(--cadence-ink); font-size: 19px; font-weight: 800; letter-spacing: -.055em; }
 /* Shared brand assets retain their original transparent canvas and proportions. */

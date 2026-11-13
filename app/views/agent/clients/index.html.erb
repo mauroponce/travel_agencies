@@ -1,4 +1,4 @@
-<div class="agent-heading"><div><span class="agent-eyebrow">AGENDA PRIVADA</span><h1>Mis clientes</h1><p>Registrá contactos manualmente. Solo vos podés verlos y consultar sus notas.</p></div><% if agent_access.commercial? %><%= link_to "Agregar cliente", new_agent_client_path, class: "btn btn-primary" %><% end %></div>
+<div class="agent-heading"><div><span class="agent-eyebrow">AGENDA PRIVADA</span><h1>Clientes</h1><p>Registrá contactos manualmente. Solo vos podés verlos y consultar sus notas.</p></div><% if agent_access.commercial? %><%= link_to "Agregar cliente", new_agent_client_path, class: "btn btn-primary" %><% end %></div>
 <section class="agent-panel">
   <%= form_with url: agent_clients_path, method: :get, class: "agent-form" do |f| %>
     <%= f.label :q, "Buscar clientes" %><%= f.search_field :q, value: params[:q] %>

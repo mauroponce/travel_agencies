@@ -104,13 +104,13 @@ class AgentPublicSearchTest < ActionDispatch::IntegrationTest
     host! PlatformHosts.platform_host
     get agent_site_path(agent_slug: workspace.slug), params: { destination: "Córdoba" }
     assert_response :success
-    assert_select "main > section:first-child.agent-public-search"
+    assert_select "#viajes > section:first-child.agent-public-search"
     assert_select ".destination-option[aria-selected=true] .destination-option-label", text: "Córdoba"
     assert_select ".destination-option", count: 3
     assert_select "input[role=combobox][aria-autocomplete=list][value='Córdoba']"
     assert_select "input[name=destination][type=hidden][value='Córdoba']"
     assert_select ".agent-public-search input[type=search], .agent-public-search input[type=submit]", count: 0
-    assert_select ".agent-catalog-filters input[type=search]", count: 1
+    assert_select "#public-extra-filters select[name=month]", count: 1
     assert_select ".agent-trip-card h2", text: "Córdoba en verano"
     assert_select ".agent-trip-card h2", text: "Mendoza especial", count: 0
     get "/test/sign-in", params: { email: workspace.owner.email }

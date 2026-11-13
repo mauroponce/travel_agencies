@@ -1,0 +1,11 @@
+<% if @pagination.total_pages > 1 %>
+<nav class="pagination" aria-label="Paginación de viajes">
+  <% if @pagination.previous %><%= link_to "‹", agent_public_catalog_path_with(@catalog.filters.merge("page" => @pagination.previous)), class: "page-btn", aria: { label: "Página anterior" }, rel: "prev" %><% else %><button type="button" class="page-btn" disabled aria-label="Página anterior">‹</button><% end %>
+  <% pages = ([1, @pagination.total_pages] + ((@pagination.number - 2)..(@pagination.number + 2)).to_a).select { |page| page.between?(1, @pagination.total_pages) }.uniq.sort %>
+  <% pages.each_with_index do |page, index| %>
+    <% if index.positive? && page > pages[index - 1] + 1 %><span aria-hidden="true">…</span><% end %>
+    <%= link_to page, agent_public_catalog_path_with(@catalog.filters.merge("page" => page)), class: "page-btn #{'active' if page == @pagination.number}", aria: { label: "Ir a la página #{page}", current: ("page" if page == @pagination.number) } %>
+  <% end %>
+  <% if @pagination.next %><%= link_to "›", agent_public_catalog_path_with(@catalog.filters.merge("page" => @pagination.next)), class: "page-btn", aria: { label: "Página siguiente" }, rel: "next" %><% else %><button type="button" class="page-btn" disabled aria-label="Página siguiente">›</button><% end %>
+</nav>
+<% else %><div class="pagination" aria-hidden="true"></div><% end %>

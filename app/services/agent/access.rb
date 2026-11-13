@@ -10,7 +10,7 @@ module Agent
     alias_method :public?, :commercial?
 
     def require_commercial!
-      raise Pundit::NotAuthorizedError, "Tu plan venció. Podés consultar y exportar tus datos o solicitar la reactivación en Mi plan." unless commercial?
+      raise Pundit::NotAuthorizedError, "Tu plan venció. Podés consultar y exportar tus datos. Coordiná la reactivación con la administración de Turistack." unless commercial?
     end
   end
 end

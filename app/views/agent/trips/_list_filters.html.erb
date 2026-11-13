@@ -1,22 +1,27 @@
-<%= form_with url: agent_trips_path, method: :get, class: "agent-trip-filters" do |f| %>
+<%= form_with url: agent_trips_path, method: :get, class: "agent-trip-filters", data: { controller: "trip-search", trip_search_url_value: agent_trips_path(format: :json), turbo_frame: "trip-list-results", turbo_action: "replace", action: "click@window->trip-search#dismiss focusout->trip-search#blur submit->trip-search#submitting turbo:before-cache@document->trip-search#close" } do |f| %>
   <%= f.hidden_field :tab, value: @list.tab %>
   <div class="agent-trip-filter-bar">
-    <label class="agent-trip-search"><%= app_icon("search") %><%= f.search_field :q, value: @list.filters["q"], placeholder: "Buscar por viaje, destino o proveedor…", aria: { label: "Buscar viajes" }, autocomplete: "off" %></label>
-    <%= f.select :supplier_id, @suppliers.map { |supplier| [supplier.name, supplier.id] }, { include_blank: "Todos los proveedores", selected: @list.filters["supplier_id"] }, aria: { label: "Filtrar por proveedor" } %>
-    <button class="btn" type="submit">Buscar</button>
-    <details class="agent-trip-extra-filters" <%= "open" if @list.filters.except("q", "supplier_id").any? %>>
+    <div class="agent-trip-destination">
+      <label class="agent-trip-search"><%= app_icon("search") %><%= f.search_field :destination, value: @list.filters["destination"], placeholder: "Buscar por destino…", role: "combobox", aria: { label: "Buscar por destino", autocomplete: "list", expanded: false, controls: "trip-destination-options" }, autocomplete: "off", spellcheck: false, data: { trip_search_target: "input", action: "input->trip-search#search compositionend->trip-search#search focus->trip-search#suggest keydown->trip-search#navigate" } %></label>
+      <div class="agent-trip-suggestions" data-trip-search-target="menu" hidden>
+        <div id="trip-destination-options" role="listbox" aria-label="Destinos sugeridos" data-trip-search-target="options"></div>
+        <p class="agent-trip-suggestion-status" role="status" aria-live="polite" data-trip-search-target="status"></p>
+      </div>
+    </div>
+    <details class="agent-trip-extra-filters">
       <summary class="btn"><%= app_icon("layers") %>Filtros</summary>
       <div class="agent-trip-filter-fields">
+        <div class="agent-trip-filter-field"><%= f.label :supplier_id, "Empresa" %><%= f.select :supplier_id, @suppliers.map { |supplier| [supplier.name, supplier.id] }, { include_blank: "Todas las empresas", selected: @list.filters["supplier_id"] } %></div>
         <div class="agent-trip-filter-field"><%= f.label :from, "Salida desde" %><%= argentine_date_field(f, :from, value: @list.filters["from"], aria: { label: "Salida desde" }) %></div>
         <div class="agent-trip-filter-field"><%= f.label :to, "Salida hasta" %><%= argentine_date_field(f, :to, value: @list.filters["to"], aria: { label: "Salida hasta" }) %></div>
-        <div class="agent-trip-filter-field"><%= f.label :currency, "Moneda" %><%= f.select :currency, AgentTripRevision::CURRENCIES, { include_blank: "Todas las monedas", selected: @list.filters["currency"] } %></div>
+        <div class="agent-trip-filter-field"><%= f.label :currency, "Moneda" %><%= f.select :currency, AgentTripRevision::CURRENCY_LABELS.map { |code, label| [label, code] }, { include_blank: "Todas las monedas", selected: @list.filters["currency"] } %></div>
         <button type="submit" class="btn">Aplicar filtros</button>
       </div>
       <%# Keep interpreted search links editable without reintroducing a status or sort selector. %>
       <details class="agent-trip-advanced-filters">
         <summary>Otros criterios de búsqueda</summary>
         <div class="agent-trip-filter-fields">
-          <% %w[destination region transport meal_plan departure_location].each do |field| %>
+          <% %w[transport meal_plan departure_location].each do |field| %>
             <div class="agent-trip-filter-field"><%= f.label field, agent_filter_label(field) %><%= f.text_field field, value: @list.filters[field] %></div>
           <% end %>
           <div class="agent-trip-filter-field"><%= f.label :price_unit, "Unidad del precio" %><%= f.select :price_unit, AgentTripRevision::PRICE_UNITS.map { |key, label| [label, key] }, { include_blank: "Todas las unidades", selected: @list.filters["price_unit"] } %></div>

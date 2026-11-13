@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es-AR"><head><title><%= content_for?(:title) ? yield(:title) : "Turistack Pro#{" · #{current_agent_workspace.business_name}" if current_agent_workspace}" %></title><%= yield :head %><meta name="viewport" content="width=device-width,initial-scale=1"><%= csrf_meta_tags %><%= csp_meta_tag %><%= stylesheet_link_tag "tailwind", "agent", "data-turbo-track": "reload" %><%= yield :stylesheets %><%= javascript_importmap_tags %><link rel="icon" href="/favicon.png" type="image/png" sizes="512x512"><link rel="apple-touch-icon" href="/icon.png"><%= render "shared/design_head" %><% if current_agent_workspace && !@public_view %><link rel="manifest" href="/manifest.json"><% end %></head>
+<html lang="es-AR"><head><title><%= content_for?(:title) ? yield(:title) : "Turistack Pro#{" · #{current_agent_workspace.business_name}" if current_agent_workspace}" %></title><%= yield :head %><meta name="viewport" content="width=device-width,initial-scale=1"><%= csrf_meta_tags %><%= csp_meta_tag %><%= stylesheet_link_tag "tailwind", "agent", "agent_fares", "data-turbo-track": "reload" %><%= yield :stylesheets %><%= javascript_importmap_tags %><link rel="icon" href="/favicon.png" type="image/png" sizes="512x512"><link rel="apple-touch-icon" href="/icon.png"><%= render "shared/design_head" %><% if current_agent_workspace && !@public_view %><link rel="manifest" href="/manifest.json"><% end %></head>
   <body class="cadence-ui agent-body" <%= 'data-controller=pwa' if current_agent_workspace && !@public_view %>>
 <%= render "shared/icon_symbols" %>
 <% if current_agent_workspace && current_user && current_user.id == current_agent_workspace.owner_id && !@public_view %>
@@ -8,12 +8,11 @@
       <div class="sidebar-logo"><%= link_to agent_root_path, class: "sidebar-brand" do %><%= image_tag "/icon.png", alt: "Turistack", width: 512, height: 512, class: "turistack-symbol" %><span><%= image_tag "/brand/logo_turistack.png", alt: "Turistack", width: 2172, height: 724, class: "turistack-logo" %><small>ASESOR</small></span><% end %><button class="sidebar-close" type="button" data-action="app-shell#close" aria-label="Cerrar menú"><%= app_icon("close") %></button><button type="button" class="agent-collapse" data-action="agent-navigation#toggle" aria-label="Contraer menú lateral" aria-expanded="true" aria-controls="main-sidebar" data-agent-navigation-target="toggle">‹</button></div>
       <section class="sidebar-group">
         <h2 class="sidebar-label">TU ESPACIO COMERCIAL</h2>
-        <nav class="sidebar-nav"><% [["Inicio", agent_root_path, "grid"], ["Viajes", agent_trips_path, "bus"], ["Importar", agent_imports_path, "file"], ["Mis proveedores", agent_suppliers_path, "users"], ["Mis clientes", agent_clients_path, "users"], ["Mi web", agent_website_path, "layers"], ["Mi plan", agent_plan_path, "credit-card"]].each do |label, path, icon| %><%= link_to path, class: "nav-link #{'nav-link-active' if current_page?(path)}" do %><%= app_icon(icon) %><span><%= label %></span><% end %><% end %></nav></section>
+        <nav class="sidebar-nav"><% [["Inicio", agent_root_path, "grid"], ["Viajes", agent_trips_path, "bus"], ["Empresas", agent_suppliers_path, "users"], ["Clientes", agent_clients_path, "users"], ["Mi web", agent_website_path, "layers"]].each do |label, path, icon| %><%= link_to path, class: "nav-link #{'nav-link-active' if current_page?(path)}" do %><%= app_icon(icon) %><span><%= label %></span><% end %><% end %></nav></section>
     </aside>
     <button class="sidebar-overlay" type="button" data-app-shell-target="overlay" data-action="app-shell#close" aria-label="Cerrar menú" tabindex="-1"></button>
     <div class="main-column">
       <header class="topbar"><button class="mobile-menu-button" type="button" data-action="app-shell#open" data-app-shell-target="toggle" aria-controls="main-sidebar" aria-expanded="false" aria-label="Abrir menú"><%= app_icon("menu") %></button>
-        <div class="topbar-brand"><%= image_tag "/brand/logo_turistack.png", alt: "Turistack", width: 2172, height: 724, class: "turistack-logo" %><span>Tu catálogo, tus proveedores, tu identidad</span></div>
         <div class="topbar-actions"><%= link_to "Ver mi web ↗", agent_catalog_public_url, class: "agent-link", target: "_blank", rel: "noopener" %>
           <div class="agent-account" data-controller="trip-menu" data-action="turbo:before-cache@document->trip-menu#dismiss">
             <button type="button" class="agent-account-trigger" aria-label="Mi cuenta: <%= current_user.name %>" aria-haspopup="menu" aria-expanded="false" aria-controls="agent-account-menu" data-trip-menu-target="trigger" data-action="click->trip-menu#toggle keydown->trip-menu#triggerKey">
@@ -25,9 +24,9 @@
           </div>
         </div>
       </header>
-      <main class="content"><% unless agent_access.commercial? %><p class="agent-alert" role="status">Tu plan venció. Conservás la lectura y exportación privada. <%= link_to "Solicitar reactivación", agent_plan_path %></p><% end %><%= yield %></main></div>
+      <main class="content"><% unless agent_access.commercial? %><p class="agent-alert" role="status">Tu plan venció. Conservás la lectura y exportación privada. Coordiná la reactivación con la administración de Turistack.</p><% end %><%= yield %></main></div>
   </div>
-<% else %><main class="agent-standalone"><%= yield %></main><% end %>
+<% else %><% if content_for?(:public_site) %><%= yield %><% else %><main class="agent-standalone"><%= yield %></main><% end %><% end %>
 <% flash.each do |type, message| %>
   <div class="flash" role="status" data-controller="dismiss"><%= message %></div>
 <% end %>

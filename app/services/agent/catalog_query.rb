@@ -1,6 +1,6 @@
 module Agent
   class CatalogQuery
-    FILTERS = %w[q supplier_id status destination region from to min_price max_price currency price_unit meal_plan transport departure_location min_days max_days sort].freeze
+    FILTERS = %w[q supplier_id status destination from to min_price max_price currency price_unit meal_plan transport departure_location min_days max_days sort].freeze
     def self.call(workspace:, filters: {}, public_view: false, search: false)
       return workspace.agent_trips.none if public_view && !Agent::Access.new(workspace).public?
       filters = filters.to_h.stringify_keys.slice(*FILTERS)
@@ -17,7 +17,7 @@ module Agent
         term = "%#{AgentTrip.sanitize_sql_like(filters["q"].to_s.first(200))}%"
         scope = scope.where("unaccent(#{table}.title) ILIKE unaccent(:q) OR unaccent(#{table}.destination) ILIKE unaccent(:q)", q: term)
       end
-      %w[destination region meal_plan transport departure_location].each do |field|
+      %w[destination meal_plan transport departure_location].each do |field|
         next if filters[field].blank?
         scope = scope.where("unaccent(#{table}.#{field}) ILIKE unaccent(?)", "%#{AgentTrip.sanitize_sql_like(filters[field].to_s.first(200))}%")
       end

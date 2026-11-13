@@ -1,27 +1,22 @@
 <% content_for :title, "Mis viajes · Turistack" %>
-<% content_for :stylesheets do %><%= stylesheet_link_tag "agent_trips", "data-turbo-track": "reload" %><% end %>
-<div class="agent-trips-page" data-controller="trip-list" data-trip-list-focus-value="<%= flash[:notice].present? || flash[:alert].present? %>">
+<% content_for :stylesheets do %><%= stylesheet_link_tag "agent_trips", "agent_import_wizard", "data-turbo-track": "reload" %><% end %>
+<div class="agent-trips-page" data-controller="trip-list import-wizard" data-import-wizard-url-value="<%= agent_trip_imports_path(format: :json) %>" data-import-wizard-resume-value="<%= params[:import_id] %>" data-import-wizard-auto-open-value="<%= params[:import] == "true" %>" data-trip-list-focus-value="<%= flash[:notice].present? || flash[:alert].present? %>">
   <nav class="agent-trip-breadcrumb" aria-label="Ruta de navegación"><%= link_to "Mi espacio", agent_root_path %><%= app_icon("chevron") %><span>Viajes</span></nav>
   <div class="agent-heading">
     <div><span class="agent-eyebrow">CATÁLOGO CENTRALIZADO</span><h1 tabindex="-1" data-trip-list-target="heading">Mis viajes</h1><p>Las propuestas de todos tus proveedores, en un mismo lugar.</p></div>
     <% if @can_manage %>
       <div class="agent-actions">
-        <%= link_to agent_imports_path, class: "btn" do %><%= app_icon("spark") %>Importar con IA<% end %>
+        <%= link_to agent_trips_path(import: true), class: "btn", data: { action: "import-wizard#open" }, aria: { haspopup: "dialog" } do %><%= app_icon("spark") %>Importar con IA<% end %>
         <%= link_to new_agent_trip_path, class: "btn btn-primary" do %><%= app_icon("plus") %>Nuevo viaje<% end %>
       </div>
     <% end %>
   </div>
   <section class="agent-trip-catalog" aria-label="Administración de viajes">
-    <nav class="agent-trip-tabs" role="tablist" aria-label="Estados de los viajes" data-action="keydown->trip-list#navigateTabs">
-      <% Agent::TripListQuery::TABS.each do |tab, config| %>
-        <%= link_to agent_trips_path(@list_params.merge("tab" => tab)), id: "trip-tab-#{tab}", role: "tab", class: "agent-trip-tab",
-          tabindex: @list.tab == tab ? 0 : -1, aria: { selected: @list.tab == tab, controls: "trip-list-panel" }, data: { tab: tab } do %>
-          <%= config.fetch(:label) %><span class="agent-trip-tab-count"><%= @tab_counts.fetch(tab) %></span>
-        <% end %>
-      <% end %>
-    </nav>
+    <%= render "list_tabs" %>
     <div id="trip-list-panel" role="tabpanel" aria-labelledby="trip-tab-<%= @list.tab %>">
       <%= render "list_filters" %>
+      <%= turbo_frame_tag "trip-list-results", target: "_top" do %>
+        <% if turbo_frame_request? %><%= turbo_stream.replace "trip-list-tabs", partial: "agent/trips/list_tabs" %><% end %>
       <div class="agent-trip-result-bar">
         <div><span><strong><%= @pagination.total_count %></strong> viajes en esta pestaña</span>
           <% if @list.filters.any? %><%= link_to "Limpiar filtros", agent_trips_path(tab: @list.tab), class: "agent-trip-clear" %><% end %>
@@ -51,10 +46,12 @@
           <% end %>
         </div>
       <% end %>
+        <%= render "list_pagination", pagination: @pagination %>
+      <% end %>
     </div>
-    <%= render "list_pagination", pagination: @pagination %>
   </section>
   <div class="agent-trip-footnote"><span><%= app_icon("clock") %>Los cambios guardados se ven en tu web cuando los publicás.</span><span>Ordenado por fecha de carga ↓</span></div>
   <p class="agent-trip-feedback" role="status" aria-live="polite" data-trip-list-target="status"></p>
   <textarea class="agent-trip-copy-manual" hidden readonly aria-label="Texto para copiar manualmente" data-trip-list-target="manual"></textarea>
+  <% if @can_manage %><%= render "agent/trips/import_wizard" %><% end %>
 </div>

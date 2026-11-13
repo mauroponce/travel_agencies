@@ -69,12 +69,8 @@ class AuthenticationController < ApplicationController
       redirect_to agent_root_path, notice: "Bienvenido."
     elsif code.purpose == "agent_onboarding"
       redirect_to agent_onboarding_path
-    elsif !authenticated_user.platform_operator? && authenticated_user.agent_workspace&.active?
-      redirect_to agent_root_path, notice: "Bienvenido."
-    elsif authenticated_user.platform_operator?
-      redirect_to platform_companies_path, notice: "Bienvenido."
     else
-      redirect_to context_path, notice: "Bienvenido."
+      redirect_to signed_in_platform_home_path(authenticated_user), notice: "Bienvenido."
     end
   end
 

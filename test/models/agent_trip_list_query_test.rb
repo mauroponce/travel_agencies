@@ -42,14 +42,29 @@ class AgentTripListQueryTest < ActiveSupport::TestCase
     end
   end
 
-  test "title destination and supplier search ignores case and accents and escapes wildcards" do
+  test "destination search ignores case and accents escapes wildcards and excludes titles and suppliers" do
     trip = agent_trip(workspace: @workspace, supplier: @supplier, title: "Vacaciones en el sur", destination: "Río Negro")
-    %w[VACACIONES rio CONDOR].each do |q|
-      assert_equal [ trip.id ], Agent::TripListQuery.new(workspace: @workspace, tab: "drafts", filters: { q: }).trips.pluck(:id)
+    %w[RIO río Negro].each do |destination|
+      assert_equal [ trip.id ], Agent::TripListQuery.new(workspace: @workspace, tab: "drafts", filters: { destination: }).trips.pluck(:id)
     end
-    [ "%", "_", "' OR 1=1 --" ].each do |q|
-      assert_empty Agent::TripListQuery.new(workspace: @workspace, tab: "drafts", filters: { q: }).trips
+    [ "VACACIONES", "CONDOR", "%", "_", "' OR 1=1 --" ].each do |destination|
+      assert_empty Agent::TripListQuery.new(workspace: @workspace, tab: "drafts", filters: { destination: }).trips
     end
+    legacy = Agent::TripListQuery.new(workspace: @workspace, tab: "drafts", filters: { q: "rio" })
+    assert_equal({ "destination" => "rio" }, legacy.filters)
+    assert_equal [ trip.id ], legacy.trips.pluck(:id)
+  end
+
+  test "destination suggestions are distinct limited and respect tabs filters and workspace" do
+    12.times { |index| agent_trip(workspace: @workspace, supplier: @supplier, destination: "Destino #{index.to_s.rjust(2, '0')}").publish! }
+    agent_trip(workspace: @workspace, supplier: @supplier, destination: "Destino 00").publish!
+    agent_trip(workspace: @workspace, supplier: @supplier, destination: "Borrador")
+    agent_trip(workspace: agent_workspace, destination: "Ajeno").publish!
+    query = Agent::TripListQuery.new(workspace: @workspace)
+    assert_equal (0...10).map { |index| "Destino #{index.to_s.rjust(2, '0')}" }, query.destinations
+    assert_equal [ "Destino 11" ], Agent::TripListQuery.new(workspace: @workspace, filters: { destination: "11" }).destinations
+    assert_equal [ "Borrador" ], Agent::TripListQuery.new(workspace: @workspace, tab: "drafts").destinations
+    assert_empty Agent::TripListQuery.new(workspace: @workspace, filters: { currency: "USD" }).destinations
   end
 
   test "all counters share filters and workspace isolation before pagination" do

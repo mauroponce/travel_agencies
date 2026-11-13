@@ -145,7 +145,7 @@ class AgentWorkspaceTest < ActionDispatch::IntegrationTest
     second = agent_trip(workspace: other)
     import = owner.agent_imports.create!(idempotency_key: SecureRandom.uuid, source: png_upload)
     login_agent(other)
-    [ agent_trip_path(trip), edit_agent_trip_path(trip), source_agent_import_path(import), agent_import_path(import), compare_agent_trips_path(ids: [ trip.id, second.id ]) ].each do |path|
+    [ agent_trip_path(trip), edit_agent_trip_path(trip), source_agent_trip_import_path(import), agent_trip_import_path(import), compare_agent_trips_path(ids: [ trip.id, second.id ]) ].each do |path|
       get path
       assert_response :not_found
     end

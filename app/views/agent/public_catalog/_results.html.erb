@@ -1,0 +1,15 @@
+<% active = @catalog.filters.except("sort", "status") %>
+<% if active.any? %><nav class="active-chips" aria-label="Filtros activos"><% active.each do |key, value| %><%= link_to agent_public_catalog_path_with(@catalog.filters.except(key).except("page")), class: "chip", aria: { label: "Quitar filtro #{agent_public_filter_label(key, value)}" } do %><%= agent_public_filter_label(key, value) %><%= app_icon("close") %><% end %><% end %></nav><% end %>
+<section aria-labelledby="agent-catalog-title">
+  <div class="catalog-top">
+    <div><div class="catalog-heading"><h2 id="agent-catalog-title">Próximos viajes</h2><span class="count"><%= @pagination.total_count %> <%= @pagination.total_count == 1 ? "viaje" : "viajes" %></span></div><p class="catalog-help">Explorá las próximas salidas y consultame por la que más te guste.</p></div>
+    <div class="sort-wrap"><%= form_with url: agent_public_catalog_filter_url, method: :get do |f| %>
+      <% @catalog.filters.except("sort").each do |key, value| %><%= f.hidden_field key, value: value %><% end %>
+      <%= f.label :sort, "Ordenar por" %><%= f.select :sort, [["Próximas salidas", "date"], ["Menor precio", "price_asc"], ["Destino (A–Z)", "destination_asc"]], { selected: @catalog.filters["sort"] || "date" }, data: { action: "change->public-site#submitForm" } %>
+    <% end %></div>
+  </div>
+  <% if @catalog.price_sort_warning? %><p class="price-warning" role="status">Para ordenar por precio, elegí una misma moneda y unidad en Más filtros. Mientras tanto, los viajes están ordenados por próxima salida.</p><% end %>
+  <% if @trips.any? %><div class="grid" aria-live="polite"><%= render partial: "agent/public_catalog/public_card", collection: @trips, as: :trip %></div>
+  <% else %><div class="no-trips"><h3>No encontramos viajes con esos filtros</h3><p>Probá con otro destino o cambiá los filtros.</p><%= link_to "Ver todos los viajes", agent_public_catalog_filter_url, class: "dark-button" %></div><% end %>
+  <%= render "agent/public_catalog/public_pagination" %>
+</section>

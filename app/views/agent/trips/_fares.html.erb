@@ -1,0 +1,43 @@
+<% readonly = local_assigns.fetch(:readonly, false) %>
+<% fares = readonly ? revision.fares : agent_fares_for_form(revision) %>
+<% if fares.present? %>
+  <section class="agent-fares agent-wide" data-controller="fare-tabs" aria-label="Tarifas y bases de ocupación">
+    <h3>Tarifas y bases de ocupación</h3>
+    <% if fares.many? %>
+      <div class="agent-fare-tabs" role="tablist" aria-label="Tipos de tarifa" data-action="keydown->fare-tabs#key">
+        <% fares.each_with_index do |fare, index| %>
+          <button type="button" role="tab" id="fare-tab-<%= index %>" aria-controls="fare-panel-<%= index %>" aria-selected="<%= index.zero? %>" tabindex="<%= index.zero? ? 0 : -1 %>" data-fare-tabs-target="tab" data-index="<%= index %>" data-action="fare-tabs#choose"><%= [fare["label"], fare["hotel"]].filter_map(&:presence).join(" · ") %></button>
+        <% end %>
+      </div>
+    <% end %>
+    <% fares.each_with_index do |fare, index| %>
+      <div class="agent-fare-panel" id="fare-panel-<%= index %>" role="<%= fares.many? ? 'tabpanel' : 'group' %>" <%= "aria-labelledby=fare-tab-#{index}" if fares.many? %> aria-label="<%= fare['label'] %>" <%= 'hidden' unless index.zero? %> data-fare-tabs-target="panel">
+        <% if readonly %>
+          <dl class="agent-details">
+            <dt>Precio</dt><dd><%= agent_fare_amount(fare) %></dd>
+            <dt>Moneda</dt><dd><%= AgentTripRevision::CURRENCY_LABELS[fare["currency"]] %></dd>
+            <dt>Base del precio</dt><dd><%= fare["price_basis"] %></dd>
+            <% if fare["list_price_cents"] %><dt>Precio de lista</dt><dd><%= agent_fare_amount(fare, "list_price_cents") %></dd><% end %>
+            <% if fare["hotel"].present? %><dt>Hotel</dt><dd><%= fare["hotel"] %></dd><% end %>
+            <% if fare["conditions"].present? %><dt>Condiciones</dt><dd><%= fare["conditions"] %></dd><% end %>
+          </dl>
+        <% else %>
+          <div class="agent-form-grid">
+            <% {label: "Nombre de la tarifa", price: "Precio final del proveedor", currency: "Moneda", price_basis: "Base del precio (ej. base doble)", list_price: "Precio de lista (opcional)", hotel: "Hotel de esta tarifa (opcional)"}.each do |field, label| %>
+              <% name = "agent_trip_revision[fares][][#{field}]"; id = "fare_#{index}_#{field}" %>
+              <% name = "agent_trip_revision[price]" if fares.one? && field == :price %>
+              <div class="agent-field">
+                <%= label_tag id, label %>
+                <% if field == :currency %>
+                  <%= select_tag name, options_for_select(AgentTripRevision::CURRENCY_LABELS.map { |code, title| [title, code] }, fare["currency"].presence || "ARS"), id: %>
+                <% else %>
+                  <%= text_field_tag name, fare[field.to_s], id:, inputmode: (%i[price list_price].include?(field) ? "decimal" : nil) %>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+  </section>
+<% end %>

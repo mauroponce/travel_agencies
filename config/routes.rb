@@ -1,7 +1,7 @@
 Rails.application.routes.draw do
   resources_path_names(
     new: "nuevo", edit: "editar", suggestion: "sugerencia",
-    request_activation: "solicitar-activacion", cancel: "cancelar",
+    cancel: "cancelar",
     export: "exportar", archive: "archivar", compare: "comparar",
     publish: "publicar", unpublish: "despublicar", cover: "portada", source: "original",
     preview: "vista-previa", about_photo: "foto-sobre-mi", operation: "operacion",
@@ -22,10 +22,6 @@ Rails.application.routes.draw do
   get "/asesor/imagenes/:slug/:revision_id", to: "agent/public_catalog#image", as: :agent_public_image
   namespace :agent, path: "asesor" do
     root "dashboard#show"
-    resource :plan, path: "mi-plan", only: :show do
-      post :request_activation
-      post :cancel
-    end
     resource :export, path: "exportar", only: :show
     resources :clients, path: "clientes", except: :destroy do
       collection { get :export }
@@ -33,6 +29,16 @@ Rails.application.routes.draw do
       resources :notes, path: "notas", only: :create, controller: "client_notes"
     end
     resources :suppliers, path: "empresas"
+    resources :trip_imports, path: "viajes/importaciones", defaults: { format: :json }, only: %i[index create show] do
+      member do
+        post "reintentar", action: :retry_processing, as: :retry
+        get :source
+        get :preview
+        patch :review
+        post :confirm
+        post :supplier
+      end
+    end
     resources :trips, path: "viajes", except: :destroy do
       collection { get :compare }
       member do
@@ -42,14 +48,6 @@ Rails.application.routes.draw do
         get :cover
         get :source
       end
-    end
-    resources :imports, path: "importaciones", only: %i[index create show] do
-      member do
-        post "reintentar", action: :retry_processing, as: :retry
-        get :source
-        get :preview
-      end
-      resources :items, path: "elementos", controller: "import_items", only: %i[edit update]
     end
     resources :searches, path: "buscador", only: %i[index create show]
     resource :website, path: "mi-web", controller: "website", only: %i[show update] do

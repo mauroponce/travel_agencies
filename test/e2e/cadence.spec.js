@@ -58,7 +58,7 @@ test("administrative screens and forms keep the same Cadence foundation", async 
 
 test("agent workspace screens keep the same Cadence foundation", async ({ page }, testInfo) => {
   await page.goto(`${agent}/test/sign-in?email=agente%40turistack.local`)
-  for (const path of ["/asesor", "/asesor/empresas", "/asesor/empresas/nuevo", "/asesor/viajes", "/asesor/viajes/nuevo", "/asesor/importaciones", "/asesor/mi-web", "/asesor/buscador"]) {
+  for (const path of ["/asesor", "/asesor/empresas", "/asesor/empresas/nuevo", "/asesor/viajes", "/asesor/viajes/nuevo", "/asesor/mi-web", "/asesor/buscador"]) {
     const response = await page.goto(`${agent}${path}`)
     expect(response.status(), path).toBe(200)
     await expectCadence(page)

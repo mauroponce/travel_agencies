@@ -4,8 +4,7 @@ class LandingController < ApplicationController
 
   def show
     if Current.host_scope == "platform"
-      return redirect_to platform_companies_path if current_user&.platform_operator?
-      return redirect_to context_path if current_user
+      return redirect_to signed_in_platform_home_path(current_user) if current_user
       render :pro
     elsif current_user&.memberships&.active&.exists?(company: current_company)
       redirect_to dashboard_path

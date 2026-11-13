@@ -7,11 +7,9 @@ module Agent
     def index
       return unless current_agent_workspace.show_catalog?
       @owner_view = current_user.present? && current_user.id == current_agent_workspace.owner_id
-      scope = CatalogQuery.call(workspace: current_agent_workspace, public_view: !@owner_view)
-      @destinations = scope.except(:includes, :order).distinct.order("agent_trip_revisions.destination").pluck("agent_trip_revisions.destination").reject(&:blank?)
-      scope = CatalogQuery.call(workspace: current_agent_workspace, filters: params.permit(*CatalogQuery::FILTERS).except(:destination), public_view: !@owner_view)
-      scope = scope.where(agent_trip_revisions: { destination: params[:destination].to_s }) if params[:destination].present?
-      @trips, @pagination = paginate(scope)
+      @catalog = PublicCatalogQuery.new(workspace: current_agent_workspace, filters: params.permit(*PublicCatalogQuery::FILTERS), owner_view: @owner_view)
+      @destinations = @catalog.destinations
+      @trips, @pagination = paginate(@catalog.trips, per_page: 6)
     end
     def search
       raise ActiveRecord::RecordNotFound unless current_agent_workspace.show_catalog?

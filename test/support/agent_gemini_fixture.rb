@@ -11,7 +11,14 @@ module AgentGeminiFixture
   def self.response(request)
     payload = JSON.parse(request.body)
     imported = payload["contents"].first["parts"].any? { |part| part.key?("inlineData") }
-    data = if imported
+    attachment = payload["contents"].first["parts"].find { |part| part.key?("inlineData") }
+    digest = Digest::SHA256.hexdigest(Base64.decode64(attachment.dig("inlineData", "data"))) if attachment
+    require Rails.root.join("test/support/agent_flyer_examples")
+    data = if imported && digest == Digest::SHA256.file(Rails.root.join("test/fixtures/files/agent_sansot.jpeg")).hexdigest
+      { trips: AgentFlyerExamples.multiple_bases }
+    elsif imported && digest == Digest::SHA256.file(Rails.root.join("test/fixtures/files/agent_multi_program.jpg")).hexdigest
+      { trips: AgentFlyerExamples.multiple_programs }
+    elsif imported
       departures = [ 3, 10, 17, 24 ].map do |day|
         date = 2.months.from_now.to_date.change(day:)
         { "label" => date.strftime("%d/%m"), "departs_on" => nil, "returns_on" => nil }

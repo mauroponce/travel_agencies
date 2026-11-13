@@ -28,6 +28,13 @@ class ApplicationController < ActionController::Base
   def current_role = Current.role
   def current_agent_workspace = Current.agent_workspace
 
+  def signed_in_platform_home_path(user)
+    return platform_companies_path if user.platform_operator?
+    return agent_root_path if AgentWorkspace.enabled? && user.agent_workspace&.active?
+
+    context_path
+  end
+
   def resolve_request_host
     Current.request_id = request.request_id
     Current.ip_address = request.remote_ip

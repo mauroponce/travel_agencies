@@ -1,0 +1,8 @@
+<nav id="trip-list-tabs" class="agent-trip-tabs" role="tablist" aria-label="Estados de los viajes" data-action="keydown->trip-list#navigateTabs">
+  <% Agent::TripListQuery::TABS.each do |tab, config| %>
+    <%= link_to agent_trips_path(@list_params.merge("tab" => tab)), id: "trip-tab-#{tab}", role: "tab", class: "agent-trip-tab",
+      tabindex: @list.tab == tab ? 0 : -1, aria: { selected: @list.tab == tab, controls: "trip-list-panel" }, data: { tab: tab } do %>
+      <%= config.fetch(:label) %><span class="agent-trip-tab-count"><%= @tab_counts.fetch(tab) %></span>
+    <% end %>
+  <% end %>
+</nav>

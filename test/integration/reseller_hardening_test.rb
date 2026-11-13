@@ -53,22 +53,24 @@ class ResellerHardeningTest < ActionDispatch::IntegrationTest
     assert_equal "Otra ventana", trip.reload.current_revision.title
   end
 
-  test "import review survives invalid price and duplicate supplier then allows correction" do
-    task = @workspace.agent_imports.create!(idempotency_key: SecureRandom.uuid, source: png_upload)
-    item = task.items.create!(agent_workspace: @workspace, position: 0, extracted: gemini_trip)
+  test "wizard review survives invalid price and reuses a supplier before correction" do
+    task = @workspace.agent_imports.create!(idempotency_key: SecureRandom.uuid, source: png_upload, status: "completed")
+    item = task.items.create!(agent_workspace: @workspace, position: 0, extracted: gemini_trip(evidence: {}))
     supplier = @workspace.agent_suppliers.create!(name: "Operador")
-    raw = { title: "Mi corrección IA", destination: "Salta", price: "no sé", agent_supplier_id: supplier.id }
-    patch agent_import_item_path(task, item), params: { commit_action: "publish", agent_trip_revision: raw }
+    row = { id: item.id, selected: true, values: { title: "Mi corrección IA", destination: "Salta", price: "no sé", agent_supplier_id: supplier.id } }
+    post confirm_agent_trip_import_path(task), params: { items: [ row ] }, as: :json
     assert_response :unprocessable_entity
-    assert_select "input[value='no sé']"
-    assert_select "input[value='Mi corrección IA']"
     assert_equal "no sé", item.reload.review_data["price"]
+    assert_equal "Mi corrección IA", item.review_data["title"]
     assert task.source.attached?
-    patch agent_import_item_path(task, item), params: { commit_action: "create_supplier", new_supplier_name: "OPERADOR", agent_trip_revision: raw.merge(price: "450000") }
-    assert_response :unprocessable_entity
-    assert_select "input[value='Mi corrección IA']"
-    patch agent_import_item_path(task, item), params: { commit_action: "draft", agent_trip_revision: raw.merge(price: "450000") }
-    assert_response :redirect
+    assert_no_difference "AgentSupplier.count" do
+      post supplier_agent_trip_import_path(task), params: { name: "OPERADOR" }, as: :json
+      assert_response :success
+      assert_equal supplier.id, response.parsed_body["supplier"]["id"]
+    end
+    row[:values][:price] = "450000"
+    post confirm_agent_trip_import_path(task), params: { items: [ row ] }, as: :json
+    assert_response :success
     assert_equal task.source.blob_id, item.reload.agent_trip.current_revision.cover.blob_id
   end
 
@@ -77,10 +79,11 @@ class ResellerHardeningTest < ActionDispatch::IntegrationTest
     previous_search = ENV["AGENT_SEARCHES_PER_DAY"]
     ENV["AGENT_IMPORTS_PER_DAY"] = ENV["AGENT_SEARCHES_PER_DAY"] = "1"
     @workspace.agent_imports.create!(idempotency_key: "used")
-    post agent_imports_path, params: { source: png_upload, idempotency_key: "retained" }
+    post agent_trip_imports_path, params: { source: png_upload, idempotency_key: "retained" }
     assert_response :too_many_requests
-    assert_select "[role=alert]", text: /límite diario/
-    token = css_select("input[name=retained_cover]").first["value"]
+    assert_match(/límite diario/, response.parsed_body["error"])
+    token = response.parsed_body["retained_cover"]
+    assert token.present?
     get new_agent_trip_path(retained_cover: token)
     assert_response :success
     assert_select "input[name=retained_cover]"
@@ -97,14 +100,12 @@ class ResellerHardeningTest < ActionDispatch::IntegrationTest
     previous_search ? ENV["AGENT_SEARCHES_PER_DAY"] = previous_search : ENV.delete("AGENT_SEARCHES_PER_DAY")
   end
 
-  test "invalid source reopens import upload form with clear message" do
+  test "invalid source returns a clear wizard error without creating an import" do
     file = Tempfile.new([ "bad", ".png" ])
     file.write("not an image"); file.close
-    post agent_imports_path, params: { source: Rack::Test::UploadedFile.new(file.path, "image/png"), idempotency_key: "bad-file" }
+    post agent_trip_imports_path, params: { source: Rack::Test::UploadedFile.new(file.path, "image/png"), idempotency_key: "bad-file" }
     assert_response :unprocessable_entity
-    assert_select "[role=alert]", text: /archivo|imagen/
-    assert_select "input[type=file]"
-    assert_select "input[name=idempotency_key][value=bad-file]"
+    assert_match(/archivo|imagen/, response.parsed_body["error"])
     assert_empty @workspace.agent_imports
   ensure
     file&.unlink

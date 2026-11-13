@@ -15,8 +15,8 @@ class SpanishRoutesTest < ActionDispatch::IntegrationTest
     assert_routing({ method: "post", path: "/asesor/viajes/viaje/despublicar" }, controller: "agent/trips", action: "unpublish", id: "viaje")
     assert_routing "/asesor/viajes/comparar", controller: "agent/trips", action: "compare"
     assert_routing "/asesor/mi-web/vista-previa", controller: "agent/website", action: "preview"
-    assert_routing "/asesor/importaciones/importacion/elementos/elemento/editar", controller: "agent/import_items", action: "edit", import_id: "importacion", id: "elemento"
-    assert_routing({ method: "post", path: "/asesor/importaciones/importacion/reintentar" }, controller: "agent/imports", action: "retry_processing", id: "importacion")
+    assert_routing "/asesor/viajes/importaciones/importacion", controller: "agent/trip_imports", action: "show", id: "importacion", format: :json
+    assert_routing({ method: "post", path: "/asesor/viajes/importaciones/importacion/reintentar" }, controller: "agent/trip_imports", action: "retry_processing", id: "importacion", format: :json)
     assert_equal "/asesor/exportar.json", agent_export_path(format: :json)
   end
 

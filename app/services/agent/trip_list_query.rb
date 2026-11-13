@@ -18,6 +18,8 @@ module Agent
     def initialize(workspace:, filters: {}, tab: nil)
       @workspace = workspace
       @filters = filters.to_h.stringify_keys.slice(*FILTERS).reject { |_key, value| value.blank? }
+      legacy_destination = @filters.delete("q")
+      @filters["destination"] ||= legacy_destination if legacy_destination.present?
       @tab = self.class.normalize_tab(tab)
     end
 
@@ -30,18 +32,17 @@ module Agent
       TABS.transform_values { |config| config.fetch(:statuses).sum { |status| grouped.fetch(status, 0) } }
     end
 
+    def destinations
+      trips.except(:includes, :order)
+        .where.not(agent_trip_revisions: { destination: [ nil, "" ] })
+        .distinct.order("agent_trip_revisions.destination").limit(10)
+        .pluck("agent_trip_revisions.destination")
+    end
+
     private
 
     def scope
-      @scope ||= begin
-        records = CatalogQuery.call(workspace: @workspace, filters: filters.except("q"))
-          .joins(current_revision: :agent_supplier)
-        if filters["q"].present?
-          term = "%#{AgentTrip.sanitize_sql_like(filters["q"].to_s.first(200))}%"
-          records = records.where("unaccent(agent_trip_revisions.title) ILIKE unaccent(:q) OR unaccent(agent_trip_revisions.destination) ILIKE unaccent(:q) OR unaccent(agent_suppliers.name) ILIKE unaccent(:q)", q: term)
-        end
-        records.reorder(created_at: :desc, id: :desc)
-      end
+      @scope ||= CatalogQuery.call(workspace: @workspace, filters:).reorder(created_at: :desc, id: :desc)
     end
   end
 end

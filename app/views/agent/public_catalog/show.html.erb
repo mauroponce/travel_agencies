@@ -25,7 +25,7 @@
   <div class="travel-heading">
     <span class="agent-eyebrow">UN NUEVO DESTINO TE ESPERA</span>
     <h1><%= @revision.title %></h1>
-    <p><%= app_icon("route") %><%= [@revision.destination, @revision.region].filter_map(&:presence).join(" · ") %></p>
+    <p><%= app_icon("route") %><%= @revision.destination %></p>
   </div>
 
   <div class="travel-layout">
@@ -34,7 +34,7 @@
         <div class="travel-image-wrap"><%= image_tag agent_image_public_url(@trip, @revision), alt: @revision.title, class: "travel-flyer", fetchpriority: "high" %></div>
         <figcaption><span><%= app_icon("file") %>Propuesta del organizador</span><%= link_to "Ver flyer completo ↗", agent_image_public_url(@trip, @revision), target: "_blank", rel: "noopener" %></figcaption>
       <% else %>
-        <div class="travel-image-placeholder"><%= app_icon("route") %><span>TU PRÓXIMA ESCAPADA</span><strong><%= @revision.destination %></strong><p><%= @revision.region %></p></div>
+        <div class="travel-image-placeholder"><%= app_icon("route") %><span>TU PRÓXIMA ESCAPADA</span><strong><%= @revision.destination %></strong></div>
       <% end %>
     </figure>
 
@@ -43,6 +43,7 @@
       <strong class="travel-price"><%= agent_price_amount(@revision) %></strong>
       <p class="travel-price-unit"><%= AgentTripRevision::PRICE_UNITS[@revision.price_unit] %></p>
       <% if @revision.price_basis.present? %><span class="travel-price-basis"><%= @revision.price_basis %></span><% end %>
+      <%= render "agent/trips/fares", revision: @revision, readonly: true if @revision.fares.many? %>
       <dl class="travel-booking-summary">
         <div><dt><%= app_icon("calendar") %>Salida</dt><dd><%= argentine_date(@revision.departs_on) %></dd></div>
         <% if @revision.returns_on %><div><dt><%= app_icon("calendar") %>Regreso</dt><dd><%= argentine_date(@revision.returns_on) %></dd></div><% end %>

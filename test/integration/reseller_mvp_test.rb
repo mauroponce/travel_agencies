@@ -63,11 +63,12 @@ class ResellerMvpTest < ActionDispatch::IntegrationTest
   end
 
   test "imported flyer is retained on human confirmation and PDF gets first page JPEG" do
-    task = @workspace.agent_imports.create!(idempotency_key: SecureRandom.uuid, source: png_upload)
-    item = task.items.create!(agent_workspace: @workspace, position: 0, extracted: gemini_trip)
+    task = @workspace.agent_imports.create!(idempotency_key: SecureRandom.uuid, source: png_upload, status: "completed")
+    item = task.items.create!(agent_workspace: @workspace, position: 0, extracted: gemini_trip(evidence: {}))
     supplier = @workspace.agent_suppliers.create!(name: "Operador")
-    patch agent_import_item_path(task, item), params: { commit_action: "publish", agent_trip_revision: gemini_trip.except("supplier_name", "warnings", "evidence").merge("agent_supplier_id" => supplier.id, "price" => "500000") }
-    assert_response :redirect
+    post confirm_agent_trip_import_path(task), params: { items: [ { id: item.id, selected: true,
+      values: { agent_supplier_id: supplier.id, price: "500000" } } ] }, as: :json
+    assert_response :success
     trip = item.reload.agent_trip
     assert_equal task.source.blob_id, trip.current_revision.cover.blob_id
     assert_equal task.source.blob_id, trip.current_revision.flyer_source.blob_id
@@ -78,7 +79,7 @@ class ResellerMvpTest < ActionDispatch::IntegrationTest
     assert_equal pdf, trip2.current_revision.flyer_source.download
     assert_equal "image/jpeg", trip2.current_revision.cover.content_type
     assert trip2.current_revision.cover.download.start_with?("\xFF\xD8\xFF".b)
-    get preview_agent_import_path(task2)
+    get preview_agent_trip_import_path(task2)
     assert_response :success
     get source_agent_trip_path(trip2)
     assert_equal pdf, response.body
@@ -86,8 +87,10 @@ class ResellerMvpTest < ActionDispatch::IntegrationTest
 
   test "manual fallback keeps source and tenants cannot mutate trips or read other flyers" do
     failed = @workspace.agent_imports.create!(idempotency_key: SecureRandom.uuid, source: png_upload, status: "error", error_code: "configuration")
-    get agent_import_path(failed)
-    assert_select "a[href='#{new_agent_trip_path(source_import_id: failed.id)}']"
+    get agent_trip_import_path(failed)
+    assert_equal "error", response.parsed_body["status"]
+    get agent_trips_path(import_id: failed.id)
+    assert_select "[data-import-wizard-resume-value=?]", failed.id
     post agent_trips_path, params: { source_import_id: failed.id, agent_trip_revision: { new_supplier_name: "Proveedor", title: "Mi borrador" } }
     assert_response :redirect
     trip = @workspace.agent_trips.last

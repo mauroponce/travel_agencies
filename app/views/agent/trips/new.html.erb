@@ -1,4 +1,4 @@
 <div class="agent-heading">
-  <h1>Nuevo viaje</h1><p>Cargá los datos manualmente o importá tu flyer y revisá lo detectado.</p><%= link_to "Importar flyer con IA", agent_imports_path, class: "btn btn-primary" %>
+  <h1>Nuevo viaje</h1><p>Cargá los datos manualmente o importá tu flyer y revisá lo detectado.</p><%= link_to "Importar flyer con IA", agent_trips_path(import: true), class: "btn btn-primary" %>
 </div>
 <section class="agent-panel"><%= render "form", form_url: agent_trips_path, form_method: :post %></section>

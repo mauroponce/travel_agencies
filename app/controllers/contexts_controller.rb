@@ -5,6 +5,8 @@ class ContextsController < ApplicationController
   def show
     response.headers["Cache-Control"] = "private, no-store"
     @workspace = current_user.agent_workspace if AgentWorkspace.enabled?
+    return redirect_to signed_in_platform_home_path(current_user) if Current.host_scope == "platform" && @workspace&.active?
+
     @memberships = current_user.memberships.active.joins(:company).where(companies: { status: "active" }).includes(:company)
   end
 

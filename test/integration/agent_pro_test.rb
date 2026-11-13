@@ -19,6 +19,27 @@ class AgentProTest < ActionDispatch::IntegrationTest
     @subscription.update!(trial_starts_at: 20.days.ago, trial_ends_at: 1.second.ago)
   end
 
+  test "plan pages and self service actions are removed while expired accounts retain useful guidance" do
+    login_agent(@workspace)
+    get agent_root_path
+    assert_response :success
+    assert_select "#main-sidebar a", text: "Mi plan", count: 0
+    assert_select "a[href^='/asesor/mi-plan']", count: 0
+    original = @subscription.attributes
+    get "/asesor/mi-plan"
+    assert_response :not_found
+    %w[solicitar-activacion cancelar].each do |action|
+      post "/asesor/mi-plan/#{action}", params: { status: "active", price_cents: 0 }
+      assert_response :not_found
+    end
+    assert_equal original, @subscription.reload.attributes
+    expire!
+    get agent_trips_path
+    assert_response :success
+    assert_select "[role=status]", text: /Coordiná la reactivación con la administración de Turistack/
+    assert_select "a[href^='/asesor/mi-plan']", count: 0
+  end
+
   test "onboarding replay never recreates a trial or accepts commercial parameters" do
     login_agent(@workspace)
     original_end = @subscription.trial_ends_at
@@ -41,7 +62,7 @@ class AgentProTest < ActionDispatch::IntegrationTest
     create_membership(company:, user: @workspace.owner, roles: %w[reseller])
     expire!
     login_agent(@workspace)
-    [ agent_root_path, agent_trips_path, agent_trip_path(@trip), agent_clients_path, agent_client_path(@client), agent_plan_path, source_agent_trip_path(@trip) ].each do |path|
+    [ agent_root_path, agent_trips_path, agent_trip_path(@trip), agent_clients_path, agent_client_path(@client), source_agent_trip_path(@trip) ].each do |path|
       get path
       assert_response :success
     end
@@ -66,11 +87,8 @@ class AgentProTest < ActionDispatch::IntegrationTest
     assert_response :forbidden
     post agent_client_notes_path(@client), params: { agent_client_note: { body: "Prohibido" } }
     assert_response :forbidden
-    post agent_imports_path, params: { source: png_upload, idempotency_key: SecureRandom.uuid }
+    post agent_trip_imports_path, params: { source: png_upload, idempotency_key: SecureRandom.uuid }
     assert_response :forbidden
-    post request_activation_agent_plan_path, params: { status: "active", price_cents: 0, current_period_ends_at: 100.years.from_now }
-    assert_response :redirect
-    assert @subscription.reload.activation_requested_at
     assert_equal "trialing", @subscription.status
     assert_not @subscription.entitled?
     host! company.platform_domain.hostname

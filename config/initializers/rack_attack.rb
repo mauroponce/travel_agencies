@@ -25,11 +25,11 @@ class Rack::Attack
   end
 
   throttle("agent-private-files/ip", limit: 120, period: 1.minute) do |request|
-    request.ip if request.path.match?(%r{\A/asesor/(?:viajes/[^/]+/(?:portada|original)|importaciones/[^/]+/(?:original|vista-previa))/?\z})
+    request.ip if request.path.match?(%r{\A/asesor/(?:viajes/[^/]+/(?:portada|original)|viajes/importaciones/[^/]+/(?:original|vista-previa))/?\z})
   end
 
   throttle("agent-ai/ip", limit: 40, period: 1.minute) do |request|
-    request.ip if request.post? && request.path.start_with?("/asesor/importaciones", "/asesor/buscador")
+    request.ip if request.post? && request.path.start_with?("/asesor/viajes/importaciones", "/asesor/buscador")
   end
 
   throttle("agent-onboarding/ip", limit: 10, period: 10.minutes) do |request|

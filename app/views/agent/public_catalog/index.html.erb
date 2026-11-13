@@ -1,39 +1,44 @@
+<% content_for :public_site, "true" %>
 <% content_for :title, "Viajes · #{current_agent_workspace.business_name}" %>
+<% content_for :stylesheets do %><%= stylesheet_link_tag "agent_public", "data-turbo-track": "reload" %><% end %>
 <% content_for :head do %><meta name="description" content="Descubrí las propuestas de viajes de <%= current_agent_workspace.business_name %> y consultá por WhatsApp."><% end %>
-<% if current_agent_workspace.show_catalog? %>
-  <%= render "agent/public_catalog/search" %>
-<% end %>
-<% if current_agent_workspace.show_about? %>
-  <section id="sobre-mi" class="agent-public-about" aria-labelledby="agent-about-title">
-    <div class="agent-about-portrait">
-      <% if current_agent_workspace.about_photo.attached? %>
-        <%= image_tag agent_about_photo_public_url, alt: "Foto de #{current_agent_workspace.public_name}", loading: "lazy", class: "agent-about-photo" %>
-      <% else %>
-        <span class="agent-about-initial" aria-hidden="true"><%= current_agent_workspace.public_name.first.upcase %></span>
+<% workspace = current_agent_workspace; contact = "https://wa.me/#{workspace.whatsapp}" %>
+<div class="advisor-site" data-controller="public-site" data-public-site-workspace-value="<%= workspace.slug %>" data-public-site-name-value="<%= workspace.business_name %>" data-action="hashchange@window->public-site#syncView">
+  <header class="header">
+    <div class="container header-content">
+      <%= link_to workspace.show_catalog? ? "#viajes" : "#sobre-mi", class: "brand", data: { turbo: false }, aria: { label: "Inicio, viajes de #{workspace.business_name}" } do %>
+        <span class="brand-mark"><%= app_icon("spark") %></span>
+        <div><div class="brand-name"><%= workspace.business_name %> <span>/ Viajes</span></div><div class="brand-sub">Experiencias para tu próxima escapada</div></div>
       <% end %>
-      <span class="agent-about-caption">Tu próximo viaje empieza con una charla.</span>
+      <nav class="header-nav" aria-label="Navegación principal">
+        <% if workspace.show_catalog? %><%= link_to "Viajes", "#viajes", class: "nav-item active", data: { public_site_target: "catalogLink", turbo: false } %><% end %>
+        <% if workspace.show_about? %><%= link_to "Sobre mí", "#sobre-mi", class: "nav-item", data: { public_site_target: "profileLink", turbo: false } %><% end %>
+      </nav>
+      <%= link_to contact, class: "header-cta", target: "_blank", rel: "noopener" do %><%= app_icon("whatsapp") %>Hablemos por WhatsApp<% end %>
     </div>
-    <div class="agent-about-story">
-      <span class="agent-eyebrow">DETRÁS DE CADA VIAJE, UNA PERSONA</span>
-      <h2 id="agent-about-title">Sobre mí</h2>
-      <h3><%= current_agent_workspace.public_name %></h3>
-      <p class="agent-about-text"><%= current_agent_workspace.about_text %></p>
-      <%= link_to "Conversemos sobre tu próximo viaje ↗", "https://wa.me/#{current_agent_workspace.whatsapp}", class: "btn btn-primary", rel: "noopener", target: "_blank" %>
-    </div>
-  </section>
-<% end %>
-<% if current_agent_workspace.show_catalog? %>
-<section id="viajes" aria-labelledby="agent-catalog-title">
-<% if @owner_view %><p class="agent-alert">Vista de agente: ves todos tus viajes, incluidos borradores, inactivos y pasados. Tus visitantes solo ven los publicados y vigentes de proveedores activos.</p><% end %>
-<div class="agent-heading">
-  <h1 id="agent-catalog-title">Viajes para descubrir</h1>
-  <span><%= @pagination.total_count %> propuestas</span></div>
-<%= render "agent/trips/cards", trips: @trips, public_view: !@owner_view %><%= render "agent/pagination", pagination: @pagination %>
-<p class="agent-public-note">Confirmá tarifas, condiciones y disponibilidad directamente antes de contratar.</p>
-</section>
-<% end %>
-<%= link_to "https://wa.me/#{current_agent_workspace.whatsapp}", class: "agent-floating-whatsapp", aria: { label: "Consultar por WhatsApp" }, title: "Consultar por WhatsApp", rel: "noopener", target: "_blank" do %>
-  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-    <path fill="currentColor" d="M20.5 3.5A11.9 11.9 0 0 0 12 0C5.4 0 0 5.4 0 12c0 2.1.5 4.1 1.6 6L0 24l6.2-1.6A12 12 0 0 0 12 24c6.6 0 12-5.4 12-12 0-3.2-1.2-6.2-3.5-8.5ZM12 22a10 10 0 0 1-5.1-1.4l-.4-.2-3.7 1 1-3.6-.3-.4A10 10 0 1 1 12 22Zm5.5-7.5c-.3-.1-1.8-.9-2.1-1-.3-.1-.5-.1-.7.2-.2.3-.8 1-1 1.2-.2.2-.4.2-.7.1-.3-.2-1.3-.5-2.4-1.5-.9-.8-1.5-1.7-1.7-2-.2-.3 0-.5.1-.6l.5-.6.3-.5c.1-.2 0-.4 0-.6l-1-2.2c-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.3 3.1c.1.2 2.1 3.3 5.1 4.6.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.8-.7 2.1-1.5.3-.7.3-1.4.2-1.5-.1-.1-.3-.2-.6-.3Z"/>
-  </svg>
-<% end %>
+  </header>
+  <main>
+    <% if workspace.show_catalog? %>
+      <section id="viajes" class="container" data-public-site-target="catalog" aria-label="Catálogo de viajes">
+        <%= render "agent/public_catalog/search" %>
+        <% if @owner_view %><p class="agent-alert owner-note">Vista de agente: ves todos tus viajes, incluidos borradores, inactivos y pasados. Tus visitantes solo ven los publicados y vigentes de proveedores activos.</p><% end %>
+        <%= turbo_frame_tag "public-catalog-results", target: "_top" do %>
+          <%= render "agent/public_catalog/results" %>
+        <% end %>
+      </section>
+    <% end %>
+    <% if workspace.show_about? %><%= render "agent/public_catalog/profile", workspace: workspace, contact: contact %><% end %>
+    <% unless workspace.show_catalog? || workspace.show_about? %>
+      <div class="container empty-contact"><h1><%= workspace.public_name %></h1><p>Tu próximo viaje empieza con una conversación.</p><%= link_to "Hablemos por WhatsApp", contact, class: "dark-button", target: "_blank", rel: "noopener" %></div>
+    <% end %>
+  </main>
+  <footer class="bottom-bar"><div class="container bottom-content">
+    <div><div class="footer-copy"><%= workspace.business_name %> · Viajes · Un espacio para encontrar tu próximo destino</div><p class="demo-note">Confirmá tarifas, condiciones y disponibilidad directamente antes de contratar.</p></div>
+    <nav class="footer-links" aria-label="Enlaces del pie">
+      <% if workspace.show_catalog? %><%= link_to "Viajes", "#viajes", data: { turbo: false } %><% end %>
+      <% if workspace.show_about? %><%= link_to "Sobre mí", "#sobre-mi", data: { turbo: false } %><% end %>
+      <%= link_to "Contacto", contact, target: "_blank", rel: "noopener" %>
+    </nav>
+  </div></footer>
+  <%= link_to contact, class: "wa-float agent-floating-whatsapp", aria: { label: "Consultar por WhatsApp" }, title: "Consultar por WhatsApp", target: "_blank", rel: "noopener" do %><%= app_icon("whatsapp") %><% end %>
+</div>

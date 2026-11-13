@@ -1,0 +1,13 @@
+<dialog class="ai-wizard" aria-labelledby="ai-wizard-title" data-import-wizard-target="dialog" data-action="cancel->import-wizard#cancel click->import-wizard#backdrop">
+  <header class="ai-wizard-head">
+    <div><span class="ai-wizard-kicker"><%= app_icon("spark") %> ASISTENTE DE IMPORTACIÓN</span><h2 id="ai-wizard-title">Crear viajes desde un flyer</h2><p>Un flyer puede contener múltiples fechas y generar varios viajes.</p></div>
+    <button type="button" class="ai-wizard-close" aria-label="Cerrar asistente" data-action="import-wizard#close"><%= app_icon("close") %></button>
+  </header>
+  <ol class="ai-stepper" aria-label="Pasos del importador" data-import-wizard-target="steps"></ol>
+  <div class="ai-wizard-main">
+    <aside class="ai-preview-rail" aria-label="Flyer de origen" data-import-wizard-target="preview"></aside>
+    <div class="ai-wizard-content" data-import-wizard-target="content" data-action="input->import-wizard#input change->import-wizard#change click->import-wizard#contentClick"></div>
+  </div>
+  <div class="ai-wizard-error" role="alert" tabindex="-1" hidden data-import-wizard-target="error"></div>
+  <footer class="ai-wizard-foot"><span data-import-wizard-target="status" role="status" aria-live="polite">Revisión humana · se guardan como borradores</span><div class="ai-wizard-actions" data-import-wizard-target="actions"></div></footer>
+</dialog>

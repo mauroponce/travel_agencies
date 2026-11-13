@@ -26,6 +26,9 @@ class AgentTripListTest < ActionDispatch::IntegrationTest
     assert_select "tbody", text: /Título interno/
     assert_select "tbody", text: /Cambios sin publicar/
     assert_select "select[name=status], select[name=sort]", count: 0
+    assert_select ".agent-trip-extra-filters[open]", count: 0
+    assert_select ".agent-trip-extra-filters select[name=supplier_id] option[value='']", text: "Todas las empresas"
+    assert_select "form.agent-trip-filters button", text: "Buscar", count: 0
     assert_select "a[data-tab=drafts] .agent-trip-tab-count", text: "1"
     assert_equal original, published.reload.published_revision_id
     get agent_trips_path(tab: "all", status: "unpublished")
@@ -54,7 +57,7 @@ class AgentTripListTest < ActionDispatch::IntegrationTest
     21.times { agent_trip(workspace: @workspace, supplier: @supplier, destination: "Mendoza", currency: "USD").publish! }
     agent_trip(workspace: @workspace, supplier: @supplier, destination: "Mendoza", currency: "USD")
     agent_trip(workspace: agent_workspace, destination: "Mendoza", currency: "USD").publish!
-    filters = { q: "mendoza", supplier_id: @supplier.id.to_s, currency: "USD", from: Date.current.iso8601, to: 1.year.from_now.to_date.iso8601 }
+    filters = { destination: "mendoza", supplier_id: @supplier.id.to_s, currency: "USD", from: Date.current.iso8601, to: 1.year.from_now.to_date.iso8601 }
     get agent_trips_path, params: filters
     assert_response :success
     assert_equal 20, row_ids.size
@@ -138,7 +141,7 @@ class AgentTripListTest < ActionDispatch::IntegrationTest
     assert_equal [ trip.id ], row_ids
     assert_select "a[role=menuitem]", text: "Ver detalle", count: 1
     assert_select "a[role=menuitem]", text: "Editar viaje", count: 0
-    assert_select "button[role=menuitem]", count: 0
+    assert_select ".agent-trip-actions button[role=menuitem]", count: 0
     post archive_agent_trip_path(trip), params: { list: { tab: "published" } }
     assert_response :forbidden
     assert_equal "published", trip.reload.status
@@ -156,6 +159,22 @@ class AgentTripListTest < ActionDispatch::IntegrationTest
       post public_send("#{action}_agent_trip_path", foreign), params: { list: { tab: "published" } }
       assert_response :not_found
     end
+  end
+
+  test "private destination suggestions and automatic result frames use the same filters" do
+    trip = agent_trip(workspace: @workspace, supplier: @supplier, destination: "Córdoba")
+    trip.publish!
+    agent_trip(workspace: @workspace, supplier: @supplier, destination: "Mendoza", title: "Córdoba en el título").publish!
+    agent_trip(workspace: agent_workspace, destination: "Córdoba privada").publish!
+    get agent_trips_path(format: :json), params: { destination: "cordoba" }
+    assert_response :success
+    assert_equal({ "destinations" => [ "Córdoba" ] }, response.parsed_body)
+    assert_equal "private, no-store", response.headers["Cache-Control"]
+    get agent_trips_path(destination: "cordoba"), headers: { "Turbo-Frame" => "trip-list-results" }
+    assert_equal [ trip.id ], row_ids
+    assert_select "turbo-frame#trip-list-results"
+    assert_select "turbo-stream[action=replace][target=trip-list-tabs]"
+    assert_select ".agent-trip-extra-filters[open]", count: 0
   end
 
   private
